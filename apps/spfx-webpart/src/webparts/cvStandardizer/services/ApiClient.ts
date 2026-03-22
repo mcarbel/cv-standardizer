@@ -24,6 +24,14 @@ export interface ConnectionTestResult {
   };
 }
 
+export interface HealthCheckResult {
+  ok: boolean;
+  url: string;
+  status?: number;
+  payload?: unknown;
+  diagnosis?: string;
+}
+
 export class ApiClient {
   public constructor(private readonly apiBaseUrl: string) {}
 
@@ -68,4 +76,57 @@ export class ApiClient {
     }
     return payload;
   }
+
+  public async healthCheck(): Promise<HealthCheckResult> {
+    const url = `${this.apiBaseUrl}/api/health`;
+
+    try {
+      const response = await fetch(url, { method: 'GET' });
+      let payload: unknown;
+
+      try {
+        payload = await response.json();
+      } catch (_error) {
+        payload = undefined;
+      }
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          url,
+          status: response.status,
+          payload,
+          diagnosis: `Backend returned HTTP ${response.status}.`
+        };
+      }
+
+      return {
+        ok: true,
+        url,
+        status: response.status,
+        payload
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        url,
+        diagnosis: buildConnectivityDiagnosis(error)
+      };
+    }
+  }
+}
+
+function buildConnectivityDiagnosis(error: unknown): string {
+  const message = error instanceof Error ? error.message : 'Load failed';
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes('load failed')) {
+    return 'Backend unreachable from the browser. Likely certificate trust, CORS, or Private Network Access blocking.';
+  }
+
+  if (normalized.includes('failed to fetch')) {
+    return 'Browser blocked the request before the backend responded. Likely certificate trust, CORS, or Private Network Access.';
+  }
+
+  return message;
 }

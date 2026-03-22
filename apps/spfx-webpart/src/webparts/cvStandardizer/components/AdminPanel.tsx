@@ -15,6 +15,11 @@ interface AdminPanelProps {
 }
 
 export interface ConnectionTestState {
+  healthOk?: boolean;
+  healthUrl?: string;
+  healthStatusCode?: number;
+  healthPayload?: unknown;
+  healthDiagnosis?: string;
   apiOk: boolean;
   ollamaOk: boolean;
   apiUrl: string;
@@ -132,7 +137,7 @@ export default function AdminPanel(props: AdminPanelProps): JSX.Element {
       <div style={styles.buttonRow}>
         <button type="submit" style={styles.primaryButton}>Save Settings</button>
         <button type="button" style={styles.secondaryButton} onClick={onTestClick} disabled={testBusy}>
-          {testBusy ? 'Testing...' : 'Test API / Ollama'}
+          {testBusy ? 'Testing...' : 'Test health / API / Ollama'}
         </button>
         <button type="button" style={styles.secondaryButton} onClick={props.onReset}>Reset to Web Part Defaults</button>
       </div>
@@ -140,6 +145,9 @@ export default function AdminPanel(props: AdminPanelProps): JSX.Element {
       {testError ? <p style={styles.errorText}>Connection test failed: {testError}</p> : null}
       {testResult ? (
         <div style={styles.resultBox}>
+          <div><strong>Health check:</strong> {testResult.healthOk ? 'Connected' : 'Unavailable'} ({testResult.healthUrl})</div>
+          {typeof testResult.healthStatusCode === 'number' ? <div><strong>Health HTTP:</strong> {testResult.healthStatusCode}</div> : null}
+          {testResult.healthDiagnosis ? <div><strong>Diagnosis:</strong> {testResult.healthDiagnosis}</div> : null}
           <div><strong>API:</strong> {testResult.apiOk ? 'Connected' : 'Unavailable'} ({testResult.apiUrl})</div>
           <div><strong>API node:</strong> {testResult.apiNodeVersion}</div>
           <div><strong>API time:</strong> {testResult.apiServerTime}</div>
@@ -160,6 +168,9 @@ export default function AdminPanel(props: AdminPanelProps): JSX.Element {
                 </div>
               ))}
             </div>
+          ) : null}
+          {typeof testResult.healthPayload !== 'undefined' ? (
+            <pre style={styles.jsonBox}>{JSON.stringify(testResult.healthPayload, null, 2)}</pre>
           ) : null}
         </div>
       ) : null}
@@ -225,6 +236,15 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     backgroundColor: '#ffffff',
     border: '1px solid #cbd5e1'
+  },
+  jsonBox: {
+    marginTop: '12px',
+    padding: '12px',
+    borderRadius: '8px',
+    backgroundColor: '#0f172a',
+    color: '#e2e8f0',
+    overflowX: 'auto',
+    fontSize: '12px'
   },
   errorText: {
     marginTop: '16px',

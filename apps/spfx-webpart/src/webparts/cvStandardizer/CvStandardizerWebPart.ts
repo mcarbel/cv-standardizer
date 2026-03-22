@@ -60,6 +60,8 @@ export default class CvStandardizerWebPart extends BaseClientSideWebPart<ICvStan
                   ]
                 }),
                 PropertyPaneToggle('dumpJson', { label: 'Enable JSON download' }),
+                PropertyPaneToggle('enableDebugPanel', { label: 'Enable debug panel' }),
+                PropertyPaneToggle('useLocalApiProxy', { label: 'Use local SPFx proxy (localhost:4321)' }),
                 PropertyPaneToggle('allowUserOverrideProvider', { label: 'Allow provider override' }),
                 PropertyPaneToggle('allowUserOverrideModel', { label: 'Allow model override' })
               ]

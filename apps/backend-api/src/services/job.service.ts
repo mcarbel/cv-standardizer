@@ -24,7 +24,7 @@ export class JobService {
   private readonly jobs = new Map<string, StoredJob>();
   private readonly storageRoot = path.resolve(process.env.STORAGE_ROOT || path.join(process.cwd(), 'storage'));
 
-  async createAndRun(file: MulterFile, rawFields: Record<string, string>): Promise<JobRecord> {
+  async createJob(file: MulterFile, rawFields: Record<string, string>): Promise<JobRecord> {
     const fields = this.normalizeFields(rawFields);
     const jobId = `job_${crypto.randomUUID()}`;
     const jobDir = path.join(this.storageRoot, 'jobs', jobId);
@@ -33,24 +33,48 @@ export class JobService {
     const createdAt = new Date().toISOString();
     const job: StoredJob = {
       jobId,
-      status: 'processing',
+      status: 'queued',
       provider: fields.provider,
       model: fields.model,
       inputFileName: file.originalname,
       outputFormat: fields.outputFormat,
-      progress: 10,
+      progress: 0,
       createdAt,
       updatedAt: createdAt
     };
     this.jobs.set(jobId, job);
 
+    void this.processJob(jobId, file, fields, jobDir);
+
+    return this.publicJob(job);
+  }
+
+  private async processJob(
+    jobId: string,
+    file: MulterFile,
+    fields: CreateJobRequestFields,
+    jobDir: string
+  ): Promise<void> {
+    const job = this.jobs.get(jobId);
+    if (!job) {
+      return;
+    }
+
     try {
+      job.status = 'processing';
+      job.progress = 5;
+      job.updatedAt = new Date().toISOString();
+      console.log(`[job ${jobId}] start provider=${fields.provider} model=${fields.model} output=${fields.outputFormat} file=${file.originalname}`);
       const sourcePath = path.join(jobDir, file.originalname);
       await fs.writeFile(sourcePath, file.buffer);
       job.progress = 20;
+      job.updatedAt = new Date().toISOString();
+      console.log(`[job ${jobId}] source saved -> ${sourcePath}`);
 
       const extractedText = await extractText(file.originalname, file.buffer);
       job.progress = 40;
+      job.updatedAt = new Date().toISOString();
+      console.log(`[job ${jobId}] text extracted length=${extractedText.length}`);
 
       const cv = await transformCv(extractedText, {
         provider: fields.provider,
@@ -61,6 +85,8 @@ export class JobService {
         outputFormat: fields.outputFormat
       });
       job.progress = 75;
+      job.updatedAt = new Date().toISOString();
+      console.log(`[job ${jobId}] transform complete fullName="${cv.fullName}" title="${cv.title}"`);
 
       const baseName = path.parse(file.originalname).name + '_standardise';
       const outputPath = await renderOutput(cv, fields.outputFormat, jobDir, baseName);
@@ -73,13 +99,12 @@ export class JobService {
       job.jsonPath = jsonPath;
       job.outputDownloadUrl = `/api/jobs/${jobId}/result`;
       job.jsonDownloadUrl = `/api/jobs/${jobId}/json`;
-
-      return this.publicJob(job);
+      console.log(`[job ${jobId}] completed output=${outputPath}`);
     } catch (error) {
       job.status = 'failed';
       job.updatedAt = new Date().toISOString();
       job.errorMessage = error instanceof Error ? error.message : 'Unknown job error';
-      throw error;
+      console.error(`[job ${jobId}] failed:`, error);
     }
   }
 

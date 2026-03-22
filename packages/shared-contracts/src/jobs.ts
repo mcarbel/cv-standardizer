@@ -14,6 +14,7 @@ export interface CreateJobRequestFields {
 export interface CreateJobResponse {
   jobId: string;
   status: JobStatus;
+  progress: number;
 }
 
 export interface JobRecord {

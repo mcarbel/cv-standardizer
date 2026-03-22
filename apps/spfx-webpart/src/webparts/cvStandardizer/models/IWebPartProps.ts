@@ -6,6 +6,8 @@ export interface ICvStandardizerWebPartProps {
   apiKey: string;
   outputFormat: 'docx' | 'pdf' | 'markdown';
   dumpJson: boolean;
+  enableDebugPanel: boolean;
+  useLocalApiProxy: boolean;
   allowUserOverrideProvider: boolean;
   allowUserOverrideModel: boolean;
 }

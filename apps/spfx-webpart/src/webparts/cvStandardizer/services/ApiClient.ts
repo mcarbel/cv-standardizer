@@ -4,12 +4,23 @@ export interface ConnectionTestResult {
   api: {
     ok: boolean;
     url: string;
+    serverTime: string;
+    nodeVersion: string;
+    defaultOllamaBaseUrl: string;
   };
   ollama: {
     ok: boolean;
     url: string;
+    statusCode?: number;
     message?: string;
-    models?: string[];
+    modelCount?: number;
+    models?: Array<{
+      name: string;
+      model: string;
+      size: number;
+      modifiedAt?: string;
+      remoteHost?: string;
+    }>;
   };
 }
 

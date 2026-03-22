@@ -17,7 +17,10 @@ export async function testConnections(req: Request, res: Response): Promise<void
   const providerBaseUrl = normalizeQueryValue(req.query.providerBaseUrl) || process.env.DEFAULT_OLLAMA_BASE_URL || 'http://localhost:11434';
   const apiHealth = {
     ok: true,
-    url: '/api/health'
+    url: '/api/health',
+    serverTime: new Date().toISOString(),
+    nodeVersion: process.version,
+    defaultOllamaBaseUrl: process.env.DEFAULT_OLLAMA_BASE_URL || 'http://localhost:11434'
   };
 
   try {
@@ -29,24 +32,38 @@ export async function testConnections(req: Request, res: Response): Promise<void
         ollama: {
           ok: false,
           url: ollamaUrl,
+          statusCode: response.status,
           message: `HTTP ${response.status}`
         }
       });
       return;
     }
 
-    const payload = await response.json() as { models?: Array<{ name?: string }> };
-    const modelNames = (payload.models || [])
-      .map((item) => item.name)
-      .filter((value): value is string => Boolean(value))
-      .slice(0, 10);
+    const payload = await response.json() as {
+      models?: Array<{
+        name?: string;
+        model?: string;
+        size?: number;
+        modified_at?: string;
+        remote_host?: string;
+      }>;
+    };
+    const models = (payload.models || []).map((item) => ({
+      name: item.name || '',
+      model: item.model || '',
+      size: item.size || 0,
+      modifiedAt: item.modified_at,
+      remoteHost: item.remote_host
+    }));
 
     res.json({
       api: apiHealth,
       ollama: {
         ok: true,
         url: ollamaUrl,
-        models: modelNames
+        statusCode: response.status,
+        modelCount: models.length,
+        models
       }
     });
   } catch (error) {
@@ -55,6 +72,7 @@ export async function testConnections(req: Request, res: Response): Promise<void
       ollama: {
         ok: false,
         url: providerBaseUrl,
+        statusCode: 502,
         message: error instanceof Error ? error.message : 'Unknown Ollama connection error'
       }
     });

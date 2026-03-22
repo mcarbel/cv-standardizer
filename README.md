@@ -58,3 +58,12 @@ Requirements:
 
 - `PnP.PowerShell` installed locally
 - the `.sppkg` already built in `apps/spfx-webpart/sharepoint/solution/`
+
+## GitHub Actions cost
+
+As of March 23, 2026, GitHub documents that standard GitHub-hosted runners are free for public repositories. For private repositories, GitHub Free includes 2,000 minutes per month and 500 MB of artifact storage, then usage can be billed beyond that quota.
+
+Sources:
+
+- [GitHub Actions billing](https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions)
+- [GitHub Free plan details](https://docs.github.com/en/get-started/learning-about-github/githubs-plans)

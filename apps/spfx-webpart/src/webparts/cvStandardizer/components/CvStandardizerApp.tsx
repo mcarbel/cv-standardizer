@@ -52,6 +52,11 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
       ollamaOk: result.ollama.ok,
       apiUrl: result.api.url,
       ollamaUrl: result.ollama.url,
+      apiServerTime: result.api.serverTime,
+      apiNodeVersion: result.api.nodeVersion,
+      apiDefaultOllamaBaseUrl: result.api.defaultOllamaBaseUrl,
+      ollamaStatusCode: result.ollama.statusCode,
+      ollamaModelCount: result.ollama.modelCount,
       ollamaMessage: result.ollama.message,
       ollamaModels: result.ollama.models
     };

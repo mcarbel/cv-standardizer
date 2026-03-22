@@ -19,8 +19,19 @@ export interface ConnectionTestState {
   ollamaOk: boolean;
   apiUrl: string;
   ollamaUrl: string;
+  apiServerTime: string;
+  apiNodeVersion: string;
+  apiDefaultOllamaBaseUrl: string;
+  ollamaStatusCode?: number;
+  ollamaModelCount?: number;
   ollamaMessage?: string;
-  ollamaModels?: string[];
+  ollamaModels?: Array<{
+    name: string;
+    model: string;
+    size: number;
+    modifiedAt?: string;
+    remoteHost?: string;
+  }>;
 }
 
 export default function AdminPanel(props: AdminPanelProps): JSX.Element {
@@ -129,11 +140,26 @@ export default function AdminPanel(props: AdminPanelProps): JSX.Element {
       {testError ? <p style={styles.errorText}>Connection test failed: {testError}</p> : null}
       {testResult ? (
         <div style={styles.resultBox}>
-          <div>API: {testResult.apiOk ? 'Connected' : 'Unavailable'} ({testResult.apiUrl})</div>
-          <div>Ollama: {testResult.ollamaOk ? 'Connected' : 'Unavailable'} ({testResult.ollamaUrl})</div>
+          <div><strong>API:</strong> {testResult.apiOk ? 'Connected' : 'Unavailable'} ({testResult.apiUrl})</div>
+          <div><strong>API node:</strong> {testResult.apiNodeVersion}</div>
+          <div><strong>API time:</strong> {testResult.apiServerTime}</div>
+          <div><strong>API default Ollama URL:</strong> {testResult.apiDefaultOllamaBaseUrl}</div>
+          <div><strong>Ollama:</strong> {testResult.ollamaOk ? 'Connected' : 'Unavailable'} ({testResult.ollamaUrl})</div>
+          {typeof testResult.ollamaStatusCode === 'number' ? <div><strong>Ollama HTTP:</strong> {testResult.ollamaStatusCode}</div> : null}
+          {typeof testResult.ollamaModelCount === 'number' ? <div><strong>Model count:</strong> {testResult.ollamaModelCount}</div> : null}
           {testResult.ollamaMessage ? <div>Message: {testResult.ollamaMessage}</div> : null}
           {testResult.ollamaModels && testResult.ollamaModels.length > 0 ? (
-            <div>Models: {testResult.ollamaModels.join(', ')}</div>
+            <div style={styles.modelList}>
+              {testResult.ollamaModels.map((model) => (
+                <div key={model.name || model.model} style={styles.modelCard}>
+                  <div><strong>{model.name || model.model}</strong></div>
+                  {model.model ? <div>Id: {model.model}</div> : null}
+                  <div>Size: {formatBytes(model.size)}</div>
+                  {model.modifiedAt ? <div>Updated: {model.modifiedAt}</div> : null}
+                  {model.remoteHost ? <div>Remote: {model.remoteHost}</div> : null}
+                </div>
+              ))}
+            </div>
           ) : null}
         </div>
       ) : null}
@@ -188,6 +214,18 @@ const styles: { [key: string]: React.CSSProperties } = {
     backgroundColor: '#eef6ff',
     color: '#0f172a'
   },
+  modelList: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: '10px',
+    marginTop: '12px'
+  },
+  modelCard: {
+    padding: '10px',
+    borderRadius: '8px',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1'
+  },
   errorText: {
     marginTop: '16px',
     color: '#b91c1c'
@@ -209,3 +247,20 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: 'pointer'
   }
 };
+
+function formatBytes(value: number): string {
+  if (!value) {
+    return '0 B';
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let size = value;
+  let unitIndex = 0;
+
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+}

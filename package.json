@@ -1,0 +1,13 @@
+{
+  "name": "cv-standardizer",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @cv-standardizer/shared-contracts && npm run build -w @cv-standardizer/backend-api",
+    "build:backend": "npm run build -w @cv-standardizer/backend-api",
+    "build:contracts": "npm run build -w @cv-standardizer/shared-contracts"
+  }
+}

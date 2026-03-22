@@ -1,0 +1,8 @@
+node_modules/
+dist/
+lib/
+temp/
+*.log
+.DS_Store
+apps/backend-api/storage/
+apps/spfx-webpart/sharepoint/

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "cv-standardizer-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/cvStandardizer/CvStandardizerWebPart.js",
+          "manifest": "./src/webparts/cvStandardizer/CvStandardizerWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "CvStandardizerWebPartStrings": "lib/webparts/cvStandardizer/loc/{locale}.js"
+  }
+}

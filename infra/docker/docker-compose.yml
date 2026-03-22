@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ../../apps/backend-api
+    ports:
+      - "8787:8787"
+    environment:
+      PORT: 8787
+      STORAGE_ROOT: /app/storage
+      DEFAULT_OLLAMA_BASE_URL: http://ollama:11434
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - ../../apps/backend-api/storage:/app/storage
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+
+volumes:
+  ollama-data:

@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { getCapabilities } from '../controllers/config.controller';
+import { getCapabilities, testConnections } from '../controllers/config.controller';
 
 const router = Router();
 
 router.get('/capabilities', getCapabilities);
+router.get('/test-connections', testConnections);
 
 export default router;

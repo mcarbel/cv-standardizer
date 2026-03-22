@@ -2,7 +2,7 @@ import * as React from 'react';
 import type { ICvStandardizerWebPartProps } from '../models/IWebPartProps';
 import type { JobRecord } from '../models/ApiModels';
 import { ApiClient } from '../services/ApiClient';
-import AdminPanel, { type AdminSettings } from './AdminPanel';
+import AdminPanel, { type AdminSettings, type ConnectionTestState } from './AdminPanel';
 import JobStatusPanel from './JobStatusPanel';
 import ResultPreview from './ResultPreview';
 import UploadPanel from './UploadPanel';
@@ -42,6 +42,19 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
   function resetAdminSettings(): void {
     setAdminSettings(defaultSettings);
     window.localStorage.removeItem(STORAGE_KEY);
+  }
+
+  async function testConnections(settings: AdminSettings): Promise<ConnectionTestState> {
+    const runtimeClient = new ApiClient(settings.apiBaseUrl);
+    const result = await runtimeClient.testConnections(settings.providerBaseUrl);
+    return {
+      apiOk: result.api.ok,
+      ollamaOk: result.ollama.ok,
+      apiUrl: result.api.url,
+      ollamaUrl: result.ollama.url,
+      ollamaMessage: result.ollama.message,
+      ollamaModels: result.ollama.models
+    };
   }
 
   async function handleUpload(file: File): Promise<void> {
@@ -88,6 +101,7 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
           initialSettings={adminSettings}
           onSave={saveAdminSettings}
           onReset={resetAdminSettings}
+          onTestConnections={testConnections}
         />
       ) : null}
       <UploadPanel onUpload={handleUpload} />

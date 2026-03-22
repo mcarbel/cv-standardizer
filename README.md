@@ -12,6 +12,12 @@ npm install
 npm run build
 ```
 
+Run the backend locally against Ollama on `localhost:11434`:
+
+```bash
+./scripts/start-backend-local.sh
+```
+
 ### SPFx
 
 ```bash

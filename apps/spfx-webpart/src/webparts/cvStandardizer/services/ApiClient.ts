@@ -1,5 +1,18 @@
 import type { CreateJobResponse, JobRecord } from '../models/ApiModels';
 
+export interface ConnectionTestResult {
+  api: {
+    ok: boolean;
+    url: string;
+  };
+  ollama: {
+    ok: boolean;
+    url: string;
+    message?: string;
+    models?: string[];
+  };
+}
+
 export class ApiClient {
   public constructor(private readonly apiBaseUrl: string) {}
 
@@ -31,5 +44,17 @@ export class ApiClient {
       throw new Error(`Failed to load job: ${response.status}`);
     }
     return response.json() as Promise<JobRecord>;
+  }
+
+  public async testConnections(providerBaseUrl: string): Promise<ConnectionTestResult> {
+    const query = new URLSearchParams({
+      providerBaseUrl
+    });
+    const response = await fetch(`${this.apiBaseUrl}/api/config/test-connections?${query.toString()}`);
+    const payload = await response.json() as ConnectionTestResult;
+    if (!response.ok) {
+      throw new Error(payload.ollama.message || `Connection test failed: ${response.status}`);
+    }
+    return payload;
   }
 }

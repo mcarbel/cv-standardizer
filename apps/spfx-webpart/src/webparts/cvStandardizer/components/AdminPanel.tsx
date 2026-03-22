@@ -11,11 +11,24 @@ interface AdminPanelProps {
   initialSettings: AdminSettings;
   onSave: (settings: AdminSettings) => void;
   onReset: () => void;
+  onTestConnections: (settings: AdminSettings) => Promise<ConnectionTestState>;
+}
+
+export interface ConnectionTestState {
+  apiOk: boolean;
+  ollamaOk: boolean;
+  apiUrl: string;
+  ollamaUrl: string;
+  ollamaMessage?: string;
+  ollamaModels?: string[];
 }
 
 export default function AdminPanel(props: AdminPanelProps): JSX.Element {
   const [settings, setSettings] = React.useState<AdminSettings>(props.initialSettings);
   const [showApiKey, setShowApiKey] = React.useState<boolean>(false);
+  const [testResult, setTestResult] = React.useState<ConnectionTestState | undefined>();
+  const [testBusy, setTestBusy] = React.useState<boolean>(false);
+  const [testError, setTestError] = React.useState<string | undefined>();
 
   React.useEffect(() => {
     setSettings(props.initialSettings);
@@ -31,6 +44,21 @@ export default function AdminPanel(props: AdminPanelProps): JSX.Element {
   function onSubmit(event: React.FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     props.onSave(settings);
+  }
+
+  async function onTestClick(): Promise<void> {
+    setTestBusy(true);
+    setTestError(undefined);
+
+    try {
+      const result = await props.onTestConnections(settings);
+      setTestResult(result);
+    } catch (error) {
+      setTestResult(undefined);
+      setTestError(error instanceof Error ? error.message : 'Connection test failed');
+    } finally {
+      setTestBusy(false);
+    }
   }
 
   return (
@@ -92,8 +120,23 @@ export default function AdminPanel(props: AdminPanelProps): JSX.Element {
 
       <div style={styles.buttonRow}>
         <button type="submit" style={styles.primaryButton}>Save Settings</button>
+        <button type="button" style={styles.secondaryButton} onClick={onTestClick} disabled={testBusy}>
+          {testBusy ? 'Testing...' : 'Test API / Ollama'}
+        </button>
         <button type="button" style={styles.secondaryButton} onClick={props.onReset}>Reset to Web Part Defaults</button>
       </div>
+
+      {testError ? <p style={styles.errorText}>Connection test failed: {testError}</p> : null}
+      {testResult ? (
+        <div style={styles.resultBox}>
+          <div>API: {testResult.apiOk ? 'Connected' : 'Unavailable'} ({testResult.apiUrl})</div>
+          <div>Ollama: {testResult.ollamaOk ? 'Connected' : 'Unavailable'} ({testResult.ollamaUrl})</div>
+          {testResult.ollamaMessage ? <div>Message: {testResult.ollamaMessage}</div> : null}
+          {testResult.ollamaModels && testResult.ollamaModels.length > 0 ? (
+            <div>Models: {testResult.ollamaModels.join(', ')}</div>
+          ) : null}
+        </div>
+      ) : null}
     </form>
   );
 }
@@ -137,6 +180,17 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     gap: '12px',
     flexWrap: 'wrap'
+  },
+  resultBox: {
+    marginTop: '16px',
+    padding: '12px',
+    borderRadius: '8px',
+    backgroundColor: '#eef6ff',
+    color: '#0f172a'
+  },
+  errorText: {
+    marginTop: '16px',
+    color: '#b91c1c'
   },
   primaryButton: {
     padding: '10px 14px',

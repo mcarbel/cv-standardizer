@@ -2,6 +2,7 @@ import * as React from 'react';
 import type { ICvStandardizerWebPartProps } from '../models/IWebPartProps';
 import type { JobRecord } from '../models/ApiModels';
 import { ApiClient } from '../services/ApiClient';
+import AdminPanel, { type AdminSettings } from './AdminPanel';
 import JobStatusPanel from './JobStatusPanel';
 import ResultPreview from './ResultPreview';
 import UploadPanel from './UploadPanel';
@@ -10,17 +11,46 @@ interface Props {
   webPartProps: ICvStandardizerWebPartProps;
 }
 
+const STORAGE_KEY = 'cv-standardizer-admin-settings';
+
 export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element {
-  const client = React.useMemo(() => new ApiClient(webPartProps.apiBaseUrl), [webPartProps.apiBaseUrl]);
+  const defaultSettings = React.useMemo<AdminSettings>(() => ({
+    apiBaseUrl: webPartProps.apiBaseUrl,
+    providerBaseUrl: webPartProps.providerBaseUrl,
+    defaultModel: webPartProps.defaultModel,
+    apiKey: webPartProps.apiKey
+  }), [
+    webPartProps.apiBaseUrl,
+    webPartProps.providerBaseUrl,
+    webPartProps.defaultModel,
+    webPartProps.apiKey
+  ]);
+  const [adminSettings, setAdminSettings] = React.useState<AdminSettings>(() => loadAdminSettings(defaultSettings));
+  const [adminVisible, setAdminVisible] = React.useState<boolean>(false);
   const [job, setJob] = React.useState<JobRecord | undefined>();
+  const client = React.useMemo(() => new ApiClient(adminSettings.apiBaseUrl), [adminSettings.apiBaseUrl]);
+
+  React.useEffect(() => {
+    setAdminSettings(loadAdminSettings(defaultSettings));
+  }, [defaultSettings]);
+
+  function saveAdminSettings(settings: AdminSettings): void {
+    setAdminSettings(settings);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  }
+
+  function resetAdminSettings(): void {
+    setAdminSettings(defaultSettings);
+    window.localStorage.removeItem(STORAGE_KEY);
+  }
 
   async function handleUpload(file: File): Promise<void> {
     const created = await client.createJob(file, {
       provider: webPartProps.defaultProvider,
-      model: webPartProps.defaultModel,
+      model: adminSettings.defaultModel,
       outputFormat: webPartProps.outputFormat,
-      providerBaseUrl: webPartProps.providerBaseUrl,
-      apiKey: webPartProps.apiKey,
+      providerBaseUrl: adminSettings.providerBaseUrl,
+      apiKey: adminSettings.apiKey,
       dumpJson: webPartProps.dumpJson
     });
 
@@ -48,8 +78,18 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
     <section>
       <h2>CV Standardizer</h2>
       <p>Provider: {webPartProps.defaultProvider}</p>
-      <p>Model: {webPartProps.defaultModel}</p>
-      <p>API URL: {webPartProps.apiBaseUrl}</p>
+      <p>Model: {adminSettings.defaultModel}</p>
+      <p>API URL: {adminSettings.apiBaseUrl}</p>
+      <button type="button" style={styles.toggleButton} onClick={() => setAdminVisible(!adminVisible)}>
+        {adminVisible ? 'Hide Admin Settings' : 'Show Admin Settings'}
+      </button>
+      {adminVisible ? (
+        <AdminPanel
+          initialSettings={adminSettings}
+          onSave={saveAdminSettings}
+          onReset={resetAdminSettings}
+        />
+      ) : null}
       <UploadPanel onUpload={handleUpload} />
       <JobStatusPanel
         jobId={job?.jobId}
@@ -61,3 +101,38 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
     </section>
   );
 }
+
+function loadAdminSettings(defaultSettings: AdminSettings): AdminSettings {
+  if (typeof window === 'undefined') {
+    return defaultSettings;
+  }
+
+  const stored = window.localStorage.getItem(STORAGE_KEY);
+  if (!stored) {
+    return defaultSettings;
+  }
+
+  try {
+    const parsed = JSON.parse(stored) as Partial<AdminSettings>;
+    return {
+      apiBaseUrl: parsed.apiBaseUrl || defaultSettings.apiBaseUrl,
+      providerBaseUrl: parsed.providerBaseUrl || defaultSettings.providerBaseUrl,
+      defaultModel: parsed.defaultModel || defaultSettings.defaultModel,
+      apiKey: parsed.apiKey || defaultSettings.apiKey
+    };
+  } catch (_error) {
+    return defaultSettings;
+  }
+}
+
+const styles: { [key: string]: React.CSSProperties } = {
+  toggleButton: {
+    padding: '10px 14px',
+    borderRadius: '8px',
+    border: '1px solid #94a3b8',
+    backgroundColor: '#ffffff',
+    color: '#0f172a',
+    cursor: 'pointer',
+    marginBottom: '16px'
+  }
+};

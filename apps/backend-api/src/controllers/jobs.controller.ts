@@ -18,7 +18,8 @@ export async function createJob(req: Request, res: Response, next: NextFunction)
 
 export async function getJob(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const job = await service.get(req.params.jobId);
+    const jobId = Array.isArray(req.params.jobId) ? req.params.jobId[0] : req.params.jobId;
+    const job = await service.get(jobId);
     res.json(job);
   } catch (error) {
     next(error);
@@ -27,7 +28,8 @@ export async function getJob(req: Request, res: Response, next: NextFunction): P
 
 export async function downloadResult(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const file = await service.getResultFile(req.params.jobId);
+    const jobId = Array.isArray(req.params.jobId) ? req.params.jobId[0] : req.params.jobId;
+    const file = await service.getResultFile(jobId);
     res.download(file.path, file.name);
   } catch (error) {
     next(error);
@@ -36,7 +38,8 @@ export async function downloadResult(req: Request, res: Response, next: NextFunc
 
 export async function downloadJson(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const file = await service.getJsonFile(req.params.jobId);
+    const jobId = Array.isArray(req.params.jobId) ? req.params.jobId[0] : req.params.jobId;
+    const file = await service.getJsonFile(jobId);
     res.download(file.path, file.name);
   } catch (error) {
     next(error);

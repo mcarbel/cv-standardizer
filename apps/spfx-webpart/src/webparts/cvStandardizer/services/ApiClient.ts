@@ -7,9 +7,11 @@ export class ApiClient {
     const form = new FormData();
     form.append('file', file);
 
-    Object.entries(fields).forEach(([key, value]) => {
-      form.append(key, String(value));
-    });
+    for (const key in fields) {
+      if (Object.prototype.hasOwnProperty.call(fields, key)) {
+        form.append(key, String(fields[key]));
+      }
+    }
 
     const response = await fetch(`${this.apiBaseUrl}/api/jobs`, {
       method: 'POST',

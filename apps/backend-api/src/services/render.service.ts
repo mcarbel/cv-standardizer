@@ -26,7 +26,7 @@ export async function renderOutput(
               children: [new TextRun({ text: cv.fullName || 'CV Standardise', bold: true, size: 32 })]
             }),
             new Paragraph(cv.title || 'Consultant / Expert'),
-            ...cv.summaryLines.map((line) => new Paragraph(line))
+            ...cv.summaryLines.map((line: string) => new Paragraph(line))
           ]
         }
       ]
@@ -60,6 +60,6 @@ function renderMarkdown(cv: CVData): string {
     ...cv.summaryLines,
     '',
     '## Skills',
-    ...Object.entries(cv.technicalSkills).flatMap(([category, skills]) => [`- ${category}: ${skills.join(', ')}`])
+    ...Object.entries(cv.technicalSkills).flatMap(([category, skills]: [string, string[]]) => [`- ${category}: ${skills.join(', ')}`])
   ].join('\n');
 }

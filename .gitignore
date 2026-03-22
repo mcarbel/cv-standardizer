@@ -6,3 +6,4 @@ temp/
 .DS_Store
 apps/backend-api/storage/
 apps/spfx-webpart/sharepoint/
+apps/spfx-webpart/release/

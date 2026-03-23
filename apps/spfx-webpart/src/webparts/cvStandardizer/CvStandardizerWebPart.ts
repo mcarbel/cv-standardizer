@@ -19,6 +19,7 @@ const DEFAULT_WEBPART_PROPS: ICvStandardizerWebPartProps = {
   providerBaseUrl: 'http://localhost:11434',
   apiKey: '',
   outputFormat: 'docx',
+  outputLanguage: 'en',
   templateStyle: 'consulting',
   anonymizeCandidateName: false,
   titleColor: '#0F172A',
@@ -40,6 +41,7 @@ export default class CvStandardizerWebPart extends BaseClientSideWebPart<ICvStan
     this.properties.providerBaseUrl = this.properties.providerBaseUrl || DEFAULT_WEBPART_PROPS.providerBaseUrl;
     this.properties.apiKey = this.properties.apiKey || DEFAULT_WEBPART_PROPS.apiKey;
     this.properties.outputFormat = this.properties.outputFormat || DEFAULT_WEBPART_PROPS.outputFormat;
+    this.properties.outputLanguage = this.properties.outputLanguage || DEFAULT_WEBPART_PROPS.outputLanguage;
     this.properties.templateStyle = this.properties.templateStyle || DEFAULT_WEBPART_PROPS.templateStyle;
     this.properties.anonymizeCandidateName = this.properties.anonymizeCandidateName ?? DEFAULT_WEBPART_PROPS.anonymizeCandidateName;
     this.properties.titleColor = this.properties.titleColor || DEFAULT_WEBPART_PROPS.titleColor;
@@ -99,6 +101,13 @@ export default class CvStandardizerWebPart extends BaseClientSideWebPart<ICvStan
                     { key: 'docx', text: 'DOCX' },
                     { key: 'pdf', text: 'PDF' },
                     { key: 'markdown', text: 'Markdown' }
+                  ]
+                }),
+                PropertyPaneDropdown('outputLanguage', {
+                  label: 'Output language',
+                  options: [
+                    { key: 'en', text: 'English' },
+                    { key: 'fr', text: 'French' }
                   ]
                 }),
                 PropertyPaneDropdown('templateStyle', {

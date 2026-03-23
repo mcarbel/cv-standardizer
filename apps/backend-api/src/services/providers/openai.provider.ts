@@ -1,11 +1,12 @@
 import OpenAI from 'openai';
-import type { CVData, OutputFormat } from '@cv-standardizer/shared-contracts';
+import type { CVData, OutputFormat, OutputLanguage } from '@cv-standardizer/shared-contracts';
 
 interface OpenAIOptions {
   model: string;
   apiKey?: string;
   sourceFileName: string;
   outputFormat: OutputFormat;
+  outputLanguage: OutputLanguage;
 }
 
 export async function callOpenAI(inputText: string, options: OpenAIOptions): Promise<CVData> {
@@ -17,7 +18,7 @@ export async function callOpenAI(inputText: string, options: OpenAIOptions): Pro
   const client = new OpenAI({ apiKey });
   const response = await client.responses.create({
     model: options.model,
-    input: buildPrompt(inputText)
+    input: buildPrompt(inputText, options.outputLanguage)
   });
 
   const cv = JSON.parse(response.output_text) as CVData;
@@ -26,15 +27,21 @@ export async function callOpenAI(inputText: string, options: OpenAIOptions): Pro
     model: options.model,
     sourceFileName: options.sourceFileName,
     outputFormat: options.outputFormat,
+    outputLanguage: options.outputLanguage,
     processedAt: new Date().toISOString()
   };
 
   return cv;
 }
 
-function buildPrompt(text: string): string {
+function buildPrompt(text: string, outputLanguage: OutputLanguage): string {
+  const languageInstruction = outputLanguage === 'fr'
+    ? 'Write all generated human-readable content in French.'
+    : 'Write all generated human-readable content in English.';
+
   return [
     'Return valid JSON only.',
+    languageInstruction,
     'Use this exact schema:',
     '{',
     '  "schemaVersion": "1.0",',
@@ -63,6 +70,7 @@ function buildPrompt(text: string): string {
     '    "model": "string",',
     '    "sourceFileName": "string",',
     '    "outputFormat": "docx | pdf | markdown",',
+    '    "outputLanguage": "en | fr",',
     '    "processedAt": "ISO date string"',
     '  }',
     '}',

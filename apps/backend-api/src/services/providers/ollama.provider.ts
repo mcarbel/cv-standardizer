@@ -1,10 +1,11 @@
-import type { CVData, OutputFormat } from '@cv-standardizer/shared-contracts';
+import type { CVData, OutputFormat, OutputLanguage } from '@cv-standardizer/shared-contracts';
 
 interface OllamaOptions {
   model: string;
   providerBaseUrl?: string;
   sourceFileName: string;
   outputFormat: OutputFormat;
+  outputLanguage: OutputLanguage;
 }
 
 export async function callOllama(inputText: string, options: OllamaOptions): Promise<CVData> {
@@ -16,7 +17,7 @@ export async function callOllama(inputText: string, options: OllamaOptions): Pro
     },
     body: JSON.stringify({
       model: options.model,
-      prompt: buildPrompt(inputText),
+      prompt: buildPrompt(inputText, options.outputLanguage),
       stream: false,
       format: 'json'
     })
@@ -37,15 +38,21 @@ export async function callOllama(inputText: string, options: OllamaOptions): Pro
     model: options.model,
     sourceFileName: options.sourceFileName,
     outputFormat: options.outputFormat,
+    outputLanguage: options.outputLanguage,
     processedAt: new Date().toISOString()
   };
 
   return cv;
 }
 
-function buildPrompt(text: string): string {
+function buildPrompt(text: string, outputLanguage: OutputLanguage): string {
+  const languageInstruction = outputLanguage === 'fr'
+    ? 'Write all generated human-readable content in French.'
+    : 'Write all generated human-readable content in English.';
+
   return [
     'Return valid JSON only.',
+    languageInstruction,
     'Use this exact schema:',
     '{',
     '  "schemaVersion": "1.0",',
@@ -74,6 +81,7 @@ function buildPrompt(text: string): string {
     '    "model": "string",',
     '    "sourceFileName": "string",',
     '    "outputFormat": "docx | pdf | markdown",',
+    '    "outputLanguage": "en | fr",',
     '    "processedAt": "ISO date string"',
     '  }',
     '}',

@@ -16,13 +16,36 @@ import {
   TextRun
 } from 'docx';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
-import type { CVData, OutputFormat, TemplateStyle, CreateJobRequestFields } from '@cv-standardizer/shared-contracts';
+import type { CVData, OutputFormat, OutputLanguage, TemplateStyle, CreateJobRequestFields } from '@cv-standardizer/shared-contracts';
 
 interface RenderTheme {
   titleColor: string;
   subtitleColor: string;
   bodyColor: string;
   sectionColor: string;
+}
+
+interface RenderLabels {
+  summary: string;
+  keyExpertise: string;
+  technicalSkills: string;
+  professionalExperience: string;
+  education: string;
+  languages: string;
+  certifications: string;
+  executiveSummary: string;
+  coreExpertise: string;
+  technologyLandscape: string;
+  consultantProfile: string;
+  profile: string;
+  capabilities: string;
+  contact: string;
+  candidate: string;
+  title: string;
+  expertise: string;
+  snapshot: string;
+  achievements: string;
+  results: string;
 }
 
 type SectionChild = Paragraph | Table;
@@ -78,15 +101,16 @@ export async function renderOutput(
 }
 
 function renderMarkdown(cv: CVData): string {
+  const labels = getRenderLabels(cv.meta.outputLanguage || 'en');
   return [
     `# ${cv.fullName || 'CV Standardise'}`,
     '',
     cv.title || 'Consultant / Expert',
     '',
-    '## Summary',
+    `## ${labels.summary}`,
     ...cv.summaryLines,
     '',
-    '## Skills',
+    `## ${labels.technicalSkills}`,
     ...Object.entries(cv.technicalSkills).flatMap(([category, skills]: [string, string[]]) => [`- ${category}: ${skills.join(', ')}`])
   ].join('\n');
 }
@@ -97,18 +121,19 @@ async function buildDocxSections(
   theme: RenderTheme,
   logoData?: Buffer
 ): Promise<SectionChild[]> {
+  const labels = getRenderLabels(cv.meta.outputLanguage || 'en');
   if (templateStyle === 'consulting') {
-    return buildConsultingTemplate(cv, theme, logoData);
+    return buildConsultingTemplate(cv, theme, labels, logoData);
   }
 
   if (templateStyle === 'modern') {
-    return buildModernTemplate(cv, theme);
+    return buildModernTemplate(cv, theme, labels);
   }
 
-  return buildStandardTemplate(cv, theme);
+  return buildStandardTemplate(cv, theme, labels);
 }
 
-function buildStandardTemplate(cv: CVData, theme: RenderTheme): SectionChild[] {
+function buildStandardTemplate(cv: CVData, theme: RenderTheme, labels: RenderLabels): SectionChild[] {
   const paragraphs: SectionChild[] = [
     new Paragraph({
       spacing: { after: 120 },
@@ -121,26 +146,26 @@ function buildStandardTemplate(cv: CVData, theme: RenderTheme): SectionChild[] {
     divider()
   ];
 
-  pushHeading(paragraphs, 'Summary', theme);
+  pushHeading(paragraphs, labels.summary, theme);
   pushBullets(paragraphs, cv.summaryLines, theme.bodyColor, false);
 
-  pushHeading(paragraphs, 'Key Expertise', theme);
+  pushHeading(paragraphs, labels.keyExpertise, theme);
   pushBullets(paragraphs, cv.keyExpertise, theme.bodyColor, true);
 
-  pushHeading(paragraphs, 'Technical Skills', theme);
+  pushHeading(paragraphs, labels.technicalSkills, theme);
   for (const [category, skills] of Object.entries(cv.technicalSkills)) {
     paragraphs.push(labeledParagraph(category, skills.join(', '), theme));
   }
 
-  pushExperienceSection(paragraphs, cv, theme, 'standard');
-  pushSimpleSection(paragraphs, 'Education', cv.education, theme);
-  pushSimpleSection(paragraphs, 'Languages', cv.languages, theme);
-  pushSimpleSection(paragraphs, 'Certifications', cv.certifications, theme);
+  pushExperienceSection(paragraphs, cv, theme, labels, 'standard');
+  pushSimpleSection(paragraphs, labels.education, cv.education, theme);
+  pushSimpleSection(paragraphs, labels.languages, cv.languages, theme);
+  pushSimpleSection(paragraphs, labels.certifications, cv.certifications, theme);
 
   return paragraphs;
 }
 
-function buildModernTemplate(cv: CVData, theme: RenderTheme): SectionChild[] {
+function buildModernTemplate(cv: CVData, theme: RenderTheme, labels: RenderLabels): SectionChild[] {
   const paragraphs: SectionChild[] = [
     new Paragraph({
       shading: {
@@ -155,33 +180,33 @@ function buildModernTemplate(cv: CVData, theme: RenderTheme): SectionChild[] {
     })
   ];
 
-  pushHeading(paragraphs, 'Executive Summary', theme);
+  pushHeading(paragraphs, labels.executiveSummary, theme);
   cv.summaryLines.forEach((line) => paragraphs.push(bodyParagraph(line, theme.bodyColor)));
 
-  pushHeading(paragraphs, 'Core Expertise', theme);
+  pushHeading(paragraphs, labels.coreExpertise, theme);
   paragraphs.push(bodyParagraph(cv.keyExpertise.join(' • '), theme.bodyColor));
 
-  pushHeading(paragraphs, 'Technology Landscape', theme);
+  pushHeading(paragraphs, labels.technologyLandscape, theme);
   for (const [category, skills] of Object.entries(cv.technicalSkills)) {
     paragraphs.push(labeledParagraph(category, skills.join(' • '), theme));
   }
 
-  pushExperienceSection(paragraphs, cv, theme, 'modern');
-  pushSimpleSection(paragraphs, 'Education', cv.education, theme);
-  pushSimpleSection(paragraphs, 'Languages', cv.languages, theme);
-  pushSimpleSection(paragraphs, 'Certifications', cv.certifications, theme);
+  pushExperienceSection(paragraphs, cv, theme, labels, 'modern');
+  pushSimpleSection(paragraphs, labels.education, cv.education, theme);
+  pushSimpleSection(paragraphs, labels.languages, cv.languages, theme);
+  pushSimpleSection(paragraphs, labels.certifications, cv.certifications, theme);
 
   return paragraphs;
 }
 
-function buildConsultingTemplate(cv: CVData, theme: RenderTheme, logoData?: Buffer): SectionChild[] {
+function buildConsultingTemplate(cv: CVData, theme: RenderTheme, labels: RenderLabels, logoData?: Buffer): SectionChild[] {
   const children: SectionChild[] = [];
 
   children.push(
-    buildConsultingHero(cv, theme, logoData),
+    buildConsultingHero(cv, theme, labels, logoData),
     new Paragraph({
       spacing: { after: 60 },
-      children: [new TextRun({ text: 'CONSULTANT PROFILE', bold: true, color: theme.sectionColor, size: 18 })]
+      children: [new TextRun({ text: labels.consultantProfile.toUpperCase(), bold: true, color: theme.sectionColor, size: 18 })]
     }),
     new Paragraph({
       spacing: { after: 200 },
@@ -196,7 +221,7 @@ function buildConsultingTemplate(cv: CVData, theme: RenderTheme, logoData?: Buff
     })
   );
 
-  children.push(buildConsultingBody(cv, theme));
+  children.push(buildConsultingBody(cv, theme, labels));
 
   return children;
 }
@@ -205,9 +230,10 @@ function pushExperienceSection(
   paragraphs: SectionChild[],
   cv: CVData,
   theme: RenderTheme,
+  labels: RenderLabels,
   variant: TemplateStyle
 ): void {
-  pushHeading(paragraphs, 'Professional Experience', theme);
+  pushHeading(paragraphs, labels.professionalExperience, theme);
 
   for (const experience of cv.experiences) {
     paragraphs.push(
@@ -242,12 +268,12 @@ function pushExperienceSection(
     }
 
     if (experience.achievements.length > 0) {
-      paragraphs.push(sectionLabel('Achievements', theme));
+      paragraphs.push(sectionLabel(labels.achievements, theme));
       pushBullets(paragraphs, experience.achievements, theme.bodyColor, true);
     }
 
     if (experience.results.length > 0) {
-      paragraphs.push(sectionLabel('Results', theme));
+      paragraphs.push(sectionLabel(labels.results, theme));
       pushBullets(paragraphs, experience.results, theme.bodyColor, true);
     }
   }
@@ -316,7 +342,7 @@ function sectionLabel(value: string, theme: RenderTheme): Paragraph {
   });
 }
 
-function buildConsultingBody(cv: CVData, theme: RenderTheme): Table {
+function buildConsultingBody(cv: CVData, theme: RenderTheme, labels: RenderLabels): Table {
   return new Table({
     width: { size: 100, type: 'pct' },
     rows: [
@@ -327,13 +353,13 @@ function buildConsultingBody(cv: CVData, theme: RenderTheme): Table {
             margins: { top: 120, bottom: 120, left: 120, right: 180 },
             borders: noBorders(),
             shading: { fill: 'F8FAFC' },
-            children: buildConsultingSidebar(cv, theme)
+            children: buildConsultingSidebar(cv, theme, labels)
           }),
           new TableCell({
             width: { size: 70, type: 'pct' },
             margins: { top: 120, bottom: 120, left: 180, right: 60 },
             borders: noBorders(),
-            children: buildConsultingMainColumn(cv, theme)
+            children: buildConsultingMainColumn(cv, theme, labels)
           })
         ]
       })
@@ -341,7 +367,7 @@ function buildConsultingBody(cv: CVData, theme: RenderTheme): Table {
   });
 }
 
-function buildConsultingHero(cv: CVData, theme: RenderTheme, logoData?: Buffer): Table {
+function buildConsultingHero(cv: CVData, theme: RenderTheme, labels: RenderLabels, logoData?: Buffer): Table {
   return new Table({
     width: { size: 100, type: 'pct' },
     borders: noBorders(),
@@ -372,7 +398,7 @@ function buildConsultingHero(cv: CVData, theme: RenderTheme, logoData?: Buffer):
             margins: { top: 60, bottom: 120, left: 180, right: 0 },
             borders: noBorders(),
             shading: { fill: 'F8FAFC' },
-            children: buildConsultingContactCard(cv, theme, logoData)
+            children: buildConsultingContactCard(cv, theme, labels, logoData)
           })
         ]
       })
@@ -380,26 +406,26 @@ function buildConsultingHero(cv: CVData, theme: RenderTheme, logoData?: Buffer):
   });
 }
 
-function buildConsultingSidebar(cv: CVData, theme: RenderTheme): Paragraph[] {
+function buildConsultingSidebar(cv: CVData, theme: RenderTheme, labels: RenderLabels): Paragraph[] {
   const sidebar: Paragraph[] = [];
 
-  pushSidebarHeading(sidebar, 'Snapshot', theme);
+  pushSidebarHeading(sidebar, labels.snapshot, theme);
   pushBullets(sidebar, cv.summaryLines.slice(0, 3), theme.bodyColor, true);
 
-  pushSidebarHeading(sidebar, 'Expertise', theme);
+  pushSidebarHeading(sidebar, labels.expertise, theme);
   pushBullets(sidebar, cv.keyExpertise.slice(0, 8), theme.bodyColor, true);
 
-  pushSidebarHeading(sidebar, 'Languages', theme);
+  pushSidebarHeading(sidebar, labels.languages, theme);
   pushBullets(sidebar, cv.languages, theme.bodyColor, true);
 
-  pushSidebarHeading(sidebar, 'Certifications', theme);
+  pushSidebarHeading(sidebar, labels.certifications, theme);
   pushBullets(sidebar, cv.certifications.slice(0, 8), theme.bodyColor, true);
 
   return sidebar;
 }
 
-function buildConsultingContactCard(cv: CVData, theme: RenderTheme, logoData?: Buffer): Paragraph[] {
-  const lines = deriveContactLines(cv);
+function buildConsultingContactCard(cv: CVData, theme: RenderTheme, labels: RenderLabels, logoData?: Buffer): Paragraph[] {
+  const lines = deriveContactLines(cv, labels);
 
   return [
     ...(logoData ? [new Paragraph({
@@ -422,7 +448,7 @@ function buildConsultingContactCard(cv: CVData, theme: RenderTheme, logoData?: B
     })] : []),
     new Paragraph({
       spacing: { after: 60 },
-      children: [new TextRun({ text: 'CONTACT', bold: true, color: theme.sectionColor, size: 18 })]
+      children: [new TextRun({ text: labels.contact.toUpperCase(), bold: true, color: theme.sectionColor, size: 18 })]
     }),
     ...lines.map(([label, value]) => new Paragraph({
       spacing: { after: 55 },
@@ -434,19 +460,19 @@ function buildConsultingContactCard(cv: CVData, theme: RenderTheme, logoData?: B
   ];
 }
 
-function buildConsultingMainColumn(cv: CVData, theme: RenderTheme): Paragraph[] {
+function buildConsultingMainColumn(cv: CVData, theme: RenderTheme, labels: RenderLabels): Paragraph[] {
   const content: Paragraph[] = [];
 
-  pushHeading(content, 'Profile', theme);
+  pushHeading(content, labels.profile, theme);
   cv.summaryLines.forEach((line) => content.push(bodyParagraph(line, theme.bodyColor)));
 
-  pushHeading(content, 'Capabilities', theme);
+  pushHeading(content, labels.capabilities, theme);
   for (const [category, skills] of Object.entries(cv.technicalSkills)) {
     content.push(labeledParagraph(category, skills.join(', '), theme));
   }
 
-  pushExperienceSection(content, cv, theme, 'consulting');
-  pushSimpleSection(content, 'Education', cv.education, theme);
+  pushExperienceSection(content, cv, theme, labels, 'consulting');
+  pushSimpleSection(content, labels.education, cv.education, theme);
 
   return content;
 }
@@ -469,18 +495,72 @@ function noBorders() {
   };
 }
 
-function deriveContactLines(cv: CVData): Array<[string, string]> {
+function deriveContactLines(cv: CVData, labels: RenderLabels): Array<[string, string]> {
   const languageSummary = cv.languages.filter(Boolean).slice(0, 3).join(', ');
   const expertiseSummary = cv.keyExpertise.filter(Boolean).slice(0, 3).join(', ');
-  const availability = cv.meta?.anonymized ? 'Contact details available on request' : 'Shared through BraineeSys on request';
+  const isFrench = cv.meta.outputLanguage === 'fr';
+  const availability = cv.meta?.anonymized
+    ? (isFrench ? 'Coordonnees disponibles sur demande' : 'Contact details available on request')
+    : (isFrench ? 'Partage via BraineeSys sur demande' : 'Shared through BraineeSys on request');
+  const unavailable = isFrench ? 'Disponible sur demande' : 'Available on request';
 
   return [
-    ['Candidate', cv.fullName || 'Confidential Candidate'],
-    ['Title', cv.title || 'Consultant / Expert'],
-    ['Languages', languageSummary || 'Available on request'],
-    ['Expertise', expertiseSummary || 'Available on request'],
-    ['Contact', availability]
+    [labels.candidate, cv.fullName || 'Confidential Candidate'],
+    [labels.title, cv.title || 'Consultant / Expert'],
+    [labels.languages, languageSummary || unavailable],
+    [labels.expertise, expertiseSummary || unavailable],
+    [labels.contact, availability]
   ];
+}
+
+function getRenderLabels(outputLanguage: OutputLanguage): RenderLabels {
+  if (outputLanguage === 'fr') {
+    return {
+      summary: 'Resume',
+      keyExpertise: 'Expertise Cle',
+      technicalSkills: 'Competences Techniques',
+      professionalExperience: 'Experience Professionnelle',
+      education: 'Formation',
+      languages: 'Langues',
+      certifications: 'Certifications',
+      executiveSummary: 'Synthese Executive',
+      coreExpertise: 'Expertise Principale',
+      technologyLandscape: 'Paysage Technologique',
+      consultantProfile: 'Profil Consultant',
+      profile: 'Profil',
+      capabilities: 'Capacites',
+      contact: 'Contact',
+      candidate: 'Candidat',
+      title: 'Titre',
+      expertise: 'Expertise',
+      snapshot: 'Synthese',
+      achievements: 'Realisations',
+      results: 'Resultats'
+    };
+  }
+
+  return {
+    summary: 'Summary',
+    keyExpertise: 'Key Expertise',
+    technicalSkills: 'Technical Skills',
+    professionalExperience: 'Professional Experience',
+    education: 'Education',
+    languages: 'Languages',
+    certifications: 'Certifications',
+    executiveSummary: 'Executive Summary',
+    coreExpertise: 'Core Expertise',
+    technologyLandscape: 'Technology Landscape',
+    consultantProfile: 'Consultant Profile',
+    profile: 'Profile',
+    capabilities: 'Capabilities',
+    contact: 'Contact',
+    candidate: 'Candidate',
+    title: 'Title',
+    expertise: 'Expertise',
+    snapshot: 'Snapshot',
+    achievements: 'Achievements',
+    results: 'Results'
+  };
 }
 
 function divider(): Paragraph {

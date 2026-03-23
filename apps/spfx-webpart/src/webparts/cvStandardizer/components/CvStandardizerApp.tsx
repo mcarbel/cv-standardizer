@@ -20,6 +20,7 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
     providerBaseUrl: webPartProps.providerBaseUrl,
     defaultModel: webPartProps.defaultModel,
     apiKey: webPartProps.apiKey,
+    outputLanguage: webPartProps.outputLanguage,
     templateStyle: webPartProps.templateStyle,
     anonymizeCandidateName: webPartProps.anonymizeCandidateName,
     titleColor: webPartProps.titleColor,
@@ -31,6 +32,7 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
     webPartProps.providerBaseUrl,
     webPartProps.defaultModel,
     webPartProps.apiKey,
+    webPartProps.outputLanguage,
     webPartProps.templateStyle,
     webPartProps.anonymizeCandidateName,
     webPartProps.titleColor,
@@ -142,6 +144,7 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
       provider: webPartProps.defaultProvider,
       model: adminSettings.defaultModel,
       outputFormat: webPartProps.outputFormat,
+      outputLanguage: adminSettings.outputLanguage,
       templateStyle: adminSettings.templateStyle,
       anonymizeCandidateName: adminSettings.anonymizeCandidateName,
       titleColor: adminSettings.titleColor,
@@ -170,6 +173,7 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
         provider: webPartProps.defaultProvider,
         model: adminSettings.defaultModel,
         outputFormat: webPartProps.outputFormat,
+        outputLanguage: adminSettings.outputLanguage,
         templateStyle: adminSettings.templateStyle,
         anonymizeCandidateName: adminSettings.anonymizeCandidateName,
         titleColor: adminSettings.titleColor,
@@ -227,6 +231,7 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
       <h2>CV Standardizer</h2>
       <p>Provider: {webPartProps.defaultProvider}</p>
       <p>Model: {adminSettings.defaultModel}</p>
+      <p>Output language: {adminSettings.outputLanguage === 'fr' ? 'French' : 'English'}</p>
       <p>Template: {adminSettings.templateStyle}</p>
       <p>API URL: {effectiveApiBaseUrl}</p>
       <p>Settings source: {settingsSource === 'browser' ? 'browser overrides' : 'web part properties'}</p>
@@ -278,6 +283,7 @@ function loadStoredAdminSettings(): AdminSettings | undefined {
       providerBaseUrl: parsed.providerBaseUrl || '',
       defaultModel: parsed.defaultModel || '',
       apiKey: parsed.apiKey || '',
+      outputLanguage: (parsed.outputLanguage as AdminSettings['outputLanguage']) || 'en',
       templateStyle: (parsed.templateStyle as AdminSettings['templateStyle']) || 'standard',
       anonymizeCandidateName: Boolean(parsed.anonymizeCandidateName),
       titleColor: parsed.titleColor || '',

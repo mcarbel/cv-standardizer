@@ -59,6 +59,19 @@ export default class CvStandardizerWebPart extends BaseClientSideWebPart<ICvStan
                     { key: 'markdown', text: 'Markdown' }
                   ]
                 }),
+                PropertyPaneDropdown('templateStyle', {
+                  label: 'Template style',
+                  options: [
+                    { key: 'standard', text: 'Standard' },
+                    { key: 'modern', text: 'Modern' },
+                    { key: 'consulting', text: 'Consulting' }
+                  ]
+                }),
+                PropertyPaneToggle('anonymizeCandidateName', { label: 'Anonymize candidate name' }),
+                PropertyPaneTextField('titleColor', { label: 'Title color' }),
+                PropertyPaneTextField('subtitleColor', { label: 'Subtitle color' }),
+                PropertyPaneTextField('bodyColor', { label: 'Body text color' }),
+                PropertyPaneTextField('sectionColor', { label: 'Section color' }),
                 PropertyPaneToggle('dumpJson', { label: 'Enable JSON download' }),
                 PropertyPaneToggle('enableDebugPanel', { label: 'Enable debug panel' }),
                 PropertyPaneToggle('useLocalApiProxy', { label: 'Use local SPFx proxy (localhost:4321)' }),

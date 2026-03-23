@@ -6,7 +6,8 @@ import type {
   CreateJobRequestFields,
   JobRecord,
   OutputFormat,
-  Provider
+  Provider,
+  CVData
 } from '@cv-standardizer/shared-contracts';
 import type { DownloadFileInfo } from '../domain/job.types';
 import { extractText } from './extraction.service';
@@ -84,14 +85,15 @@ export class JobService {
         sourceFileName: file.originalname,
         outputFormat: fields.outputFormat
       });
+      const preparedCv = prepareCvForOutput(cv, fields);
       job.progress = 75;
       job.updatedAt = new Date().toISOString();
-      console.log(`[job ${jobId}] transform complete fullName="${cv.fullName}" title="${cv.title}"`);
+      console.log(`[job ${jobId}] transform complete fullName="${preparedCv.fullName}" title="${preparedCv.title}"`);
 
       const baseName = path.parse(file.originalname).name + '_standardise';
-      const outputPath = await renderOutput(cv, fields.outputFormat, jobDir, baseName);
+      const outputPath = await renderOutput(preparedCv, fields.outputFormat, jobDir, baseName, fields);
       const jsonPath = path.join(jobDir, `${baseName}.json`);
-      await fs.writeFile(jsonPath, JSON.stringify(cv, null, 2), 'utf-8');
+      await fs.writeFile(jsonPath, JSON.stringify(preparedCv, null, 2), 'utf-8');
       job.progress = 100;
       job.status = 'completed';
       job.updatedAt = new Date().toISOString();
@@ -143,6 +145,12 @@ export class JobService {
       provider: (rawFields.provider || 'heuristic') as Provider,
       model: rawFields.model || 'gpt-5',
       outputFormat: (rawFields.outputFormat || 'docx') as OutputFormat,
+      templateStyle: (rawFields.templateStyle || 'standard') as CreateJobRequestFields['templateStyle'],
+      anonymizeCandidateName: rawFields.anonymizeCandidateName === 'true',
+      titleColor: rawFields.titleColor || '#1D4ED8',
+      subtitleColor: rawFields.subtitleColor || '#334155',
+      bodyColor: rawFields.bodyColor || '#334155',
+      sectionColor: rawFields.sectionColor || '#1D4ED8',
       providerBaseUrl: rawFields.providerBaseUrl || undefined,
       apiKey: rawFields.apiKey || undefined,
       dumpJson: rawFields.dumpJson === 'true'
@@ -165,4 +173,18 @@ export class JobService {
       jsonDownloadUrl: job.jsonDownloadUrl
     };
   }
+}
+
+function prepareCvForOutput(cv: CVData, fields: CreateJobRequestFields): CVData {
+  const anonymized = fields.anonymizeCandidateName === true;
+
+  return {
+    ...cv,
+    fullName: anonymized ? 'Confidential Candidate' : cv.fullName,
+    meta: {
+      ...cv.meta,
+      templateStyle: fields.templateStyle,
+      anonymized
+    }
+  };
 }

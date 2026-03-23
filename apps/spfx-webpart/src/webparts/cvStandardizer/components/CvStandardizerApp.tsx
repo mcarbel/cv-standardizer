@@ -19,12 +19,24 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
     apiBaseUrl: webPartProps.apiBaseUrl,
     providerBaseUrl: webPartProps.providerBaseUrl,
     defaultModel: webPartProps.defaultModel,
-    apiKey: webPartProps.apiKey
+    apiKey: webPartProps.apiKey,
+    templateStyle: webPartProps.templateStyle,
+    anonymizeCandidateName: webPartProps.anonymizeCandidateName,
+    titleColor: webPartProps.titleColor,
+    subtitleColor: webPartProps.subtitleColor,
+    bodyColor: webPartProps.bodyColor,
+    sectionColor: webPartProps.sectionColor
   }), [
     webPartProps.apiBaseUrl,
     webPartProps.providerBaseUrl,
     webPartProps.defaultModel,
-    webPartProps.apiKey
+    webPartProps.apiKey,
+    webPartProps.templateStyle,
+    webPartProps.anonymizeCandidateName,
+    webPartProps.titleColor,
+    webPartProps.subtitleColor,
+    webPartProps.bodyColor,
+    webPartProps.sectionColor
   ]);
   const [adminSettings, setAdminSettings] = React.useState<AdminSettings>(() => loadStoredAdminSettings() || defaultSettings);
   const [settingsSource, setSettingsSource] = React.useState<'webpart' | 'browser'>(
@@ -130,6 +142,12 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
       provider: webPartProps.defaultProvider,
       model: adminSettings.defaultModel,
       outputFormat: webPartProps.outputFormat,
+      templateStyle: adminSettings.templateStyle,
+      anonymizeCandidateName: adminSettings.anonymizeCandidateName,
+      titleColor: adminSettings.titleColor,
+      subtitleColor: adminSettings.subtitleColor,
+      bodyColor: adminSettings.bodyColor,
+      sectionColor: adminSettings.sectionColor,
       providerBaseUrl: adminSettings.providerBaseUrl,
       apiKey: maskApiKey(adminSettings.apiKey),
       dumpJson: webPartProps.dumpJson
@@ -152,6 +170,12 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
         provider: webPartProps.defaultProvider,
         model: adminSettings.defaultModel,
         outputFormat: webPartProps.outputFormat,
+        templateStyle: adminSettings.templateStyle,
+        anonymizeCandidateName: adminSettings.anonymizeCandidateName,
+        titleColor: adminSettings.titleColor,
+        subtitleColor: adminSettings.subtitleColor,
+        bodyColor: adminSettings.bodyColor,
+        sectionColor: adminSettings.sectionColor,
         providerBaseUrl: adminSettings.providerBaseUrl,
         apiKey: adminSettings.apiKey,
         dumpJson: webPartProps.dumpJson
@@ -203,6 +227,7 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
       <h2>CV Standardizer</h2>
       <p>Provider: {webPartProps.defaultProvider}</p>
       <p>Model: {adminSettings.defaultModel}</p>
+      <p>Template: {adminSettings.templateStyle}</p>
       <p>API URL: {effectiveApiBaseUrl}</p>
       <p>Settings source: {settingsSource === 'browser' ? 'browser overrides' : 'web part properties'}</p>
       {webPartProps.useLocalApiProxy ? <p>Proxy mode: prepared in configuration, but current runtime still uses the configured backend URL directly.</p> : null}
@@ -252,7 +277,13 @@ function loadStoredAdminSettings(): AdminSettings | undefined {
       apiBaseUrl: parsed.apiBaseUrl || '',
       providerBaseUrl: parsed.providerBaseUrl || '',
       defaultModel: parsed.defaultModel || '',
-      apiKey: parsed.apiKey || ''
+      apiKey: parsed.apiKey || '',
+      templateStyle: (parsed.templateStyle as AdminSettings['templateStyle']) || 'standard',
+      anonymizeCandidateName: Boolean(parsed.anonymizeCandidateName),
+      titleColor: parsed.titleColor || '',
+      subtitleColor: parsed.subtitleColor || '',
+      bodyColor: parsed.bodyColor || '',
+      sectionColor: parsed.sectionColor || ''
     };
   } catch (_error) {
     return undefined;

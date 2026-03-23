@@ -1,4 +1,4 @@
-import type { OutputFormat, Provider } from './cv';
+import type { OutputFormat, Provider, TemplateStyle } from './cv';
 
 export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
 
@@ -6,6 +6,12 @@ export interface CreateJobRequestFields {
   provider: Provider;
   model: string;
   outputFormat: OutputFormat;
+  templateStyle?: TemplateStyle;
+  anonymizeCandidateName?: boolean;
+  titleColor?: string;
+  subtitleColor?: string;
+  bodyColor?: string;
+  sectionColor?: string;
   providerBaseUrl?: string;
   apiKey?: string;
   dumpJson?: boolean;

@@ -5,6 +5,12 @@ export interface AdminSettings {
   providerBaseUrl: string;
   defaultModel: string;
   apiKey: string;
+  templateStyle: 'standard' | 'modern' | 'consulting';
+  anonymizeCandidateName: boolean;
+  titleColor: string;
+  subtitleColor: string;
+  bodyColor: string;
+  sectionColor: string;
 }
 
 interface AdminPanelProps {
@@ -50,7 +56,7 @@ export default function AdminPanel(props: AdminPanelProps): JSX.Element {
     setSettings(props.initialSettings);
   }, [props.initialSettings]);
 
-  function updateField(field: keyof AdminSettings, value: string): void {
+  function updateField(field: keyof AdminSettings, value: string | boolean): void {
     setSettings({
       ...settings,
       [field]: value
@@ -110,6 +116,68 @@ export default function AdminPanel(props: AdminPanelProps): JSX.Element {
           style={styles.input}
           value={settings.defaultModel}
           onChange={(event) => updateField('defaultModel', event.target.value)}
+          type="text"
+        />
+      </label>
+
+      <label style={styles.label}>
+        Template style
+        <select
+          style={styles.input}
+          value={settings.templateStyle}
+          onChange={(event) => updateField('templateStyle', event.target.value)}
+        >
+          <option value="standard">Standard</option>
+          <option value="modern">Modern</option>
+          <option value="consulting">Consulting</option>
+        </select>
+      </label>
+
+      <label style={styles.checkboxLabel}>
+        <input
+          checked={settings.anonymizeCandidateName}
+          onChange={(event) => updateField('anonymizeCandidateName', event.target.checked)}
+          type="checkbox"
+        />
+        Anonymize candidate name
+      </label>
+
+      <label style={styles.label}>
+        Title color
+        <input
+          style={styles.input}
+          value={settings.titleColor}
+          onChange={(event) => updateField('titleColor', event.target.value)}
+          type="text"
+        />
+      </label>
+
+      <label style={styles.label}>
+        Subtitle color
+        <input
+          style={styles.input}
+          value={settings.subtitleColor}
+          onChange={(event) => updateField('subtitleColor', event.target.value)}
+          type="text"
+        />
+      </label>
+
+      <label style={styles.label}>
+        Body text color
+        <input
+          style={styles.input}
+          value={settings.bodyColor}
+          onChange={(event) => updateField('bodyColor', event.target.value)}
+          type="text"
+        />
+      </label>
+
+      <label style={styles.label}>
+        Section color
+        <input
+          style={styles.input}
+          value={settings.sectionColor}
+          onChange={(event) => updateField('sectionColor', event.target.value)}
           type="text"
         />
       </label>

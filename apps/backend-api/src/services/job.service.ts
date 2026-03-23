@@ -94,7 +94,11 @@ export class JobService {
       job.updatedAt = new Date().toISOString();
       console.log(`[job ${jobId}] transform complete fullName="${preparedCv.fullName}" title="${preparedCv.title}"`);
 
-      const baseName = buildOutputBaseName(file.originalname, fields.templateStyle || 'standard');
+      const baseName = buildOutputBaseName(
+        file.originalname,
+        fields.templateStyle || 'standard',
+        fields.outputLanguage || 'en'
+      );
       const outputPath = await renderOutput(preparedCv, fields.outputFormat, jobDir, baseName, fields);
       const jsonPath = path.join(jobDir, `${baseName}.json`);
       await fs.writeFile(jsonPath, JSON.stringify(preparedCv, null, 2), 'utf-8');
@@ -196,9 +200,10 @@ function prepareCvForOutput(cv: CVData, fields: CreateJobRequestFields, anonymiz
   };
 }
 
-function buildOutputBaseName(originalFileName: string, templateStyle: string): string {
+function buildOutputBaseName(originalFileName: string, templateStyle: string, outputLanguage: string): string {
   const sanitizedTemplate = templateStyle.replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'standard';
-  return `${path.parse(originalFileName).name}_${sanitizedTemplate}_standardise`;
+  const sanitizedLanguage = outputLanguage.replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'en';
+  return `${path.parse(originalFileName).name}_${sanitizedTemplate}_${sanitizedLanguage}_standardise`;
 }
 
 function buildAnonymizedCandidateLabel(fullName: string, sequence = 1): string {

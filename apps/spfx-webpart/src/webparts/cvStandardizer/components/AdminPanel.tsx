@@ -89,6 +89,15 @@ export default function AdminPanel(props: AdminPanelProps): JSX.Element {
       <p style={styles.description}>
         Edit runtime API settings from the web part UI. These values override the Property Pane defaults for your current browser.
       </p>
+      <div style={styles.defaultsBox}>
+        <div><strong>Current template defaults</strong></div>
+        <div>Template: {settings.templateStyle}</div>
+        <div>Title: {settings.titleColor}</div>
+        <div>Subtitle: {settings.subtitleColor}</div>
+        <div>Body: {settings.bodyColor}</div>
+        <div>Sections: {settings.sectionColor}</div>
+        <div>Anonymize name: {settings.anonymizeCandidateName ? 'Yes' : 'No'}</div>
+      </div>
 
       <label style={styles.label}>
         API Base URL
@@ -260,6 +269,15 @@ const styles: { [key: string]: React.CSSProperties } = {
   description: {
     margin: '0 0 16px 0',
     color: '#475569'
+  },
+  defaultsBox: {
+    marginBottom: '16px',
+    padding: '12px',
+    borderRadius: '10px',
+    backgroundColor: '#ffffff',
+    border: '1px solid #dbe4f0',
+    color: '#334155',
+    lineHeight: 1.6
   },
   label: {
     display: 'block',

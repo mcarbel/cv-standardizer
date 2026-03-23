@@ -201,17 +201,10 @@ function buildConsultingTemplate(cv: CVData, theme: RenderTheme, logoData?: Buff
   }
 
   children.push(
-    new Paragraph({
-      spacing: { after: 80 },
-      children: [new TextRun({ text: 'CONSULTANT PROFILE', bold: true, color: theme.sectionColor, size: 18 })]
-    }),
-    new Paragraph({
-      spacing: { after: 100 },
-      children: [new TextRun({ text: cv.fullName || 'CV Standardise', bold: true, size: 36, color: theme.titleColor })]
-    }),
+    buildConsultingHero(cv, theme),
     new Paragraph({
       spacing: { after: 60 },
-      children: [new TextRun({ text: cv.title || 'Consultant / Expert', size: 24, color: theme.subtitleColor })]
+      children: [new TextRun({ text: 'CONSULTANT PROFILE', bold: true, color: theme.sectionColor, size: 18 })]
     }),
     new Paragraph({
       spacing: { after: 200 },
@@ -371,6 +364,45 @@ function buildConsultingBody(cv: CVData, theme: RenderTheme): Table {
   });
 }
 
+function buildConsultingHero(cv: CVData, theme: RenderTheme): Table {
+  return new Table({
+    width: { size: 100, type: 'pct' },
+    borders: noBorders(),
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 64, type: 'pct' },
+            margins: { top: 80, bottom: 120, left: 0, right: 180 },
+            borders: noBorders(),
+            children: [
+              new Paragraph({
+                spacing: { after: 100 },
+                children: [new TextRun({ text: cv.fullName || 'CV Standardise', bold: true, size: 36, color: theme.titleColor })]
+              }),
+              new Paragraph({
+                spacing: { after: 120 },
+                children: [new TextRun({ text: cv.title || 'Consultant / Expert', size: 24, color: theme.subtitleColor })]
+              }),
+              new Paragraph({
+                spacing: { after: 60 },
+                children: [new TextRun({ text: 'Client-ready profile prepared for presentation and interview shortlisting.', color: theme.bodyColor })]
+              })
+            ]
+          }),
+          new TableCell({
+            width: { size: 36, type: 'pct' },
+            margins: { top: 60, bottom: 120, left: 180, right: 0 },
+            borders: noBorders(),
+            shading: { fill: 'F8FAFC' },
+            children: buildConsultingContactCard(cv, theme)
+          })
+        ]
+      })
+    ]
+  });
+}
+
 function buildConsultingSidebar(cv: CVData, theme: RenderTheme): Paragraph[] {
   const sidebar: Paragraph[] = [];
 
@@ -387,6 +419,24 @@ function buildConsultingSidebar(cv: CVData, theme: RenderTheme): Paragraph[] {
   pushBullets(sidebar, cv.certifications.slice(0, 8), theme.bodyColor, true);
 
   return sidebar;
+}
+
+function buildConsultingContactCard(cv: CVData, theme: RenderTheme): Paragraph[] {
+  const lines = deriveContactLines(cv);
+
+  return [
+    new Paragraph({
+      spacing: { after: 60 },
+      children: [new TextRun({ text: 'CONTACT', bold: true, color: theme.sectionColor, size: 18 })]
+    }),
+    ...lines.map(([label, value]) => new Paragraph({
+      spacing: { after: 55 },
+      children: [
+        new TextRun({ text: `${label}: `, bold: true, color: theme.titleColor }),
+        new TextRun({ text: value, color: theme.bodyColor })
+      ]
+    }))
+  ];
 }
 
 function buildConsultingMainColumn(cv: CVData, theme: RenderTheme): Paragraph[] {
@@ -422,6 +472,20 @@ function noBorders() {
     left: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
     right: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' }
   };
+}
+
+function deriveContactLines(cv: CVData): Array<[string, string]> {
+  const languageSummary = cv.languages.filter(Boolean).slice(0, 3).join(', ');
+  const expertiseSummary = cv.keyExpertise.filter(Boolean).slice(0, 3).join(', ');
+  const availability = cv.meta?.anonymized ? 'Contact details available on request' : 'Shared through BraineeSys on request';
+
+  return [
+    ['Candidate', cv.fullName || 'Confidential Candidate'],
+    ['Title', cv.title || 'Consultant / Expert'],
+    ['Languages', languageSummary || 'Available on request'],
+    ['Expertise', expertiseSummary || 'Available on request'],
+    ['Contact', availability]
+  ];
 }
 
 function divider(): Paragraph {

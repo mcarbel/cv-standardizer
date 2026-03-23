@@ -5,7 +5,8 @@
   "scripts": {
     "build": "gulp bundle",
     "package-solution": "gulp package-solution",
-    "clean": "gulp clean"
+    "clean": "gulp clean",
+    "serve": "gulp serve-deprecated"
   },
   "dependencies": {
     "@fluentui/react-components": "^9.56.0",

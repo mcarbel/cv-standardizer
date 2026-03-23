@@ -4,7 +4,7 @@
   "https": true,
   "serveConfigurations": {
     "default": {
-      "pageUrl": "https://tenant.sharepoint.com/sites/dev/SitePages/Home.aspx"
+      "pageUrl": "https://braineesysms365.sharepoint.com/_layouts/15/workbench.aspx"
     }
   }
 }

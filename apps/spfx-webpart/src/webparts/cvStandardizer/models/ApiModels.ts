@@ -3,6 +3,7 @@ export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
 export interface CreateJobResponse {
   jobId: string;
   status: JobStatus;
+  progress: number;
 }
 
 export interface JobRecord {

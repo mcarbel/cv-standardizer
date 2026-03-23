@@ -19,13 +19,21 @@
       "description": { "default": "Upload and standardize a CV through an external API." },
       "officeFabricIconFontName": "Page",
       "properties": {
-        "apiBaseUrl": "http://localhost:8787",
+        "apiBaseUrl": "https://localhost:8787",
         "defaultProvider": "ollama",
-        "defaultModel": "llama3.1",
+        "defaultModel": "kimi-k2.5:cloud",
         "providerBaseUrl": "http://localhost:11434",
         "apiKey": "",
         "outputFormat": "docx",
+        "templateStyle": "consulting",
+        "anonymizeCandidateName": false,
+        "titleColor": "#0F172A",
+        "subtitleColor": "#475569",
+        "bodyColor": "#334155",
+        "sectionColor": "#0F766E",
         "dumpJson": true,
+        "enableDebugPanel": true,
+        "useLocalApiProxy": false,
         "allowUserOverrideProvider": false,
         "allowUserOverrideModel": false
       }

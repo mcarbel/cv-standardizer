@@ -9,8 +9,8 @@ export async function createJob(req: Request, res: Response, next: NextFunction)
       throw new Error('Missing uploaded file');
     }
 
-    const job = await service.createAndRun(req.file, req.body);
-    res.status(202).json({ jobId: job.jobId, status: job.status });
+    const job = await service.createJob(req.file, req.body);
+    res.status(202).json({ jobId: job.jobId, status: job.status, progress: job.progress });
   } catch (error) {
     next(error);
   }

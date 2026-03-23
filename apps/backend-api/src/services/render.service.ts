@@ -1,14 +1,44 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { Document, Packer, Paragraph, TextRun } from 'docx';
+import {
+  AlignmentType,
+  BorderStyle,
+  Document,
+  HeadingLevel,
+  ImageRun,
+  Packer,
+  Paragraph,
+  TabStopPosition,
+  TabStopType,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun
+} from 'docx';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
-import type { CVData, OutputFormat } from '@cv-standardizer/shared-contracts';
+import type { CVData, OutputFormat, TemplateStyle, CreateJobRequestFields } from '@cv-standardizer/shared-contracts';
+
+interface RenderTheme {
+  titleColor: string;
+  subtitleColor: string;
+  bodyColor: string;
+  sectionColor: string;
+}
+
+type SectionChild = Paragraph | Table;
+
+const LOGO_PATH = path.resolve(process.cwd(), 'apps/backend-api/assets/BraineeSys_Logo_Black.svg');
+const PNG_FALLBACK_PIXEL = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////fwAJ+wP9KobjigAAAABJRU5ErkJggg==',
+  'base64'
+);
 
 export async function renderOutput(
   cv: CVData,
   outputFormat: OutputFormat,
   outputDir: string,
-  baseName: string
+  baseName: string,
+  renderOptions?: CreateJobRequestFields
 ): Promise<string> {
   if (outputFormat === 'markdown') {
     const outputPath = path.join(outputDir, `${baseName}.md`);
@@ -18,16 +48,13 @@ export async function renderOutput(
 
   if (outputFormat === 'docx') {
     const outputPath = path.join(outputDir, `${baseName}.docx`);
+    const templateStyle = renderOptions?.templateStyle || 'standard';
+    const theme = resolveTheme(renderOptions);
+    const logoData = templateStyle === 'consulting' ? await loadLogoIfAvailable() : undefined;
     const doc = new Document({
       sections: [
         {
-          children: [
-            new Paragraph({
-              children: [new TextRun({ text: cv.fullName || 'CV Standardise', bold: true, size: 32 })]
-            }),
-            new Paragraph(cv.title || 'Consultant / Expert'),
-            ...cv.summaryLines.map((line: string) => new Paragraph(line))
-          ]
+          children: await buildDocxSections(cv, templateStyle, theme, logoData)
         }
       ]
     });
@@ -62,4 +89,440 @@ function renderMarkdown(cv: CVData): string {
     '## Skills',
     ...Object.entries(cv.technicalSkills).flatMap(([category, skills]: [string, string[]]) => [`- ${category}: ${skills.join(', ')}`])
   ].join('\n');
+}
+
+async function buildDocxSections(
+  cv: CVData,
+  templateStyle: TemplateStyle,
+  theme: RenderTheme,
+  logoData?: Buffer
+): Promise<SectionChild[]> {
+  if (templateStyle === 'consulting') {
+    return buildConsultingTemplate(cv, theme, logoData);
+  }
+
+  if (templateStyle === 'modern') {
+    return buildModernTemplate(cv, theme);
+  }
+
+  return buildStandardTemplate(cv, theme);
+}
+
+function buildStandardTemplate(cv: CVData, theme: RenderTheme): SectionChild[] {
+  const paragraphs: SectionChild[] = [
+    new Paragraph({
+      spacing: { after: 120 },
+      children: [new TextRun({ text: cv.fullName || 'CV Standardise', bold: true, size: 34, color: theme.titleColor })]
+    }),
+    new Paragraph({
+      spacing: { after: 120 },
+      children: [new TextRun({ text: cv.title || 'Consultant / Expert', italics: true, size: 24, color: theme.subtitleColor })]
+    }),
+    divider()
+  ];
+
+  pushHeading(paragraphs, 'Summary', theme);
+  pushBullets(paragraphs, cv.summaryLines, theme.bodyColor, false);
+
+  pushHeading(paragraphs, 'Key Expertise', theme);
+  pushBullets(paragraphs, cv.keyExpertise, theme.bodyColor, true);
+
+  pushHeading(paragraphs, 'Technical Skills', theme);
+  for (const [category, skills] of Object.entries(cv.technicalSkills)) {
+    paragraphs.push(labeledParagraph(category, skills.join(', '), theme));
+  }
+
+  pushExperienceSection(paragraphs, cv, theme, 'standard');
+  pushSimpleSection(paragraphs, 'Education', cv.education, theme);
+  pushSimpleSection(paragraphs, 'Languages', cv.languages, theme);
+  pushSimpleSection(paragraphs, 'Certifications', cv.certifications, theme);
+
+  return paragraphs;
+}
+
+function buildModernTemplate(cv: CVData, theme: RenderTheme): SectionChild[] {
+  const paragraphs: SectionChild[] = [
+    new Paragraph({
+      shading: {
+        fill: theme.sectionColor
+      },
+      spacing: { after: 40 },
+      children: [new TextRun({ text: cv.fullName || 'CV Standardise', bold: true, size: 34, color: 'FFFFFF' })]
+    }),
+    new Paragraph({
+      spacing: { after: 160 },
+      children: [new TextRun({ text: cv.title || 'Consultant / Expert', bold: true, color: theme.subtitleColor, size: 22 })]
+    })
+  ];
+
+  pushHeading(paragraphs, 'Executive Summary', theme);
+  cv.summaryLines.forEach((line) => paragraphs.push(bodyParagraph(line, theme.bodyColor)));
+
+  pushHeading(paragraphs, 'Core Expertise', theme);
+  paragraphs.push(bodyParagraph(cv.keyExpertise.join(' • '), theme.bodyColor));
+
+  pushHeading(paragraphs, 'Technology Landscape', theme);
+  for (const [category, skills] of Object.entries(cv.technicalSkills)) {
+    paragraphs.push(labeledParagraph(category, skills.join(' • '), theme));
+  }
+
+  pushExperienceSection(paragraphs, cv, theme, 'modern');
+  pushSimpleSection(paragraphs, 'Education', cv.education, theme);
+  pushSimpleSection(paragraphs, 'Languages', cv.languages, theme);
+  pushSimpleSection(paragraphs, 'Certifications', cv.certifications, theme);
+
+  return paragraphs;
+}
+
+function buildConsultingTemplate(cv: CVData, theme: RenderTheme, logoData?: Buffer): SectionChild[] {
+  const children: SectionChild[] = [];
+
+  children.push(
+    buildConsultingHero(cv, theme, logoData),
+    new Paragraph({
+      spacing: { after: 60 },
+      children: [new TextRun({ text: 'CONSULTANT PROFILE', bold: true, color: theme.sectionColor, size: 18 })]
+    }),
+    new Paragraph({
+      spacing: { after: 200 },
+      border: {
+        bottom: {
+          color: theme.sectionColor,
+          style: BorderStyle.SINGLE,
+          size: 10,
+          space: 1
+        }
+      }
+    })
+  );
+
+  children.push(buildConsultingBody(cv, theme));
+
+  return children;
+}
+
+function pushExperienceSection(
+  paragraphs: SectionChild[],
+  cv: CVData,
+  theme: RenderTheme,
+  variant: TemplateStyle
+): void {
+  pushHeading(paragraphs, 'Professional Experience', theme);
+
+  for (const experience of cv.experiences) {
+    paragraphs.push(
+      new Paragraph({
+        spacing: { before: 160, after: 40 },
+        tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
+        children: [
+          new TextRun({ text: experience.title || experience.role || 'Experience', bold: true, size: variant === 'consulting' ? 25 : 24, color: theme.titleColor }),
+          new TextRun({ text: '\t' }),
+          new TextRun({ text: experience.dates || '', bold: true, color: theme.subtitleColor })
+        ]
+      })
+    );
+
+    if (experience.role || experience.sector) {
+      paragraphs.push(
+        new Paragraph({
+          spacing: { after: 60 },
+          children: [
+            new TextRun({
+              text: `${experience.role || ''}${experience.role && experience.sector ? ' - ' : ''}${experience.sector || ''}`,
+              italics: true,
+              color: theme.subtitleColor
+            })
+          ]
+        })
+      );
+    }
+
+    if (experience.context) {
+      paragraphs.push(bodyParagraph(experience.context, theme.bodyColor));
+    }
+
+    if (experience.achievements.length > 0) {
+      paragraphs.push(sectionLabel('Achievements', theme));
+      pushBullets(paragraphs, experience.achievements, theme.bodyColor, true);
+    }
+
+    if (experience.results.length > 0) {
+      paragraphs.push(sectionLabel('Results', theme));
+      pushBullets(paragraphs, experience.results, theme.bodyColor, true);
+    }
+  }
+}
+
+function pushSimpleSection(paragraphs: SectionChild[], title: string, lines: string[], theme: RenderTheme): void {
+  pushHeading(paragraphs, title, theme);
+  pushBullets(paragraphs, lines, theme.bodyColor, true);
+}
+
+function pushHeading(paragraphs: SectionChild[], title: string, theme: RenderTheme): void {
+  paragraphs.push(
+    new Paragraph({
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 240, after: 120 },
+      border: {
+        bottom: {
+          color: theme.sectionColor,
+          space: 1,
+          style: BorderStyle.SINGLE,
+          size: 6
+        }
+      },
+      children: [new TextRun({ text: title.toUpperCase(), bold: true, size: 22, color: theme.sectionColor })]
+    })
+  );
+}
+
+function pushBullets(paragraphs: SectionChild[], lines: string[], color: string, compact: boolean): void {
+  lines
+    .filter(Boolean)
+    .forEach((line) => {
+      paragraphs.push(
+        new Paragraph({
+          spacing: { after: compact ? 40 : 80 },
+          bullet: {
+            level: 0
+          },
+          children: [new TextRun({ text: line, color })]
+        })
+      );
+    });
+}
+
+function labeledParagraph(label: string, value: string, theme: RenderTheme): Paragraph {
+  return new Paragraph({
+    spacing: { after: 90 },
+    children: [
+      new TextRun({ text: `${label}: `, bold: true, color: theme.titleColor }),
+      new TextRun({ text: value, color: theme.bodyColor })
+    ]
+  });
+}
+
+function bodyParagraph(value: string, color: string): Paragraph {
+  return new Paragraph({
+    spacing: { after: 80 },
+    children: [new TextRun({ text: value, color })]
+  });
+}
+
+function sectionLabel(value: string, theme: RenderTheme): Paragraph {
+  return new Paragraph({
+    spacing: { before: 60, after: 30 },
+    children: [new TextRun({ text: value, bold: true, color: theme.titleColor })]
+  });
+}
+
+function buildConsultingBody(cv: CVData, theme: RenderTheme): Table {
+  return new Table({
+    width: { size: 100, type: 'pct' },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 30, type: 'pct' },
+            margins: { top: 120, bottom: 120, left: 120, right: 180 },
+            borders: noBorders(),
+            shading: { fill: 'F8FAFC' },
+            children: buildConsultingSidebar(cv, theme)
+          }),
+          new TableCell({
+            width: { size: 70, type: 'pct' },
+            margins: { top: 120, bottom: 120, left: 180, right: 60 },
+            borders: noBorders(),
+            children: buildConsultingMainColumn(cv, theme)
+          })
+        ]
+      })
+    ]
+  });
+}
+
+function buildConsultingHero(cv: CVData, theme: RenderTheme, logoData?: Buffer): Table {
+  return new Table({
+    width: { size: 100, type: 'pct' },
+    borders: noBorders(),
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 64, type: 'pct' },
+            margins: { top: 80, bottom: 120, left: 0, right: 180 },
+            borders: noBorders(),
+            children: [
+              new Paragraph({
+                spacing: { after: 100 },
+                children: [new TextRun({ text: cv.fullName || 'CV Standardise', bold: true, size: 36, color: theme.titleColor })]
+              }),
+              new Paragraph({
+                spacing: { after: 120 },
+                children: [new TextRun({ text: cv.title || 'Consultant / Expert', size: 24, color: theme.subtitleColor })]
+              }),
+              new Paragraph({
+                spacing: { after: 60 },
+                children: [new TextRun({ text: 'Client-ready profile prepared for presentation and interview shortlisting.', color: theme.bodyColor })]
+              })
+            ]
+          }),
+          new TableCell({
+            width: { size: 36, type: 'pct' },
+            margins: { top: 60, bottom: 120, left: 180, right: 0 },
+            borders: noBorders(),
+            shading: { fill: 'F8FAFC' },
+            children: buildConsultingContactCard(cv, theme, logoData)
+          })
+        ]
+      })
+    ]
+  });
+}
+
+function buildConsultingSidebar(cv: CVData, theme: RenderTheme): Paragraph[] {
+  const sidebar: Paragraph[] = [];
+
+  pushSidebarHeading(sidebar, 'Snapshot', theme);
+  pushBullets(sidebar, cv.summaryLines.slice(0, 3), theme.bodyColor, true);
+
+  pushSidebarHeading(sidebar, 'Expertise', theme);
+  pushBullets(sidebar, cv.keyExpertise.slice(0, 8), theme.bodyColor, true);
+
+  pushSidebarHeading(sidebar, 'Languages', theme);
+  pushBullets(sidebar, cv.languages, theme.bodyColor, true);
+
+  pushSidebarHeading(sidebar, 'Certifications', theme);
+  pushBullets(sidebar, cv.certifications.slice(0, 8), theme.bodyColor, true);
+
+  return sidebar;
+}
+
+function buildConsultingContactCard(cv: CVData, theme: RenderTheme, logoData?: Buffer): Paragraph[] {
+  const lines = deriveContactLines(cv);
+
+  return [
+    ...(logoData ? [new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 90 },
+      children: [
+        new ImageRun({
+          type: 'svg',
+          data: logoData,
+          fallback: {
+            type: 'png',
+            data: PNG_FALLBACK_PIXEL
+          },
+          transformation: {
+            width: 122,
+            height: 33
+          }
+        })
+      ]
+    })] : []),
+    new Paragraph({
+      spacing: { after: 60 },
+      children: [new TextRun({ text: 'CONTACT', bold: true, color: theme.sectionColor, size: 18 })]
+    }),
+    ...lines.map(([label, value]) => new Paragraph({
+      spacing: { after: 55 },
+      children: [
+        new TextRun({ text: `${label}: `, bold: true, color: theme.titleColor }),
+        new TextRun({ text: value, color: theme.bodyColor })
+      ]
+    }))
+  ];
+}
+
+function buildConsultingMainColumn(cv: CVData, theme: RenderTheme): Paragraph[] {
+  const content: Paragraph[] = [];
+
+  pushHeading(content, 'Profile', theme);
+  cv.summaryLines.forEach((line) => content.push(bodyParagraph(line, theme.bodyColor)));
+
+  pushHeading(content, 'Capabilities', theme);
+  for (const [category, skills] of Object.entries(cv.technicalSkills)) {
+    content.push(labeledParagraph(category, skills.join(', '), theme));
+  }
+
+  pushExperienceSection(content, cv, theme, 'consulting');
+  pushSimpleSection(content, 'Education', cv.education, theme);
+
+  return content;
+}
+
+function pushSidebarHeading(paragraphs: Paragraph[], title: string, theme: RenderTheme): void {
+  paragraphs.push(
+    new Paragraph({
+      spacing: { before: 120, after: 60 },
+      children: [new TextRun({ text: title.toUpperCase(), bold: true, color: theme.sectionColor, size: 18 })]
+    })
+  );
+}
+
+function noBorders() {
+  return {
+    top: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+    bottom: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+    left: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+    right: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' }
+  };
+}
+
+function deriveContactLines(cv: CVData): Array<[string, string]> {
+  const languageSummary = cv.languages.filter(Boolean).slice(0, 3).join(', ');
+  const expertiseSummary = cv.keyExpertise.filter(Boolean).slice(0, 3).join(', ');
+  const availability = cv.meta?.anonymized ? 'Contact details available on request' : 'Shared through BraineeSys on request';
+
+  return [
+    ['Candidate', cv.fullName || 'Confidential Candidate'],
+    ['Title', cv.title || 'Consultant / Expert'],
+    ['Languages', languageSummary || 'Available on request'],
+    ['Expertise', expertiseSummary || 'Available on request'],
+    ['Contact', availability]
+  ];
+}
+
+function divider(): Paragraph {
+  return new Paragraph({
+    border: {
+      bottom: {
+        color: 'CBD5E1',
+        space: 1,
+        style: BorderStyle.SINGLE,
+        size: 6
+      }
+    },
+    spacing: { after: 200 }
+  });
+}
+
+function resolveTheme(renderOptions?: CreateJobRequestFields): RenderTheme {
+  return {
+    titleColor: normalizeColor(renderOptions?.titleColor, '1D4ED8'),
+    subtitleColor: normalizeColor(renderOptions?.subtitleColor, '334155'),
+    bodyColor: normalizeColor(renderOptions?.bodyColor, '334155'),
+    sectionColor: normalizeColor(renderOptions?.sectionColor, '1D4ED8')
+  };
+}
+
+function normalizeColor(value: string | undefined, fallback: string): string {
+  if (!value) {
+    return fallback;
+  }
+
+  const normalized = value.replace('#', '').trim();
+  if (/^[0-9A-Fa-f]{6}$/.test(normalized)) {
+    return normalized.toUpperCase();
+  }
+
+  return fallback;
+}
+
+async function loadLogoIfAvailable(): Promise<Buffer | undefined> {
+  try {
+    return await fs.readFile(LOGO_PATH);
+  } catch (_error) {
+    return undefined;
+  }
 }

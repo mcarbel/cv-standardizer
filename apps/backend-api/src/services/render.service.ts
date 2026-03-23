@@ -177,31 +177,8 @@ function buildModernTemplate(cv: CVData, theme: RenderTheme): SectionChild[] {
 function buildConsultingTemplate(cv: CVData, theme: RenderTheme, logoData?: Buffer): SectionChild[] {
   const children: SectionChild[] = [];
 
-  if (logoData) {
-    children.push(
-      new Paragraph({
-        alignment: AlignmentType.RIGHT,
-        spacing: { after: 120 },
-        children: [
-          new ImageRun({
-            type: 'svg',
-            data: logoData,
-            fallback: {
-              type: 'png',
-              data: PNG_FALLBACK_PIXEL
-            },
-            transformation: {
-              width: 180,
-              height: 48
-            }
-          })
-        ]
-      })
-    );
-  }
-
   children.push(
-    buildConsultingHero(cv, theme),
+    buildConsultingHero(cv, theme, logoData),
     new Paragraph({
       spacing: { after: 60 },
       children: [new TextRun({ text: 'CONSULTANT PROFILE', bold: true, color: theme.sectionColor, size: 18 })]
@@ -364,7 +341,7 @@ function buildConsultingBody(cv: CVData, theme: RenderTheme): Table {
   });
 }
 
-function buildConsultingHero(cv: CVData, theme: RenderTheme): Table {
+function buildConsultingHero(cv: CVData, theme: RenderTheme, logoData?: Buffer): Table {
   return new Table({
     width: { size: 100, type: 'pct' },
     borders: noBorders(),
@@ -395,7 +372,7 @@ function buildConsultingHero(cv: CVData, theme: RenderTheme): Table {
             margins: { top: 60, bottom: 120, left: 180, right: 0 },
             borders: noBorders(),
             shading: { fill: 'F8FAFC' },
-            children: buildConsultingContactCard(cv, theme)
+            children: buildConsultingContactCard(cv, theme, logoData)
           })
         ]
       })
@@ -421,10 +398,28 @@ function buildConsultingSidebar(cv: CVData, theme: RenderTheme): Paragraph[] {
   return sidebar;
 }
 
-function buildConsultingContactCard(cv: CVData, theme: RenderTheme): Paragraph[] {
+function buildConsultingContactCard(cv: CVData, theme: RenderTheme, logoData?: Buffer): Paragraph[] {
   const lines = deriveContactLines(cv);
 
   return [
+    ...(logoData ? [new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 90 },
+      children: [
+        new ImageRun({
+          type: 'svg',
+          data: logoData,
+          fallback: {
+            type: 'png',
+            data: PNG_FALLBACK_PIXEL
+          },
+          transformation: {
+            width: 122,
+            height: 33
+          }
+        })
+      ]
+    })] : []),
     new Paragraph({
       spacing: { after: 60 },
       children: [new TextRun({ text: 'CONTACT', bold: true, color: theme.sectionColor, size: 18 })]

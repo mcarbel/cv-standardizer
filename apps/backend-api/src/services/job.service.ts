@@ -24,9 +24,11 @@ interface StoredJob extends JobRecord {
 export class JobService {
   private readonly jobs = new Map<string, StoredJob>();
   private readonly storageRoot = path.resolve(process.env.STORAGE_ROOT || path.join(process.cwd(), 'storage'));
+  private anonymizedSequence = 1;
 
   async createJob(file: MulterFile, rawFields: Record<string, string>): Promise<JobRecord> {
     const fields = this.normalizeFields(rawFields);
+    const anonymizedSequence = fields.anonymizeCandidateName ? this.anonymizedSequence++ : undefined;
     const jobId = `job_${crypto.randomUUID()}`;
     const jobDir = path.join(this.storageRoot, 'jobs', jobId);
     await fs.mkdir(jobDir, { recursive: true });
@@ -45,7 +47,7 @@ export class JobService {
     };
     this.jobs.set(jobId, job);
 
-    void this.processJob(jobId, file, fields, jobDir);
+    void this.processJob(jobId, file, fields, jobDir, anonymizedSequence);
 
     return this.publicJob(job);
   }
@@ -54,7 +56,8 @@ export class JobService {
     jobId: string,
     file: MulterFile,
     fields: CreateJobRequestFields,
-    jobDir: string
+    jobDir: string,
+    anonymizedSequence?: number
   ): Promise<void> {
     const job = this.jobs.get(jobId);
     if (!job) {
@@ -85,7 +88,7 @@ export class JobService {
         sourceFileName: file.originalname,
         outputFormat: fields.outputFormat
       });
-      const preparedCv = prepareCvForOutput(cv, fields);
+      const preparedCv = prepareCvForOutput(cv, fields, anonymizedSequence);
       job.progress = 75;
       job.updatedAt = new Date().toISOString();
       console.log(`[job ${jobId}] transform complete fullName="${preparedCv.fullName}" title="${preparedCv.title}"`);
@@ -175,16 +178,29 @@ export class JobService {
   }
 }
 
-function prepareCvForOutput(cv: CVData, fields: CreateJobRequestFields): CVData {
+function prepareCvForOutput(cv: CVData, fields: CreateJobRequestFields, anonymizedSequence?: number): CVData {
   const anonymized = fields.anonymizeCandidateName === true;
+  const anonymizedLabel = anonymized ? buildAnonymizedCandidateLabel(cv.fullName, anonymizedSequence) : cv.fullName;
 
   return {
     ...cv,
-    fullName: anonymized ? 'Confidential Candidate' : cv.fullName,
+    fullName: anonymized ? anonymizedLabel : cv.fullName,
     meta: {
       ...cv.meta,
       templateStyle: fields.templateStyle,
       anonymized
     }
   };
+}
+
+function buildAnonymizedCandidateLabel(fullName: string, sequence = 1): string {
+  const initials = fullName
+    .split(/[^A-Za-z]+/)
+    .filter(Boolean)
+    .slice(0, 4)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+
+  const candidateInitials = initials || 'CC';
+  return `${candidateInitials}-${String(sequence).padStart(3, '0')}`;
 }

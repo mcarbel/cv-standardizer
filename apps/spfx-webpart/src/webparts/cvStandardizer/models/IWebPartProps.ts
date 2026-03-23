@@ -5,6 +5,7 @@ export interface ICvStandardizerWebPartProps {
   providerBaseUrl: string;
   apiKey: string;
   outputFormat: 'docx' | 'pdf' | 'markdown';
+  outputLanguage: 'en' | 'fr';
   templateStyle: 'standard' | 'modern' | 'consulting';
   anonymizeCandidateName: boolean;
   titleColor: string;

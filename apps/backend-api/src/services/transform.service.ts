@@ -1,4 +1,4 @@
-import type { CVData, OutputFormat, Provider } from '@cv-standardizer/shared-contracts';
+import type { CVData, OutputFormat, OutputLanguage, Provider } from '@cv-standardizer/shared-contracts';
 import { callOllama } from './providers/ollama.provider';
 import { callOpenAI } from './providers/openai.provider';
 
@@ -9,6 +9,7 @@ interface TransformOptions {
   apiKey?: string;
   sourceFileName: string;
   outputFormat: OutputFormat;
+  outputLanguage: OutputLanguage;
 }
 
 export async function transformCv(inputText: string, options: TransformOptions): Promise<CVData> {
@@ -39,6 +40,7 @@ export async function transformCv(inputText: string, options: TransformOptions):
       model: options.model,
       sourceFileName: options.sourceFileName,
       outputFormat: options.outputFormat,
+      outputLanguage: options.outputLanguage,
       processedAt: new Date().toISOString()
     }
   };

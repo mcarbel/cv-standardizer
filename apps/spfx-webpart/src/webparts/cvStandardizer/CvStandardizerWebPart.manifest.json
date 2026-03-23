@@ -25,6 +25,7 @@
         "providerBaseUrl": "http://localhost:11434",
         "apiKey": "",
         "outputFormat": "docx",
+        "outputLanguage": "en",
         "templateStyle": "consulting",
         "anonymizeCandidateName": false,
         "titleColor": "#0F172A",

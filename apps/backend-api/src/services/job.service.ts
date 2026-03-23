@@ -86,14 +86,15 @@ export class JobService {
         providerBaseUrl: fields.providerBaseUrl,
         apiKey: fields.apiKey,
         sourceFileName: file.originalname,
-        outputFormat: fields.outputFormat
+        outputFormat: fields.outputFormat,
+        outputLanguage: fields.outputLanguage || 'en'
       });
       const preparedCv = prepareCvForOutput(cv, fields, anonymizedSequence);
       job.progress = 75;
       job.updatedAt = new Date().toISOString();
       console.log(`[job ${jobId}] transform complete fullName="${preparedCv.fullName}" title="${preparedCv.title}"`);
 
-      const baseName = path.parse(file.originalname).name + '_standardise';
+      const baseName = buildOutputBaseName(file.originalname, fields.templateStyle || 'standard');
       const outputPath = await renderOutput(preparedCv, fields.outputFormat, jobDir, baseName, fields);
       const jsonPath = path.join(jobDir, `${baseName}.json`);
       await fs.writeFile(jsonPath, JSON.stringify(preparedCv, null, 2), 'utf-8');
@@ -148,6 +149,7 @@ export class JobService {
       provider: (rawFields.provider || 'heuristic') as Provider,
       model: rawFields.model || 'gpt-5',
       outputFormat: (rawFields.outputFormat || 'docx') as OutputFormat,
+      outputLanguage: (rawFields.outputLanguage || 'en') as CreateJobRequestFields['outputLanguage'],
       templateStyle: (rawFields.templateStyle || 'standard') as CreateJobRequestFields['templateStyle'],
       anonymizeCandidateName: rawFields.anonymizeCandidateName === 'true',
       titleColor: rawFields.titleColor || '#1D4ED8',
@@ -188,9 +190,15 @@ function prepareCvForOutput(cv: CVData, fields: CreateJobRequestFields, anonymiz
     meta: {
       ...cv.meta,
       templateStyle: fields.templateStyle,
+      outputLanguage: fields.outputLanguage,
       anonymized
     }
   };
+}
+
+function buildOutputBaseName(originalFileName: string, templateStyle: string): string {
+  const sanitizedTemplate = templateStyle.replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'standard';
+  return `${path.parse(originalFileName).name}_${sanitizedTemplate}_standardise`;
 }
 
 function buildAnonymizedCandidateLabel(fullName: string, sequence = 1): string {

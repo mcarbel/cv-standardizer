@@ -5,6 +5,7 @@ export interface AdminSettings {
   providerBaseUrl: string;
   defaultModel: string;
   apiKey: string;
+  outputLanguage: 'en' | 'fr';
   templateStyle: 'standard' | 'modern' | 'consulting';
   anonymizeCandidateName: boolean;
   titleColor: string;
@@ -91,6 +92,7 @@ export default function AdminPanel(props: AdminPanelProps): JSX.Element {
       </p>
       <div style={styles.defaultsBox}>
         <div><strong>Current template defaults</strong></div>
+        <div>Language: {settings.outputLanguage === 'fr' ? 'French' : 'English'}</div>
         <div>Template: {settings.templateStyle}</div>
         <div>Title: {settings.titleColor}</div>
         <div>Subtitle: {settings.subtitleColor}</div>
@@ -127,6 +129,18 @@ export default function AdminPanel(props: AdminPanelProps): JSX.Element {
           onChange={(event) => updateField('defaultModel', event.target.value)}
           type="text"
         />
+      </label>
+
+      <label style={styles.label}>
+        Output language
+        <select
+          style={styles.input}
+          value={settings.outputLanguage}
+          onChange={(event) => updateField('outputLanguage', event.target.value)}
+        >
+          <option value="en">English</option>
+          <option value="fr">French</option>
+        </select>
       </label>
 
       <label style={styles.label}>

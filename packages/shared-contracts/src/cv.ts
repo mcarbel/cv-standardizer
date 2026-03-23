@@ -1,6 +1,7 @@
 export type Provider = 'heuristic' | 'openai' | 'ollama';
 export type OutputFormat = 'docx' | 'pdf' | 'markdown';
 export type TemplateStyle = 'standard' | 'modern' | 'consulting';
+export type OutputLanguage = 'en' | 'fr';
 
 export interface Experience {
   title: string;
@@ -29,6 +30,7 @@ export interface CVData {
     model: string;
     sourceFileName: string;
     outputFormat: OutputFormat;
+    outputLanguage?: OutputLanguage;
     templateStyle?: TemplateStyle;
     anonymized?: boolean;
     processedAt: string;

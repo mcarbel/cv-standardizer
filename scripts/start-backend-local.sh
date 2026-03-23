@@ -10,7 +10,8 @@ source ~/.nvm/nvm.sh
 nvm use 20
 
 export PORT="${PORT:-8787}"
-export HOST="${HOST:-localhost}"
+# zsh often predefines HOST with the machine name; force localhost for reliable local HTTPS binding.
+export HOST="localhost"
 export STORAGE_ROOT="${STORAGE_ROOT:-$(pwd)/apps/backend-api/storage}"
 export DEFAULT_OLLAMA_BASE_URL="${DEFAULT_OLLAMA_BASE_URL:-http://localhost:11434}"
 export HTTPS_KEY_FILE="${HTTPS_KEY_FILE:-$HOME/.rushstack/rushstack-serve.key}"

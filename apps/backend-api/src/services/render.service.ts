@@ -10,6 +10,9 @@ import {
   Paragraph,
   TabStopPosition,
   TabStopType,
+  Table,
+  TableCell,
+  TableRow,
   TextRun
 } from 'docx';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
@@ -21,6 +24,8 @@ interface RenderTheme {
   bodyColor: string;
   sectionColor: string;
 }
+
+type SectionChild = Paragraph | Table;
 
 const LOGO_PATH = path.resolve(process.cwd(), 'apps/backend-api/assets/BraineeSys_Logo_Black.svg');
 const PNG_FALLBACK_PIXEL = Buffer.from(
@@ -91,7 +96,7 @@ async function buildDocxSections(
   templateStyle: TemplateStyle,
   theme: RenderTheme,
   logoData?: Buffer
-): Promise<Paragraph[]> {
+): Promise<SectionChild[]> {
   if (templateStyle === 'consulting') {
     return buildConsultingTemplate(cv, theme, logoData);
   }
@@ -103,8 +108,8 @@ async function buildDocxSections(
   return buildStandardTemplate(cv, theme);
 }
 
-function buildStandardTemplate(cv: CVData, theme: RenderTheme): Paragraph[] {
-  const paragraphs: Paragraph[] = [
+function buildStandardTemplate(cv: CVData, theme: RenderTheme): SectionChild[] {
+  const paragraphs: SectionChild[] = [
     new Paragraph({
       spacing: { after: 120 },
       children: [new TextRun({ text: cv.fullName || 'CV Standardise', bold: true, size: 34, color: theme.titleColor })]
@@ -135,8 +140,8 @@ function buildStandardTemplate(cv: CVData, theme: RenderTheme): Paragraph[] {
   return paragraphs;
 }
 
-function buildModernTemplate(cv: CVData, theme: RenderTheme): Paragraph[] {
-  const paragraphs: Paragraph[] = [
+function buildModernTemplate(cv: CVData, theme: RenderTheme): SectionChild[] {
+  const paragraphs: SectionChild[] = [
     new Paragraph({
       shading: {
         fill: theme.sectionColor
@@ -169,11 +174,11 @@ function buildModernTemplate(cv: CVData, theme: RenderTheme): Paragraph[] {
   return paragraphs;
 }
 
-function buildConsultingTemplate(cv: CVData, theme: RenderTheme, logoData?: Buffer): Paragraph[] {
-  const paragraphs: Paragraph[] = [];
+function buildConsultingTemplate(cv: CVData, theme: RenderTheme, logoData?: Buffer): SectionChild[] {
+  const children: SectionChild[] = [];
 
   if (logoData) {
-    paragraphs.push(
+    children.push(
       new Paragraph({
         alignment: AlignmentType.RIGHT,
         spacing: { after: 120 },
@@ -195,7 +200,11 @@ function buildConsultingTemplate(cv: CVData, theme: RenderTheme, logoData?: Buff
     );
   }
 
-  paragraphs.push(
+  children.push(
+    new Paragraph({
+      spacing: { after: 80 },
+      children: [new TextRun({ text: 'CONSULTANT PROFILE', bold: true, color: theme.sectionColor, size: 18 })]
+    }),
     new Paragraph({
       spacing: { after: 100 },
       children: [new TextRun({ text: cv.fullName || 'CV Standardise', bold: true, size: 36, color: theme.titleColor })]
@@ -217,27 +226,13 @@ function buildConsultingTemplate(cv: CVData, theme: RenderTheme, logoData?: Buff
     })
   );
 
-  pushHeading(paragraphs, 'Profile', theme);
-  cv.summaryLines.forEach((line) => paragraphs.push(bodyParagraph(line, theme.bodyColor)));
+  children.push(buildConsultingBody(cv, theme));
 
-  pushHeading(paragraphs, 'Selected Expertise', theme);
-  pushBullets(paragraphs, cv.keyExpertise, theme.bodyColor, true);
-
-  pushHeading(paragraphs, 'Capabilities', theme);
-  for (const [category, skills] of Object.entries(cv.technicalSkills)) {
-    paragraphs.push(labeledParagraph(category, skills.join(', '), theme));
-  }
-
-  pushExperienceSection(paragraphs, cv, theme, 'consulting');
-  pushSimpleSection(paragraphs, 'Education', cv.education, theme);
-  pushSimpleSection(paragraphs, 'Languages', cv.languages, theme);
-  pushSimpleSection(paragraphs, 'Certifications', cv.certifications, theme);
-
-  return paragraphs;
+  return children;
 }
 
 function pushExperienceSection(
-  paragraphs: Paragraph[],
+  paragraphs: SectionChild[],
   cv: CVData,
   theme: RenderTheme,
   variant: TemplateStyle
@@ -288,12 +283,12 @@ function pushExperienceSection(
   }
 }
 
-function pushSimpleSection(paragraphs: Paragraph[], title: string, lines: string[], theme: RenderTheme): void {
+function pushSimpleSection(paragraphs: SectionChild[], title: string, lines: string[], theme: RenderTheme): void {
   pushHeading(paragraphs, title, theme);
   pushBullets(paragraphs, lines, theme.bodyColor, true);
 }
 
-function pushHeading(paragraphs: Paragraph[], title: string, theme: RenderTheme): void {
+function pushHeading(paragraphs: SectionChild[], title: string, theme: RenderTheme): void {
   paragraphs.push(
     new Paragraph({
       heading: HeadingLevel.HEADING_2,
@@ -311,7 +306,7 @@ function pushHeading(paragraphs: Paragraph[], title: string, theme: RenderTheme)
   );
 }
 
-function pushBullets(paragraphs: Paragraph[], lines: string[], color: string, compact: boolean): void {
+function pushBullets(paragraphs: SectionChild[], lines: string[], color: string, compact: boolean): void {
   lines
     .filter(Boolean)
     .forEach((line) => {
@@ -349,6 +344,84 @@ function sectionLabel(value: string, theme: RenderTheme): Paragraph {
     spacing: { before: 60, after: 30 },
     children: [new TextRun({ text: value, bold: true, color: theme.titleColor })]
   });
+}
+
+function buildConsultingBody(cv: CVData, theme: RenderTheme): Table {
+  return new Table({
+    width: { size: 100, type: 'pct' },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 30, type: 'pct' },
+            margins: { top: 120, bottom: 120, left: 120, right: 180 },
+            borders: noBorders(),
+            shading: { fill: 'F8FAFC' },
+            children: buildConsultingSidebar(cv, theme)
+          }),
+          new TableCell({
+            width: { size: 70, type: 'pct' },
+            margins: { top: 120, bottom: 120, left: 180, right: 60 },
+            borders: noBorders(),
+            children: buildConsultingMainColumn(cv, theme)
+          })
+        ]
+      })
+    ]
+  });
+}
+
+function buildConsultingSidebar(cv: CVData, theme: RenderTheme): Paragraph[] {
+  const sidebar: Paragraph[] = [];
+
+  pushSidebarHeading(sidebar, 'Snapshot', theme);
+  pushBullets(sidebar, cv.summaryLines.slice(0, 3), theme.bodyColor, true);
+
+  pushSidebarHeading(sidebar, 'Expertise', theme);
+  pushBullets(sidebar, cv.keyExpertise.slice(0, 8), theme.bodyColor, true);
+
+  pushSidebarHeading(sidebar, 'Languages', theme);
+  pushBullets(sidebar, cv.languages, theme.bodyColor, true);
+
+  pushSidebarHeading(sidebar, 'Certifications', theme);
+  pushBullets(sidebar, cv.certifications.slice(0, 8), theme.bodyColor, true);
+
+  return sidebar;
+}
+
+function buildConsultingMainColumn(cv: CVData, theme: RenderTheme): Paragraph[] {
+  const content: Paragraph[] = [];
+
+  pushHeading(content, 'Profile', theme);
+  cv.summaryLines.forEach((line) => content.push(bodyParagraph(line, theme.bodyColor)));
+
+  pushHeading(content, 'Capabilities', theme);
+  for (const [category, skills] of Object.entries(cv.technicalSkills)) {
+    content.push(labeledParagraph(category, skills.join(', '), theme));
+  }
+
+  pushExperienceSection(content, cv, theme, 'consulting');
+  pushSimpleSection(content, 'Education', cv.education, theme);
+
+  return content;
+}
+
+function pushSidebarHeading(paragraphs: Paragraph[], title: string, theme: RenderTheme): void {
+  paragraphs.push(
+    new Paragraph({
+      spacing: { before: 120, after: 60 },
+      children: [new TextRun({ text: title.toUpperCase(), bold: true, color: theme.sectionColor, size: 18 })]
+    })
+  );
+}
+
+function noBorders() {
+  return {
+    top: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+    bottom: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+    left: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+    right: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' }
+  };
 }
 
 function divider(): Paragraph {

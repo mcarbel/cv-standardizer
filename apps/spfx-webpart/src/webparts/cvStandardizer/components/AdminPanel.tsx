@@ -5,6 +5,8 @@ export interface AdminSettings {
   providerBaseUrl: string;
   defaultModel: string;
   apiKey: string;
+  showBackgroundImage: boolean;
+  backgroundImageUrl: string;
   outputLanguage: 'en' | 'fr';
   templateStyle: 'standard' | 'modern' | 'consulting';
   anonymizeCandidateName: boolean;
@@ -92,6 +94,8 @@ export default function AdminPanel(props: AdminPanelProps): JSX.Element {
       </p>
       <div style={styles.defaultsBox}>
         <div><strong>Current template defaults</strong></div>
+        <div>Background image: {settings.showBackgroundImage ? 'Enabled' : 'Disabled'}</div>
+        <div>Background URL: {settings.backgroundImageUrl || 'None'}</div>
         <div>Language: {settings.outputLanguage === 'fr' ? 'French' : 'English'}</div>
         <div>Template: {settings.templateStyle}</div>
         <div>Title: {settings.titleColor}</div>
@@ -127,6 +131,25 @@ export default function AdminPanel(props: AdminPanelProps): JSX.Element {
           style={styles.input}
           value={settings.defaultModel}
           onChange={(event) => updateField('defaultModel', event.target.value)}
+          type="text"
+        />
+      </label>
+
+      <label style={styles.checkboxLabel}>
+        <input
+          checked={settings.showBackgroundImage}
+          onChange={(event) => updateField('showBackgroundImage', event.target.checked)}
+          type="checkbox"
+        />
+        Show background image
+      </label>
+
+      <label style={styles.label}>
+        Background image URL
+        <input
+          style={styles.input}
+          value={settings.backgroundImageUrl}
+          onChange={(event) => updateField('backgroundImageUrl', event.target.value)}
           type="text"
         />
       </label>

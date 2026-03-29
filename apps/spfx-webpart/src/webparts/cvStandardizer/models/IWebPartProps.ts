@@ -4,6 +4,8 @@ export interface ICvStandardizerWebPartProps {
   defaultModel: string;
   providerBaseUrl: string;
   apiKey: string;
+  showBackgroundImage: boolean;
+  backgroundImageUrl: string;
   outputFormat: 'docx' | 'pdf' | 'markdown';
   outputLanguage: 'en' | 'fr';
   templateStyle: 'standard' | 'modern' | 'consulting';

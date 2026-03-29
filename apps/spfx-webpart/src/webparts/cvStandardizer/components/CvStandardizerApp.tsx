@@ -20,6 +20,8 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
     providerBaseUrl: webPartProps.providerBaseUrl,
     defaultModel: webPartProps.defaultModel,
     apiKey: webPartProps.apiKey,
+    showBackgroundImage: webPartProps.showBackgroundImage,
+    backgroundImageUrl: webPartProps.backgroundImageUrl,
     outputLanguage: webPartProps.outputLanguage,
     templateStyle: webPartProps.templateStyle,
     anonymizeCandidateName: webPartProps.anonymizeCandidateName,
@@ -32,6 +34,8 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
     webPartProps.providerBaseUrl,
     webPartProps.defaultModel,
     webPartProps.apiKey,
+    webPartProps.showBackgroundImage,
+    webPartProps.backgroundImageUrl,
     webPartProps.outputLanguage,
     webPartProps.templateStyle,
     webPartProps.anonymizeCandidateName,
@@ -49,6 +53,12 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
   const [debugEntries, setDebugEntries] = React.useState<DebugEntry[]>([]);
   const effectiveApiBaseUrl = React.useMemo(() => adminSettings.apiBaseUrl, [adminSettings.apiBaseUrl]);
   const client = React.useMemo(() => new ApiClient(effectiveApiBaseUrl), [effectiveApiBaseUrl]);
+  const shellStyle = React.useMemo<React.CSSProperties>(() => ({
+    ...styles.shell,
+    backgroundImage: adminSettings.showBackgroundImage && adminSettings.backgroundImageUrl
+      ? `linear-gradient(180deg, rgba(230, 237, 250, 0.84), rgba(240, 245, 255, 0.96)), url("${adminSettings.backgroundImageUrl}")`
+      : 'linear-gradient(180deg, #dde7fb 0%, #f8fbff 100%)'
+  }), [adminSettings.backgroundImageUrl, adminSettings.showBackgroundImage]);
 
   React.useEffect(() => {
     setAdminSettings(defaultSettings);
@@ -227,41 +237,61 @@ export default function CvStandardizerApp({ webPartProps }: Props): JSX.Element 
   }, [client, job]);
 
   return (
-    <section>
-      <h2>CV Standardizer</h2>
-      <p>Provider: {webPartProps.defaultProvider}</p>
-      <p>Model: {adminSettings.defaultModel}</p>
-      <p>Output language: {adminSettings.outputLanguage === 'fr' ? 'French' : 'English'}</p>
-      <p>Template: {adminSettings.templateStyle}</p>
-      <p>API URL: {effectiveApiBaseUrl}</p>
-      <p>Settings source: {settingsSource === 'browser' ? 'browser overrides' : 'web part properties'}</p>
-      {webPartProps.useLocalApiProxy ? <p>Proxy mode: prepared in configuration, but current runtime still uses the configured backend URL directly.</p> : null}
-      <button type="button" style={styles.toggleButton} onClick={() => setAdminVisible(!adminVisible)}>
-        {adminVisible ? 'Hide Admin Settings' : 'Show Admin Settings'}
-      </button>
-      {adminVisible ? (
-        <AdminPanel
-          initialSettings={adminSettings}
-          onSave={saveAdminSettings}
-          onReset={resetAdminSettings}
-          onTestConnections={testConnections}
-        />
-      ) : null}
-      <UploadPanel onUpload={handleUpload} />
-      <JobStatusPanel
-        jobId={job?.jobId}
-        status={job?.status}
-        progress={job?.progress}
-        errorMessage={job?.errorMessage}
-      />
-      <ResultPreview
-        apiBaseUrl={effectiveApiBaseUrl}
-        resultUrl={job?.outputDownloadUrl}
-        jsonUrl={job?.jsonDownloadUrl}
-      />
-      {webPartProps.enableDebugPanel ? (
-        <DebugPanel entries={debugEntries} onClear={() => setDebugEntries([])} />
-      ) : null}
+    <section style={shellStyle}>
+      <div style={styles.overlay}>
+        <div style={styles.hero}>
+          <div style={styles.heroTopRow}>
+            <div style={styles.metaPill}>CV Standardizer</div>
+            <button type="button" style={styles.toggleButton} onClick={() => setAdminVisible(!adminVisible)}>
+              {adminVisible ? 'Hide Admin Settings' : 'Show Admin Settings'}
+            </button>
+          </div>
+          <div style={styles.heroCopy}>
+            <h2 style={styles.heroTitle}>Upload CVs to be analyzed</h2>
+            <p style={styles.heroText}>
+              Drag and drop a candidate CV directly into the workspace, then generate a standardized output using
+              your configured provider, language, template, and styling rules.
+            </p>
+          </div>
+          <div style={styles.statusRibbon}>
+            <span>Provider: {webPartProps.defaultProvider}</span>
+            <span>Model: {adminSettings.defaultModel}</span>
+            <span>Language: {adminSettings.outputLanguage === 'fr' ? 'French' : 'English'}</span>
+            <span>Template: {adminSettings.templateStyle}</span>
+            <span>Settings: {settingsSource === 'browser' ? 'browser overrides' : 'web part properties'}</span>
+          </div>
+          {webPartProps.useLocalApiProxy ? (
+            <p style={styles.proxyNote}>
+              Proxy mode is prepared in configuration, but the current runtime still uses the configured backend URL directly.
+            </p>
+          ) : null}
+        </div>
+        {adminVisible ? (
+          <AdminPanel
+            initialSettings={adminSettings}
+            onSave={saveAdminSettings}
+            onReset={resetAdminSettings}
+            onTestConnections={testConnections}
+          />
+        ) : null}
+        <UploadPanel onUpload={handleUpload} />
+        <div style={styles.resultStack}>
+          <JobStatusPanel
+            jobId={job?.jobId}
+            status={job?.status}
+            progress={job?.progress}
+            errorMessage={job?.errorMessage}
+          />
+          <ResultPreview
+            apiBaseUrl={effectiveApiBaseUrl}
+            resultUrl={job?.outputDownloadUrl}
+            jsonUrl={job?.jsonDownloadUrl}
+          />
+        </div>
+        {webPartProps.enableDebugPanel ? (
+          <DebugPanel entries={debugEntries} onClear={() => setDebugEntries([])} />
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -283,6 +313,8 @@ function loadStoredAdminSettings(): AdminSettings | undefined {
       providerBaseUrl: parsed.providerBaseUrl || '',
       defaultModel: parsed.defaultModel || '',
       apiKey: parsed.apiKey || '',
+      showBackgroundImage: parsed.showBackgroundImage ?? true,
+      backgroundImageUrl: parsed.backgroundImageUrl || '',
       outputLanguage: (parsed.outputLanguage as AdminSettings['outputLanguage']) || 'en',
       templateStyle: (parsed.templateStyle as AdminSettings['templateStyle']) || 'standard',
       anonymizeCandidateName: Boolean(parsed.anonymizeCandidateName),
@@ -297,14 +329,90 @@ function loadStoredAdminSettings(): AdminSettings | undefined {
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
+  shell: {
+    position: 'relative',
+    minHeight: '100vh',
+    margin: '0 -24px',
+    padding: '40px 24px 56px',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat'
+  },
+  overlay: {
+    maxWidth: '1240px',
+    margin: '0 auto',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '24px'
+  },
+  hero: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '18px',
+    padding: '6px 2px 2px'
+  },
+  heroTopRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '16px'
+  },
+  metaPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    borderRadius: '999px',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: '10px 16px',
+    color: '#0f172a',
+    fontSize: '12px',
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    boxShadow: '0 10px 24px rgba(15, 23, 42, 0.08)'
+  },
+  heroCopy: {
+    maxWidth: '760px'
+  },
+  heroTitle: {
+    margin: '0 0 12px 0',
+    color: '#0b3b77',
+    fontSize: 'clamp(38px, 5vw, 72px)',
+    lineHeight: 0.98,
+    letterSpacing: '-0.04em'
+  },
+  heroText: {
+    margin: 0,
+    color: '#334155',
+    fontSize: '18px',
+    lineHeight: 1.7
+  },
+  statusRibbon: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '10px',
+    color: '#1e293b',
+    fontSize: '13px'
+  },
+  proxyNote: {
+    margin: 0,
+    color: '#475569',
+    fontSize: '13px'
+  },
   toggleButton: {
-    padding: '10px 14px',
-    borderRadius: '8px',
-    border: '1px solid #94a3b8',
-    backgroundColor: '#ffffff',
+    padding: '12px 18px',
+    borderRadius: '999px',
+    border: '1px solid rgba(15, 23, 42, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
     color: '#0f172a',
     cursor: 'pointer',
-    marginBottom: '16px'
+    fontWeight: 700,
+    boxShadow: '0 12px 24px rgba(15, 23, 42, 0.08)'
+  },
+  resultStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px'
   }
 };
 

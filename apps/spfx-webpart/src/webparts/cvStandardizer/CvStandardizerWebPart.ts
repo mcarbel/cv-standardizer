@@ -12,12 +12,16 @@ import {
 import CvStandardizerApp from './components/CvStandardizerApp';
 import type { ICvStandardizerWebPartProps } from './models/IWebPartProps';
 
+const defaultBackgroundImageUrl: string = require('./assets/CV-Standardizer.jpg');
+
 const DEFAULT_WEBPART_PROPS: ICvStandardizerWebPartProps = {
   apiBaseUrl: 'https://localhost:8787',
   defaultProvider: 'ollama',
   defaultModel: 'kimi-k2.5:cloud',
   providerBaseUrl: 'http://localhost:11434',
   apiKey: '',
+  showBackgroundImage: true,
+  backgroundImageUrl: defaultBackgroundImageUrl,
   outputFormat: 'docx',
   outputLanguage: 'en',
   templateStyle: 'consulting',
@@ -40,6 +44,8 @@ export default class CvStandardizerWebPart extends BaseClientSideWebPart<ICvStan
     this.properties.defaultModel = this.properties.defaultModel || DEFAULT_WEBPART_PROPS.defaultModel;
     this.properties.providerBaseUrl = this.properties.providerBaseUrl || DEFAULT_WEBPART_PROPS.providerBaseUrl;
     this.properties.apiKey = this.properties.apiKey || DEFAULT_WEBPART_PROPS.apiKey;
+    this.properties.showBackgroundImage = this.properties.showBackgroundImage ?? DEFAULT_WEBPART_PROPS.showBackgroundImage;
+    this.properties.backgroundImageUrl = this.properties.backgroundImageUrl || DEFAULT_WEBPART_PROPS.backgroundImageUrl;
     this.properties.outputFormat = this.properties.outputFormat || DEFAULT_WEBPART_PROPS.outputFormat;
     this.properties.outputLanguage = this.properties.outputLanguage || DEFAULT_WEBPART_PROPS.outputLanguage;
     this.properties.templateStyle = this.properties.templateStyle || DEFAULT_WEBPART_PROPS.templateStyle;
@@ -89,7 +95,9 @@ export default class CvStandardizerWebPart extends BaseClientSideWebPart<ICvStan
                 }),
                 PropertyPaneTextField('defaultModel', { label: 'Default model' }),
                 PropertyPaneTextField('providerBaseUrl', { label: 'Provider Base URL' }),
-                PropertyPaneTextField('apiKey', { label: 'API Key' })
+                PropertyPaneTextField('apiKey', { label: 'API Key' }),
+                PropertyPaneToggle('showBackgroundImage', { label: 'Show background image' }),
+                PropertyPaneTextField('backgroundImageUrl', { label: 'Background image URL' })
               ]
             },
             {

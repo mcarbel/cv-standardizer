@@ -54,6 +54,17 @@ Use the PnP PowerShell script to upload and publish the `.sppkg` to the tenant A
   -SiteUrl "https://contoso.sharepoint.com/sites/hr"
 ```
 
+On macOS with modern Entra authentication, you can provide an explicit app id and use device login:
+
+```powershell
+./scripts/deploy-appcatalog.ps1 `
+  -TenantAdminUrl "https://braineesysms365-admin.sharepoint.com" `
+  -Tenant "braineesysms365.onmicrosoft.com" `
+  -ClientId "9fb46f90-4038-4225-9241-0ced8ad3318b" `
+  -DeviceLogin `
+  -SiteUrl "https://braineesysms365.sharepoint.com/sites/CVTech2"
+```
+
 Requirements:
 
 - `PnP.PowerShell` installed locally

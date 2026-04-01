@@ -1,0 +1,59 @@
+{
+  "lists": [
+    {
+      "title": "OpenedJobs",
+      "templateType": 100,
+      "description": "Open recruitment opportunities displayed on the dashboard."
+    },
+    {
+      "title": "FilledJobs",
+      "templateType": 100,
+      "description": "Filled recruitment opportunities displayed on the dashboard."
+    },
+    {
+      "title": "StartedMissions",
+      "templateType": 100,
+      "description": "Started missions displayed on the dashboard."
+    },
+    {
+      "title": "EndingMissions",
+      "templateType": 100,
+      "description": "Missions ending in the selected period."
+    },
+    {
+      "title": "ActiveMissions",
+      "templateType": 100,
+      "description": "Active missions displayed in the monthly report."
+    },
+    {
+      "title": "DailyRateRanges",
+      "templateType": 100,
+      "description": "Daily rate range reference data."
+    },
+    {
+      "title": "WorkedDays",
+      "templateType": 100,
+      "description": "Worked days summary data."
+    },
+    {
+      "title": "EstimatedInvoices",
+      "templateType": 100,
+      "description": "Estimated invoice values displayed on the dashboard."
+    },
+    {
+      "title": "Simulations",
+      "templateType": 100,
+      "description": "Simulation records for CVTech2 operations."
+    },
+    {
+      "title": "Leaves",
+      "templateType": 100,
+      "description": "Leave tracking records."
+    },
+    {
+      "title": "Overtime",
+      "templateType": 100,
+      "description": "Overtime tracking records."
+    }
+  ]
+}

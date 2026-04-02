@@ -28,6 +28,7 @@ $themePath = Join-Path $templateRoot "theme/cvtech2-theme.json"
 $navigationPath = Join-Path $templateRoot "config/navigation.json"
 $listsPath = Join-Path $templateRoot "config/lists.json"
 $layoutPath = Join-Path $templateRoot "config/dashboard-layout.json"
+$cvTech2DashboardComponentId = "6d8292f3-bfeb-4d5d-8968-6d51a0811eca"
 
 if (-not (Get-Module -ListAvailable -Name PnP.PowerShell)) {
   throw "PnP.PowerShell is required. Install it with: Install-Module PnP.PowerShell -Scope CurrentUser"
@@ -95,7 +96,8 @@ function Ensure-QuickLaunchNode {
   $resolvedUrl = $Node.url
   if ($Node.url.StartsWith("/")) {
     $web = Get-PnPWeb
-    $resolvedUrl = "{0}{1}" -f $web.Url.TrimEnd('/'), $Node.url
+    $baseAuthority = ([System.Uri]$web.Url).GetLeftPart([System.UriPartial]::Authority)
+    $resolvedUrl = "{0}{1}" -f $baseAuthority.TrimEnd('/'), $Node.url
   }
 
   Add-PnPNavigationNode -Title $Node.title -Url $resolvedUrl -Location QuickLaunch -External | Out-Null
@@ -238,6 +240,49 @@ function Add-PageTextPartWithFallback {
   }
 }
 
+function Get-CVTech2DashboardComponent {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$PageName
+  )
+
+  $availableComponents = Get-PnPPageComponent -Page $PageName -ListAvailable
+  return $availableComponents | Where-Object {
+    $_.Id -eq $cvTech2DashboardComponentId -or $_.Name -eq "CVTech2 Dashboard"
+  } | Select-Object -First 1
+}
+
+function Add-CVTech2DashboardWebPart {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$PageName
+  )
+
+  $component = Get-CVTech2DashboardComponent -Page $PageName
+  if ($null -eq $component) {
+    Write-Warning "CVTech2 Dashboard SPFx component is not available on this site. Falling back to text-part provisioning."
+    return $false
+  }
+
+  Add-PnPPageSection -Page $PageName -SectionTemplate OneColumn | Out-Null
+
+  $properties = @{
+    brandLabel = "cvtech2"
+    greetingName = "Mario"
+    profileInitials = "MC"
+    overviewLabel = "3 months overview"
+    languagePrimary = "English"
+    languageSecondary = "Francais"
+    primaryColor = "#27c2c6"
+    secondaryColor = "#136d70"
+    accentTextColor = "#16323a"
+    surfaceColor = "#f3f7fb"
+  }
+
+  Add-PnPPageWebPart -Page $PageName -Section 1 -Column 1 -Component $component -WebPartProperties $properties | Out-Null
+  return $true
+}
+
 function Add-DashboardTextPart {
   param(
     [Parameter(Mandatory = $true)]
@@ -361,24 +406,26 @@ if ($null -ne $existingPage) {
 Add-PnPPage -Name $pageName -LayoutType Home -Title $layout.pageTitle | Out-Null
 Start-Sleep -Seconds 2
 
-$sectionIndex = 1
-foreach ($section in $layout.sections) {
-  switch ($section.type) {
-    "OneColumn" { Add-PnPPageSection -Page $pageName -SectionTemplate OneColumn | Out-Null }
-    "TwoColumn" { Add-PnPPageSection -Page $pageName -SectionTemplate TwoColumn | Out-Null }
-    default { Add-PnPPageSection -Page $pageName -SectionTemplate OneColumn | Out-Null }
-  }
-  Start-Sleep -Milliseconds 500
-
-  $columnIndex = 1
-  foreach ($content in $section.content) {
-    Add-DashboardTextPart -PageName $pageName -Section $sectionIndex -Column $columnIndex -Content $content
-    if ($section.type -eq "TwoColumn") {
-      $columnIndex++
+if (-not (Add-CVTech2DashboardWebPart -PageName $pageName)) {
+  $sectionIndex = 1
+  foreach ($section in $layout.sections) {
+    switch ($section.type) {
+      "OneColumn" { Add-PnPPageSection -Page $pageName -SectionTemplate OneColumn | Out-Null }
+      "TwoColumn" { Add-PnPPageSection -Page $pageName -SectionTemplate TwoColumn | Out-Null }
+      default { Add-PnPPageSection -Page $pageName -SectionTemplate OneColumn | Out-Null }
     }
-  }
+    Start-Sleep -Milliseconds 500
 
-  $sectionIndex++
+    $columnIndex = 1
+    foreach ($content in $section.content) {
+      Add-DashboardTextPart -PageName $pageName -Section $sectionIndex -Column $columnIndex -Content $content
+      if ($section.type -eq "TwoColumn") {
+        $columnIndex++
+      }
+    }
+
+    $sectionIndex++
+  }
 }
 
 Set-PnPHomePage -RootFolderRelativeUrl "SitePages/$pageName" | Out-Null

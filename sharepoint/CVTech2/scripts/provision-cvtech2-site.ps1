@@ -100,6 +100,50 @@ function Ensure-QuickLaunchNode {
   }
 }
 
+function Remove-QuickLaunchNodeTree {
+  param(
+    [Parameter(Mandatory = $true)]
+    $Node
+  )
+
+  if ($Node.Children) {
+    foreach ($child in @($Node.Children)) {
+      Remove-QuickLaunchNodeTree -Node $child
+    }
+  }
+
+  Remove-PnPNavigationNode -Identity $Node.Id -Force
+}
+
+function Reset-QuickLaunch {
+  param(
+    [Parameter(Mandatory = $true)]
+    [pscustomobject]$NavigationDefinition
+  )
+
+  if (-not ($NavigationDefinition.PSObject.Properties.Name -contains "replaceQuickLaunch") -or -not $NavigationDefinition.replaceQuickLaunch) {
+    return
+  }
+
+  $preserveTitles = @()
+  if ($NavigationDefinition.PSObject.Properties.Name -contains "preserveQuickLaunchTitles") {
+    $preserveTitles = @($NavigationDefinition.preserveQuickLaunchTitles)
+  }
+
+  $desiredTitles = @($NavigationDefinition.quickLaunch | ForEach-Object { $_.title })
+  $keepTitles = $desiredTitles + $preserveTitles
+
+  $existingNodes = @(Get-PnPNavigationNode -Location QuickLaunch)
+  foreach ($node in $existingNodes) {
+    if ($keepTitles -contains $node.Title) {
+      continue
+    }
+
+    Write-Host "Removing legacy quick launch node: $($node.Title)"
+    Remove-QuickLaunchNodeTree -Node $node
+  }
+}
+
 function Ensure-SitePageExistsFromUrl {
   param(
     [Parameter(Mandatory = $true)]
@@ -140,6 +184,39 @@ function Add-DashboardTextPart {
     [pscustomobject]$Content
   )
 
+  if ($Content.kind -eq "Hero") {
+    $eyebrow = ""
+    if ($Content.PSObject.Properties.Name -contains "eyebrow" -and $Content.eyebrow) {
+      $eyebrow = "<div style='font-size:14px;letter-spacing:0.14em;text-transform:uppercase;color:#27c2c6;font-weight:700;'>$($Content.eyebrow)</div>"
+    }
+
+    $supportingText = ""
+    if ($Content.PSObject.Properties.Name -contains "supportingText" -and $Content.supportingText) {
+      $supportingText = "<p style='margin:18px 0 0 0;font-size:18px;line-height:1.7;color:#47616b;max-width:980px;'>$($Content.supportingText)</p>"
+    }
+
+    $html = @"
+<div style='background:linear-gradient(135deg, rgba(39,194,198,0.13), rgba(19,109,112,0.05));border-radius:28px;padding:34px 40px;box-shadow:0 18px 45px rgba(15,23,42,0.08);'>
+  <div style='display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;'>
+    <div style='display:flex;align-items:center;gap:22px;'>
+      <div style='width:92px;height:92px;border-radius:999px;background:linear-gradient(135deg, #27c2c6, #169096);color:#ffffff;font-weight:800;font-size:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 24px rgba(39,194,198,0.28);'>MC</div>
+      <div>
+        $eyebrow
+        <h1 style='font-size:58px;line-height:1.02;margin:10px 0 0 0;color:#16323a;'>$($Content.title)</h1>
+        <p style='margin:18px 0 0 0;font-size:26px;color:#27c2c6;font-weight:700;'>$($Content.body)</p>
+      </div>
+    </div>
+    <div style='min-width:220px;text-align:right;'>
+      <div style='display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:18px;background:#ffffff;color:#27c2c6;font-size:28px;box-shadow:0 12px 24px rgba(15,23,42,0.08);'>!</div>
+    </div>
+  </div>
+  $supportingText
+</div>
+"@
+    Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+    return
+  }
+
   if ($Content.kind -eq "Text") {
     $html = "<div style='padding:12px 0;'><h1 style='font-size:54px;line-height:1;margin:0;color:#16323a;'>$($Content.title)</h1><p style='margin-top:18px;font-size:22px;color:#27c2c6;font-weight:700;'>$($Content.body)</p></div>"
     Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
@@ -151,18 +228,40 @@ function Add-DashboardTextPart {
     $subtitle = "<div style='font-size:13px;color:#4a5e66;margin-top:6px;'>$($Content.subtitle)</div>"
   }
 
+  $countValue = "0"
+  if ($Content.title -eq "Daily rate range") {
+    $countValue = "-"
+  } elseif ($Content.title -eq "Estimated invoice") {
+    $countValue = "0 EUR"
+  }
+
+  $iconLabel = ""
+  if ($Content.PSObject.Properties.Name -contains "icon" -and $Content.icon) {
+    $iconLabel = $Content.icon
+  }
+
   $background = "#ffffff"
   $textColor = "#16323a"
+  $secondaryColor = "#48616b"
+  $outline = "border:1px solid rgba(15,23,42,0.04);"
   if ($Content.accent -eq "primary") {
     $background = "linear-gradient(135deg, #27c2c6, #136d70)"
     $textColor = "#ffffff"
+    $secondaryColor = "rgba(255,255,255,0.8)"
+    $outline = "border:none;"
   }
 
-  $html = @"
-<div style='background:$background;border-radius:18px;padding:28px 32px;box-shadow:0 10px 26px rgba(15,23,42,0.06);min-height:120px;'>
-  <div style='font-size:14px;letter-spacing:0.08em;text-transform:uppercase;color:$textColor;opacity:0.75;'>$($Content.sourceList)</div>
-  <div style='font-size:22px;font-weight:700;color:$textColor;margin-top:10px;'>$($Content.title)</div>
-  $subtitle
+$html = @"
+<div style='background:$background;$outline border-radius:22px;padding:28px 30px;box-shadow:0 14px 34px rgba(15,23,42,0.06);min-height:150px;'>
+  <div style='display:flex;align-items:flex-start;justify-content:space-between;gap:18px;'>
+    <div>
+      <div style='font-size:14px;letter-spacing:0.08em;text-transform:uppercase;color:$secondaryColor;font-weight:700;'>$($Content.sourceList)</div>
+      <div style='font-size:54px;line-height:1;margin-top:10px;color:$textColor;font-weight:800;'>$countValue</div>
+      <div style='font-size:22px;font-weight:700;color:$textColor;margin-top:10px;'>$($Content.title)</div>
+      $subtitle
+    </div>
+    <div style='min-width:58px;height:58px;padding:0 12px;border-radius:16px;background:rgba(39,194,198,0.12);display:flex;align-items:center;justify-content:center;color:#15858b;font-size:12px;font-weight:800;letter-spacing:0.08em;'>$iconLabel</div>
+  </div>
 </div>
 "@
   Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
@@ -198,6 +297,8 @@ Set-PnPWebTheme -Theme $theme.name | Out-Null
 foreach ($list in $lists.lists) {
   Ensure-ListExists -ListDefinition $list
 }
+
+Reset-QuickLaunch -NavigationDefinition $navigation
 
 foreach ($node in $navigation.quickLaunch) {
   Ensure-SitePageExistsFromUrl -NodeUrl $node.url

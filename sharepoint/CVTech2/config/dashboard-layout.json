@@ -6,9 +6,11 @@
       "type": "OneColumn",
       "content": [
         {
-          "kind": "Text",
+          "kind": "Hero",
+          "eyebrow": "CVTech2 dashboard",
           "title": "Hello Mario",
-          "body": "3 months overview"
+          "body": "3 months overview",
+          "supportingText": "This operational cockpit brings together pipeline activity, missions, and invoicing signals in one clean SharePoint landing page."
         }
       ]
     },
@@ -19,12 +21,14 @@
           "kind": "Card",
           "title": "Opened jobs",
           "sourceList": "OpenedJobs",
+          "icon": "CHAT",
           "accent": "light"
         },
         {
           "kind": "Card",
           "title": "Filled jobs",
           "sourceList": "FilledJobs",
+          "icon": "BRIEFCASE",
           "accent": "light"
         }
       ]
@@ -36,6 +40,7 @@
           "kind": "Card",
           "title": "Started missions",
           "sourceList": "StartedMissions",
+          "icon": "ARROW_IN",
           "accent": "light"
         },
         {
@@ -43,6 +48,7 @@
           "title": "Ending missions",
           "sourceList": "EndingMissions",
           "subtitle": "In the next 3 months",
+          "icon": "ARROW_OUT",
           "accent": "light"
         }
       ]
@@ -64,12 +70,14 @@
           "kind": "Card",
           "title": "Active missions",
           "sourceList": "ActiveMissions",
+          "icon": "TARGET",
           "accent": "light"
         },
         {
           "kind": "Card",
           "title": "Daily rate range",
           "sourceList": "DailyRateRanges",
+          "icon": "EURO",
           "accent": "light"
         }
       ]
@@ -81,12 +89,14 @@
           "kind": "Card",
           "title": "Worked days",
           "sourceList": "WorkedDays",
+          "icon": "CHART",
           "accent": "light"
         },
         {
           "kind": "Card",
           "title": "Estimated invoice",
           "sourceList": "EstimatedInvoices",
+          "icon": "MONEY",
           "accent": "primary"
         }
       ]

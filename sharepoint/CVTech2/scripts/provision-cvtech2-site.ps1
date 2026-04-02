@@ -252,72 +252,14 @@ function Add-DashboardTextPart {
     [pscustomobject]$Content
   )
 
-  if ($Content.kind -eq "SectionHeading") {
-    $html = @"
-<div style='padding:8px 0 4px 0;'>
-  <div style='font-size:30px;line-height:1.2;font-weight:800;color:#27c2c6;'>$($Content.title)</div>
-  <div style='margin-top:8px;font-size:16px;line-height:1.65;color:#58707a;'>$($Content.body)</div>
-</div>
-"@
-    Add-PageTextPartWithFallback -PageName $PageName -Section $Section -Column $Column -PrimaryHtml $html -FallbackHtml "<h2>$($Content.title)</h2><p>$($Content.body)</p>"
-    return
-  }
-
-  if ($Content.kind -eq "Hero") {
-    $eyebrow = ""
-    if ($Content.PSObject.Properties.Name -contains "eyebrow" -and $Content.eyebrow) {
-      $eyebrow = "<div style='font-size:14px;letter-spacing:0.14em;text-transform:uppercase;color:#27c2c6;font-weight:700;'>$($Content.eyebrow)</div>"
-    }
-
-    $supportingText = ""
-    if ($Content.PSObject.Properties.Name -contains "supportingText" -and $Content.supportingText) {
-      $supportingText = "<p style='margin:18px 0 0 0;font-size:18px;line-height:1.7;color:#47616b;max-width:980px;'>$($Content.supportingText)</p>"
-    }
-
-    $html = @"
-<div style='background:linear-gradient(135deg, #f1fcfc, #f8ffff);border:1px solid #d7f4f4;border-radius:28px;padding:30px 34px;box-shadow:0 16px 38px rgba(15,23,42,0.06);min-height:220px;'>
-  <div style='font-size:14px;letter-spacing:0.14em;text-transform:uppercase;color:#27c2c6;font-weight:700;'>$($Content.eyebrow)</div>
-  <div style='display:flex;align-items:center;gap:18px;margin-top:18px;'>
-    <div style='width:82px;height:82px;border-radius:999px;background:linear-gradient(135deg, #27c2c6, #169096);color:#ffffff;font-size:30px;font-weight:800;display:flex;align-items:center;justify-content:center;'>MC</div>
-    <div style='font-size:58px;line-height:1;font-weight:800;color:#16323a;'>$($Content.title)</div>
-  </div>
-  <div style='margin-top:14px;font-size:24px;font-weight:700;color:#27c2c6;'>$($Content.body)</div>
-  <div style='margin-top:18px;font-size:18px;line-height:1.7;color:#47616b;'>$($Content.supportingText)</div>
-</div>
-"@
-    $fallbackHtml = "<div><div style='font-size:12px;text-transform:uppercase;color:#27c2c6;font-weight:700;'>$($Content.eyebrow)</div><h1>$($Content.title)</h1><p><strong>$($Content.body)</strong></p><p>$($Content.supportingText)</p></div>"
-    Add-PageTextPartWithFallback -PageName $PageName -Section $Section -Column $Column -PrimaryHtml $html -FallbackHtml $fallbackHtml
-    return
-  }
-
-  if ($Content.kind -eq "UtilityPanel") {
-    $html = @"
-<div style='background:#ffffff;border:1px solid rgba(21,133,139,0.12);border-radius:24px;padding:26px 26px 22px 26px;box-shadow:0 16px 34px rgba(15,23,42,0.06);min-height:220px;'>
-  <div style='display:flex;align-items:center;gap:16px;'>
-    <div style='width:70px;height:70px;border-radius:999px;background:#27c2c6;color:#ffffff;font-size:26px;font-weight:800;display:flex;align-items:center;justify-content:center;'>$($Content.profileInitials)</div>
-    <div>
-      <div style='font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:#6b8790;font-weight:700;'>Profile</div>
-      <div style='margin-top:6px;font-size:24px;font-weight:800;color:#16323a;'>$($Content.profileLabel)</div>
-    </div>
-  </div>
-  <div style='margin-top:22px;padding:14px 16px;border-radius:18px;background:#f6fbfb;border:1px solid #e0f4f4;'>
-    <div style='font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#6b8790;font-weight:700;'>$($Content.statusLabel)</div>
-    <div style='margin-top:6px;font-size:20px;font-weight:800;color:#16323a;'>$($Content.statusValue)</div>
-  </div>
-  <div style='margin-top:18px;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#6b8790;font-weight:700;'>$($Content.languageTitle)</div>
-  <div style='margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;'>
-    <div style='padding:10px 14px;border-radius:999px;background:#27c2c6;color:#ffffff;font-size:14px;font-weight:700;'>$($Content.languagePrimary)</div>
-    <div style='padding:10px 14px;border-radius:999px;background:#edf7f7;color:#1f5960;font-size:14px;font-weight:700;border:1px solid #d7eeee;'>$($Content.languageSecondary)</div>
-  </div>
-</div>
-"@
-    $fallbackHtml = "<div><p><strong>$($Content.profileLabel)</strong></p><p>$($Content.statusLabel): $($Content.statusValue)</p><p>$($Content.languageTitle): $($Content.languagePrimary) / $($Content.languageSecondary)</p></div>"
-    Add-PageTextPartWithFallback -PageName $PageName -Section $Section -Column $Column -PrimaryHtml $html -FallbackHtml $fallbackHtml
-    return
-  }
-
   if ($Content.kind -eq "Text") {
-    $html = "<div style='padding:12px 0;'><h1 style='font-size:54px;line-height:1;margin:0;color:#16323a;'>$($Content.title)</h1><p style='margin-top:18px;font-size:22px;color:#27c2c6;font-weight:700;'>$($Content.body)</p></div>"
+    $fontSize = "54px"
+    $bodySize = "22px"
+    if ($Content.title -eq "3 months overview" -or $Content.title -eq "Monthly report" -or $Content.title -eq "Dashboard ready") {
+      $fontSize = "30px"
+      $bodySize = "16px"
+    }
+    $html = "<div style='padding:12px 0;'><h1 style='font-size:$fontSize;line-height:1.15;margin:0;color:#16323a;'>$($Content.title)</h1><p style='margin-top:18px;font-size:$bodySize;color:#27c2c6;font-weight:700;'>$($Content.body)</p></div>"
     Add-PageTextPartWithFallback -PageName $PageName -Section $Section -Column $Column -PrimaryHtml $html -FallbackHtml "<h1>$($Content.title)</h1><p>$($Content.body)</p>"
     return
   }

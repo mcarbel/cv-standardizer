@@ -6,21 +6,14 @@
       "type": "TwoColumn",
       "content": [
         {
-          "kind": "Hero",
-          "eyebrow": "CVTech2 dashboard",
+          "kind": "Text",
           "title": "Hello Mario",
-          "body": "3 months overview",
-          "supportingText": "This operational cockpit brings together pipeline activity, missions, and invoicing signals in one clean SharePoint landing page."
+          "body": "3 months overview"
         },
         {
-          "kind": "UtilityPanel",
-          "profileInitials": "MC",
-          "profileLabel": "Mario Consultant",
-          "statusLabel": "Dashboard ready",
-          "statusValue": "0 new alerts",
-          "languageTitle": "Languages",
-          "languagePrimary": "English",
-          "languageSecondary": "Francais"
+          "kind": "Text",
+          "title": "Dashboard ready",
+          "body": "Profile: Mario Consultant | Languages: English / Francais"
         }
       ]
     },
@@ -28,7 +21,7 @@
       "type": "OneColumn",
       "content": [
         {
-          "kind": "SectionHeading",
+          "kind": "Text",
           "title": "3 months overview",
           "body": "Operational indicators for staffing, delivery flow, and near-term mission activity."
         }
@@ -77,7 +70,7 @@
       "type": "OneColumn",
       "content": [
         {
-          "kind": "SectionHeading",
+          "kind": "Text",
           "title": "Monthly report",
           "body": "Commercial traction, delivery effort, and invoicing visibility for the current reporting period."
         }

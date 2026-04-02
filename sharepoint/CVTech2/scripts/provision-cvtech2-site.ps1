@@ -93,14 +93,7 @@ function Ensure-QuickLaunchNode {
     return
   }
 
-  $resolvedUrl = $Node.url
-  if ($Node.url.StartsWith("/")) {
-    $web = Get-PnPWeb
-    $baseAuthority = ([System.Uri]$web.Url).GetLeftPart([System.UriPartial]::Authority)
-    $resolvedUrl = "{0}{1}" -f $baseAuthority.TrimEnd('/'), $Node.url
-  }
-
-  Add-PnPNavigationNode -Title $Node.title -Url $resolvedUrl -Location QuickLaunch -External | Out-Null
+  Add-PnPNavigationNode -Title $Node.title -Url $Node.url -Location QuickLaunch -External | Out-Null
 }
 
 function Remove-QuickLaunchNodeTree {
@@ -240,47 +233,34 @@ function Add-PageTextPartWithFallback {
   }
 }
 
-function Get-CVTech2DashboardComponent {
-  param(
-    [Parameter(Mandatory = $true)]
-    [string]$PageName
-  )
-
-  $availableComponents = Get-PnPPageComponent -Page $PageName -ListAvailable
-  return $availableComponents | Where-Object {
-    $_.Id -eq $cvTech2DashboardComponentId -or $_.Name -eq "CVTech2 Dashboard"
-  } | Select-Object -First 1
-}
-
 function Add-CVTech2DashboardWebPart {
   param(
     [Parameter(Mandatory = $true)]
     [string]$PageName
   )
 
-  $component = Get-CVTech2DashboardComponent -Page $PageName
-  if ($null -eq $component) {
+  try {
+    Add-PnPPageSection -Page $PageName -SectionTemplate OneColumn | Out-Null
+
+    $properties = @{
+      brandLabel = "cvtech2"
+      greetingName = "Mario"
+      profileInitials = "MC"
+      overviewLabel = "3 months overview"
+      languagePrimary = "English"
+      languageSecondary = "Francais"
+      primaryColor = "#27c2c6"
+      secondaryColor = "#136d70"
+      accentTextColor = "#16323a"
+      surfaceColor = "#f3f7fb"
+    }
+
+    Add-PnPPageWebPart -Page $PageName -Section 1 -Column 1 -Component $cvTech2DashboardComponentId -WebPartProperties $properties | Out-Null
+    return $true
+  } catch {
     Write-Warning "CVTech2 Dashboard SPFx component is not available on this site. Falling back to text-part provisioning."
     return $false
   }
-
-  Add-PnPPageSection -Page $PageName -SectionTemplate OneColumn | Out-Null
-
-  $properties = @{
-    brandLabel = "cvtech2"
-    greetingName = "Mario"
-    profileInitials = "MC"
-    overviewLabel = "3 months overview"
-    languagePrimary = "English"
-    languageSecondary = "Francais"
-    primaryColor = "#27c2c6"
-    secondaryColor = "#136d70"
-    accentTextColor = "#16323a"
-    surfaceColor = "#f3f7fb"
-  }
-
-  Add-PnPPageWebPart -Page $PageName -Section 1 -Column 1 -Component $component -WebPartProperties $properties | Out-Null
-  return $true
 }
 
 function Add-DashboardTextPart {

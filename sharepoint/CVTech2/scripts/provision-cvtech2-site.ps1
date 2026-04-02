@@ -218,6 +218,19 @@ function Add-DashboardTextPart {
     [pscustomobject]$Content
   )
 
+  if ($Content.kind -eq "SectionHeading") {
+    $html = @"
+<div style='padding:8px 0 4px 0;'>
+  <div style='font-size:30px;line-height:1.2;font-weight:800;color:#27c2c6;'>$($Content.title)</div>
+  <div style='margin-top:8px;font-size:16px;line-height:1.65;color:#58707a;'>$($Content.body)</div>
+</div>
+"@
+    Invoke-WithRetry -ScriptBlock {
+      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+    }
+    return
+  }
+
   if ($Content.kind -eq "Hero") {
     $eyebrow = ""
     if ($Content.PSObject.Properties.Name -contains "eyebrow" -and $Content.eyebrow) {
@@ -230,11 +243,41 @@ function Add-DashboardTextPart {
     }
 
     $html = @"
-<div style='background-color:#f2fbfb;border:1px solid #d7f4f4;border-radius:24px;padding:28px 32px;'>
+<div style='background:linear-gradient(135deg, #f1fcfc, #f8ffff);border:1px solid #d7f4f4;border-radius:28px;padding:30px 34px;box-shadow:0 16px 38px rgba(15,23,42,0.06);min-height:220px;'>
   <div style='font-size:14px;letter-spacing:0.14em;text-transform:uppercase;color:#27c2c6;font-weight:700;'>$($Content.eyebrow)</div>
-  <div style='margin-top:18px;font-size:64px;line-height:1;font-weight:800;color:#16323a;'>$($Content.title)</div>
+  <div style='display:flex;align-items:center;gap:18px;margin-top:18px;'>
+    <div style='width:82px;height:82px;border-radius:999px;background:linear-gradient(135deg, #27c2c6, #169096);color:#ffffff;font-size:30px;font-weight:800;display:flex;align-items:center;justify-content:center;'>MC</div>
+    <div style='font-size:58px;line-height:1;font-weight:800;color:#16323a;'>$($Content.title)</div>
+  </div>
   <div style='margin-top:14px;font-size:24px;font-weight:700;color:#27c2c6;'>$($Content.body)</div>
   <div style='margin-top:18px;font-size:18px;line-height:1.7;color:#47616b;'>$($Content.supportingText)</div>
+</div>
+"@
+    Invoke-WithRetry -ScriptBlock {
+      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+    }
+    return
+  }
+
+  if ($Content.kind -eq "UtilityPanel") {
+    $html = @"
+<div style='background:#ffffff;border:1px solid rgba(21,133,139,0.12);border-radius:24px;padding:26px 26px 22px 26px;box-shadow:0 16px 34px rgba(15,23,42,0.06);min-height:220px;'>
+  <div style='display:flex;align-items:center;gap:16px;'>
+    <div style='width:70px;height:70px;border-radius:999px;background:#27c2c6;color:#ffffff;font-size:26px;font-weight:800;display:flex;align-items:center;justify-content:center;'>$($Content.profileInitials)</div>
+    <div>
+      <div style='font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:#6b8790;font-weight:700;'>Profile</div>
+      <div style='margin-top:6px;font-size:24px;font-weight:800;color:#16323a;'>$($Content.profileLabel)</div>
+    </div>
+  </div>
+  <div style='margin-top:22px;padding:14px 16px;border-radius:18px;background:#f6fbfb;border:1px solid #e0f4f4;'>
+    <div style='font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#6b8790;font-weight:700;'>$($Content.statusLabel)</div>
+    <div style='margin-top:6px;font-size:20px;font-weight:800;color:#16323a;'>$($Content.statusValue)</div>
+  </div>
+  <div style='margin-top:18px;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#6b8790;font-weight:700;'>$($Content.languageTitle)</div>
+  <div style='margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;'>
+    <div style='padding:10px 14px;border-radius:999px;background:#27c2c6;color:#ffffff;font-size:14px;font-weight:700;'>$($Content.languagePrimary)</div>
+    <div style='padding:10px 14px;border-radius:999px;background:#edf7f7;color:#1f5960;font-size:14px;font-weight:700;border:1px solid #d7eeee;'>$($Content.languageSecondary)</div>
+  </div>
 </div>
 "@
     Invoke-WithRetry -ScriptBlock {
@@ -272,15 +315,19 @@ function Add-DashboardTextPart {
   $textColor = "#16323a"
   $secondaryColor = "#48616b"
   $outline = "border:1px solid rgba(15,23,42,0.04);"
+  $iconBackground = "rgba(39,194,198,0.12)"
+  $iconColor = "#15858b"
   if ($Content.accent -eq "primary") {
     $background = "linear-gradient(135deg, #27c2c6, #136d70)"
     $textColor = "#ffffff"
     $secondaryColor = "rgba(255,255,255,0.8)"
     $outline = "border:none;"
+    $iconBackground = "rgba(255,255,255,0.18)"
+    $iconColor = "#ffffff"
   }
 
 $html = @"
-<div style='background:$background;$outline border-radius:22px;padding:28px 30px;box-shadow:0 14px 34px rgba(15,23,42,0.06);min-height:150px;'>
+<div style='background:$background;$outline border-radius:22px;padding:30px 30px;box-shadow:0 14px 34px rgba(15,23,42,0.06);min-height:158px;'>
   <div style='display:flex;align-items:flex-start;justify-content:space-between;gap:18px;'>
     <div>
       <div style='font-size:14px;letter-spacing:0.08em;text-transform:uppercase;color:$secondaryColor;font-weight:700;'>$($Content.sourceList)</div>
@@ -288,7 +335,7 @@ $html = @"
       <div style='font-size:22px;font-weight:700;color:$textColor;margin-top:10px;'>$($Content.title)</div>
       $subtitle
     </div>
-    <div style='min-width:58px;height:58px;padding:0 12px;border-radius:16px;background:rgba(39,194,198,0.12);display:flex;align-items:center;justify-content:center;color:#15858b;font-size:12px;font-weight:800;letter-spacing:0.08em;'>$iconLabel</div>
+    <div style='min-width:58px;height:58px;padding:0 12px;border-radius:16px;background:$iconBackground;display:flex;align-items:center;justify-content:center;color:$iconColor;font-size:12px;font-weight:800;letter-spacing:0.08em;'>$iconLabel</div>
   </div>
 </div>
 "@

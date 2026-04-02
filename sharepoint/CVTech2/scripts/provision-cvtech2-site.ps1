@@ -408,5 +408,9 @@ if (-not (Add-CVTech2DashboardWebPart -PageName $pageName)) {
   }
 }
 
+if (Get-Command Publish-PnPPage -ErrorAction SilentlyContinue) {
+  Publish-PnPPage -Identity $pageName | Out-Null
+}
+
 Set-PnPHomePage -RootFolderRelativeUrl "SitePages/$pageName" | Out-Null
 Write-Host "CVTech2 site template applied."

@@ -2,7 +2,7 @@
   "replaceQuickLaunch": true,
   "preserveQuickLaunchTitles": [],
   "quickLaunch": [
-    { "title": "Dashboard", "url": "/sites/CVTech2/SitePages/Home.aspx" },
+    { "title": "Dashboard", "url": "/sites/CVTech2/SitePages/Dashboard.aspx" },
     { "title": "My Profile", "url": "/sites/CVTech2/SitePages/My-Profile.aspx" },
     { "title": "Jobs", "url": "/sites/CVTech2/Lists/OpenedJobs/AllItems.aspx" },
     { "title": "Simulations", "url": "/sites/CVTech2/Lists/Simulations/AllItems.aspx" },
@@ -11,7 +11,7 @@
     { "title": "Overtime", "url": "/sites/CVTech2/Lists/Overtime/AllItems.aspx" }
   ],
   "footerLinks": [
-    { "title": "English", "url": "/sites/CVTech2/SitePages/Home.aspx?lang=en" },
-    { "title": "Francais", "url": "/sites/CVTech2/SitePages/Home.aspx?lang=fr" }
+    { "title": "English", "url": "/sites/CVTech2/SitePages/Dashboard.aspx?lang=en" },
+    { "title": "Francais", "url": "/sites/CVTech2/SitePages/Dashboard.aspx?lang=fr" }
   ]
 }

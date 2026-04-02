@@ -1,0 +1,95 @@
+{
+  "pageName": "Home.aspx",
+  "pageTitle": "CVTech2 Dashboard",
+  "sections": [
+    {
+      "type": "OneColumn",
+      "content": [
+        {
+          "kind": "Text",
+          "title": "Hello Mario",
+          "body": "3 months overview"
+        }
+      ]
+    },
+    {
+      "type": "TwoColumn",
+      "content": [
+        {
+          "kind": "Card",
+          "title": "Opened jobs",
+          "sourceList": "OpenedJobs",
+          "accent": "light"
+        },
+        {
+          "kind": "Card",
+          "title": "Filled jobs",
+          "sourceList": "FilledJobs",
+          "accent": "light"
+        }
+      ]
+    },
+    {
+      "type": "TwoColumn",
+      "content": [
+        {
+          "kind": "Card",
+          "title": "Started missions",
+          "sourceList": "StartedMissions",
+          "accent": "light"
+        },
+        {
+          "kind": "Card",
+          "title": "Ending missions",
+          "sourceList": "EndingMissions",
+          "subtitle": "In the next 3 months",
+          "accent": "light"
+        }
+      ]
+    },
+    {
+      "type": "OneColumn",
+      "content": [
+        {
+          "kind": "Text",
+          "title": "Monthly report",
+          "body": ""
+        }
+      ]
+    },
+    {
+      "type": "TwoColumn",
+      "content": [
+        {
+          "kind": "Card",
+          "title": "Active missions",
+          "sourceList": "ActiveMissions",
+          "accent": "light"
+        },
+        {
+          "kind": "Card",
+          "title": "Daily rate range",
+          "sourceList": "DailyRateRanges",
+          "accent": "light"
+        }
+      ]
+    },
+    {
+      "type": "TwoColumn",
+      "content": [
+        {
+          "kind": "Card",
+          "title": "Worked days",
+          "sourceList": "WorkedDays",
+          "accent": "light"
+        },
+        {
+          "kind": "Card",
+          "title": "Estimated invoice",
+          "sourceList": "EstimatedInvoices",
+          "accent": "primary"
+        }
+      ]
+    }
+  ]
+}

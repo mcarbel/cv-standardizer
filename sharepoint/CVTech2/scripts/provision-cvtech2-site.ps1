@@ -92,12 +92,13 @@ function Ensure-QuickLaunchNode {
     return
   }
 
-  try {
-    Add-PnPNavigationNode -Title $Node.title -Url $Node.url -Location QuickLaunch | Out-Null
-  } catch {
-    Write-Warning "Navigation node '$($Node.title)' could not be added as an internal link. Retrying as external."
-    Add-PnPNavigationNode -Title $Node.title -Url $Node.url -Location QuickLaunch -External | Out-Null
+  $resolvedUrl = $Node.url
+  if ($Node.url.StartsWith("/")) {
+    $web = Get-PnPWeb
+    $resolvedUrl = "{0}{1}" -f $web.Url.TrimEnd('/'), $Node.url
   }
+
+  Add-PnPNavigationNode -Title $Node.title -Url $resolvedUrl -Location QuickLaunch -External | Out-Null
 }
 
 function Remove-QuickLaunchNodeTree {

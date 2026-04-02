@@ -1,0 +1,72 @@
+{
+  "id": "6d8292f3-bfeb-4d5d-8968-6d51a0811eca",
+  "alias": "CvTech2DashboardWebPart",
+  "componentType": "WebPart",
+  "version": "0.1.0",
+  "manifestVersion": 2,
+  "requiresCustomScript": false,
+  "supportedHosts": [
+    "SharePointWebPart",
+    "SharePointFullPage"
+  ],
+  "supportsThemeVariants": true,
+  "preconfiguredEntries": [
+    {
+      "groupId": "1df6b71f-5d0f-4c30-ae0b-b5fd425c2f01",
+      "group": {
+        "default": "Business"
+      },
+      "title": {
+        "default": "CVTech2 Dashboard"
+      },
+      "description": {
+        "default": "Native SPFx dashboard web part for the CVTech2 SharePoint site."
+      },
+      "officeFabricIconFontName": "BIDashboard",
+      "properties": {
+        "brandLabel": "cvtech2",
+        "greetingName": "Mario",
+        "profileInitials": "MC",
+        "overviewLabel": "3 months overview",
+        "languagePrimary": "English",
+        "languageSecondary": "Francais",
+        "primaryColor": "#27c2c6",
+        "secondaryColor": "#136d70",
+        "accentTextColor": "#16323a",
+        "surfaceColor": "#f3f7fb"
+      }
+    }
+  ],
+  "loaderConfig": {
+    "internalModuleBaseUrls": [
+      "https://localhost:4321/dist/"
+    ],
+    "entryModuleId": "cvtech2-dashboard-web-part",
+    "scriptResources": {
+      "cvtech2-dashboard-web-part": {
+        "type": "path",
+        "path": "cvtech2-dashboard-web-part.js"
+      },
+      "react": {
+        "type": "component",
+        "id": "0d910c1c-13b9-4e1c-9aa4-b008c5e42d7d",
+        "version": "17.0.1"
+      },
+      "react-dom": {
+        "type": "component",
+        "id": "aa0a46ec-1505-43cd-a44a-93f3a5aa460a",
+        "version": "17.0.1"
+      },
+      "@microsoft/sp-webpart-base": {
+        "type": "component",
+        "id": "974a7777-0990-4136-8fa6-95d80114c2e0",
+        "version": "1.21.1"
+      },
+      "@microsoft/sp-property-pane": {
+        "type": "component",
+        "id": "f9e737b7-f0df-4597-ba8c-3060f82380db",
+        "version": "1.21.1"
+      }
+    }
+  }
+}

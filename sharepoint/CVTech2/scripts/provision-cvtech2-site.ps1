@@ -28,6 +28,7 @@ $themePath = Join-Path $templateRoot "theme/cvtech2-theme.json"
 $navigationPath = Join-Path $templateRoot "config/navigation.json"
 $listsPath = Join-Path $templateRoot "config/lists.json"
 $layoutPath = Join-Path $templateRoot "config/dashboard-layout.json"
+$cvTech2DashboardComponentId = "6d8292f3-bfeb-4d5d-8968-6d51a0811eca"
 
 if (-not (Get-Module -ListAvailable -Name PnP.PowerShell)) {
   throw "PnP.PowerShell is required. Install it with: Install-Module PnP.PowerShell -Scope CurrentUser"
@@ -92,12 +93,7 @@ function Ensure-QuickLaunchNode {
     return
   }
 
-  try {
-    Add-PnPNavigationNode -Title $Node.title -Url $Node.url -Location QuickLaunch | Out-Null
-  } catch {
-    Write-Warning "Navigation node '$($Node.title)' could not be added as an internal link. Retrying as external."
-    Add-PnPNavigationNode -Title $Node.title -Url $Node.url -Location QuickLaunch -External | Out-Null
-  }
+  Add-PnPNavigationNode -Title $Node.title -Url $Node.url -Location QuickLaunch -External | Out-Null
 }
 
 function Remove-QuickLaunchNodeTree {
@@ -203,6 +199,70 @@ function Invoke-WithRetry {
   }
 }
 
+function Add-PageTextPartWithFallback {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$PageName,
+
+    [Parameter(Mandatory = $true)]
+    [int]$Section,
+
+    [Parameter(Mandatory = $true)]
+    [int]$Column,
+
+    [Parameter(Mandatory = $true)]
+    [string]$PrimaryHtml,
+
+    [Parameter(Mandatory = $false)]
+    [string]$FallbackHtml
+  )
+
+  try {
+    Invoke-WithRetry -ScriptBlock {
+      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $PrimaryHtml | Out-Null
+    }
+  } catch {
+    if (-not $FallbackHtml) {
+      throw
+    }
+
+    Write-Warning "Rich text part failed. Falling back to a simpler SharePoint-safe block."
+    Invoke-WithRetry -ScriptBlock {
+      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $FallbackHtml | Out-Null
+    }
+  }
+}
+
+function Add-CVTech2DashboardWebPart {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$PageName
+  )
+
+  try {
+    Add-PnPPageSection -Page $PageName -SectionTemplate OneColumn | Out-Null
+
+    $properties = @{
+      brandLabel = "cvtech2"
+      greetingName = "Mario"
+      profileInitials = "MC"
+      overviewLabel = "3 months overview"
+      languagePrimary = "English"
+      languageSecondary = "Francais"
+      primaryColor = "#27c2c6"
+      secondaryColor = "#136d70"
+      accentTextColor = "#16323a"
+      surfaceColor = "#f3f7fb"
+    }
+
+    Add-PnPPageWebPart -Page $PageName -Section 1 -Column 1 -Component $cvTech2DashboardComponentId -WebPartProperties $properties | Out-Null
+    return $true
+  } catch {
+    Write-Warning "CVTech2 Dashboard SPFx component is not available on this site. Falling back to text-part provisioning."
+    return $false
+  }
+}
+
 function Add-DashboardTextPart {
   param(
     [Parameter(Mandatory = $true)]
@@ -218,36 +278,15 @@ function Add-DashboardTextPart {
     [pscustomobject]$Content
   )
 
-  if ($Content.kind -eq "Hero") {
-    $eyebrow = ""
-    if ($Content.PSObject.Properties.Name -contains "eyebrow" -and $Content.eyebrow) {
-      $eyebrow = "<div style='font-size:14px;letter-spacing:0.14em;text-transform:uppercase;color:#27c2c6;font-weight:700;'>$($Content.eyebrow)</div>"
-    }
-
-    $supportingText = ""
-    if ($Content.PSObject.Properties.Name -contains "supportingText" -and $Content.supportingText) {
-      $supportingText = "<p style='margin:18px 0 0 0;font-size:18px;line-height:1.7;color:#47616b;max-width:980px;'>$($Content.supportingText)</p>"
-    }
-
-    $html = @"
-<div style='background-color:#f2fbfb;border:1px solid #d7f4f4;border-radius:24px;padding:28px 32px;'>
-  <div style='font-size:14px;letter-spacing:0.14em;text-transform:uppercase;color:#27c2c6;font-weight:700;'>$($Content.eyebrow)</div>
-  <div style='margin-top:18px;font-size:64px;line-height:1;font-weight:800;color:#16323a;'>$($Content.title)</div>
-  <div style='margin-top:14px;font-size:24px;font-weight:700;color:#27c2c6;'>$($Content.body)</div>
-  <div style='margin-top:18px;font-size:18px;line-height:1.7;color:#47616b;'>$($Content.supportingText)</div>
-</div>
-"@
-    Invoke-WithRetry -ScriptBlock {
-      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
-    }
-    return
-  }
-
   if ($Content.kind -eq "Text") {
-    $html = "<div style='padding:12px 0;'><h1 style='font-size:54px;line-height:1;margin:0;color:#16323a;'>$($Content.title)</h1><p style='margin-top:18px;font-size:22px;color:#27c2c6;font-weight:700;'>$($Content.body)</p></div>"
-    Invoke-WithRetry -ScriptBlock {
-      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+    $fontSize = "54px"
+    $bodySize = "22px"
+    if ($Content.title -eq "3 months overview" -or $Content.title -eq "Monthly report" -or $Content.title -eq "Dashboard ready") {
+      $fontSize = "30px"
+      $bodySize = "16px"
     }
+    $html = "<div style='padding:12px 0;'><h1 style='font-size:$fontSize;line-height:1.15;margin:0;color:#16323a;'>$($Content.title)</h1><p style='margin-top:18px;font-size:$bodySize;color:#27c2c6;font-weight:700;'>$($Content.body)</p></div>"
+    Add-PageTextPartWithFallback -PageName $PageName -Section $Section -Column $Column -PrimaryHtml $html -FallbackHtml "<h1>$($Content.title)</h1><p>$($Content.body)</p>"
     return
   }
 
@@ -272,15 +311,19 @@ function Add-DashboardTextPart {
   $textColor = "#16323a"
   $secondaryColor = "#48616b"
   $outline = "border:1px solid rgba(15,23,42,0.04);"
+  $iconBackground = "rgba(39,194,198,0.12)"
+  $iconColor = "#15858b"
   if ($Content.accent -eq "primary") {
     $background = "linear-gradient(135deg, #27c2c6, #136d70)"
     $textColor = "#ffffff"
     $secondaryColor = "rgba(255,255,255,0.8)"
     $outline = "border:none;"
+    $iconBackground = "rgba(255,255,255,0.18)"
+    $iconColor = "#ffffff"
   }
 
 $html = @"
-<div style='background:$background;$outline border-radius:22px;padding:28px 30px;box-shadow:0 14px 34px rgba(15,23,42,0.06);min-height:150px;'>
+<div style='background:$background;$outline border-radius:22px;padding:30px 30px;box-shadow:0 14px 34px rgba(15,23,42,0.06);min-height:158px;'>
   <div style='display:flex;align-items:flex-start;justify-content:space-between;gap:18px;'>
     <div>
       <div style='font-size:14px;letter-spacing:0.08em;text-transform:uppercase;color:$secondaryColor;font-weight:700;'>$($Content.sourceList)</div>
@@ -288,13 +331,12 @@ $html = @"
       <div style='font-size:22px;font-weight:700;color:$textColor;margin-top:10px;'>$($Content.title)</div>
       $subtitle
     </div>
-    <div style='min-width:58px;height:58px;padding:0 12px;border-radius:16px;background:rgba(39,194,198,0.12);display:flex;align-items:center;justify-content:center;color:#15858b;font-size:12px;font-weight:800;letter-spacing:0.08em;'>$iconLabel</div>
+    <div style='min-width:58px;height:58px;padding:0 12px;border-radius:16px;background:$iconBackground;display:flex;align-items:center;justify-content:center;color:$iconColor;font-size:12px;font-weight:800;letter-spacing:0.08em;'>$iconLabel</div>
   </div>
 </div>
 "@
-  Invoke-WithRetry -ScriptBlock {
-    Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
-  }
+  $fallbackHtml = "<div><p><strong>$($Content.sourceList)</strong></p><h3>$countValue</h3><p>$($Content.title)</p><p>$($Content.subtitle)</p></div>"
+  Add-PageTextPartWithFallback -PageName $PageName -Section $Section -Column $Column -PrimaryHtml $html -FallbackHtml $fallbackHtml
 }
 
 $theme = Get-Content $themePath -Raw | ConvertFrom-Json
@@ -344,24 +386,26 @@ if ($null -ne $existingPage) {
 Add-PnPPage -Name $pageName -LayoutType Home -Title $layout.pageTitle | Out-Null
 Start-Sleep -Seconds 2
 
-$sectionIndex = 1
-foreach ($section in $layout.sections) {
-  switch ($section.type) {
-    "OneColumn" { Add-PnPPageSection -Page $pageName -SectionTemplate OneColumn | Out-Null }
-    "TwoColumn" { Add-PnPPageSection -Page $pageName -SectionTemplate TwoColumn | Out-Null }
-    default { Add-PnPPageSection -Page $pageName -SectionTemplate OneColumn | Out-Null }
-  }
-  Start-Sleep -Milliseconds 500
-
-  $columnIndex = 1
-  foreach ($content in $section.content) {
-    Add-DashboardTextPart -PageName $pageName -Section $sectionIndex -Column $columnIndex -Content $content
-    if ($section.type -eq "TwoColumn") {
-      $columnIndex++
+if (-not (Add-CVTech2DashboardWebPart -PageName $pageName)) {
+  $sectionIndex = 1
+  foreach ($section in $layout.sections) {
+    switch ($section.type) {
+      "OneColumn" { Add-PnPPageSection -Page $pageName -SectionTemplate OneColumn | Out-Null }
+      "TwoColumn" { Add-PnPPageSection -Page $pageName -SectionTemplate TwoColumn | Out-Null }
+      default { Add-PnPPageSection -Page $pageName -SectionTemplate OneColumn | Out-Null }
     }
-  }
+    Start-Sleep -Milliseconds 500
 
-  $sectionIndex++
+    $columnIndex = 1
+    foreach ($content in $section.content) {
+      Add-DashboardTextPart -PageName $pageName -Section $sectionIndex -Column $columnIndex -Content $content
+      if ($section.type -eq "TwoColumn") {
+        $columnIndex++
+      }
+    }
+
+    $sectionIndex++
+  }
 }
 
 Set-PnPHomePage -RootFolderRelativeUrl "SitePages/$pageName" | Out-Null

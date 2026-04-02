@@ -72,13 +72,13 @@ Write-Host "Connecting to tenant app catalog: $TenantAdminUrl"
 Connect-CvStandardizerPnP -Url $TenantAdminUrl
 
 Write-Host "Uploading package: $resolvedPackagePath"
-$app = Add-PnPApp -Path $resolvedPackagePath -Overwrite -Scope Tenant -Confirm:$false
+$app = Add-PnPApp -Path $resolvedPackagePath -Overwrite -Scope Tenant -Force
 Write-Host "Uploaded app id: $($app.Id)"
 
 if (-not $SkipPublish) {
   try {
     Write-Host "Publishing package..."
-    Publish-PnPApp -Identity $app.Id -Scope Tenant -Confirm:$false
+    Publish-PnPApp -Identity $app.Id -Scope Tenant
   } catch {
     Write-Warning "Publish-PnPApp failed: $($_.Exception.Message)"
   }
@@ -89,7 +89,7 @@ if ($SiteUrl -and -not $SkipInstall) {
   Connect-CvStandardizerPnP -Url $SiteUrl
 
   Write-Host "Installing app on site..."
-  Install-PnPApp -Identity $app.Id -Scope Tenant -Confirm:$false
+  Install-PnPApp -Identity $app.Id -Scope Tenant
 }
 
 Write-Host "Done."

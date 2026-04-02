@@ -1,0 +1,32 @@
+{
+  "name": "@cv-standardizer/spfx-cvtech2-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "gulp bundle",
+    "package-solution": "gulp package-solution",
+    "clean": "gulp clean",
+    "serve": "gulp serve-deprecated"
+  },
+  "dependencies": {
+    "@microsoft/sp-core-library": "1.21.1",
+    "@microsoft/sp-lodash-subset": "1.21.1",
+    "@microsoft/sp-office-ui-fabric-core": "1.21.1",
+    "@microsoft/sp-property-pane": "1.21.1",
+    "@microsoft/sp-webpart-base": "1.21.1",
+    "react": "17.0.1",
+    "react-dom": "17.0.1",
+    "tslib": "2.3.1"
+  },
+  "devDependencies": {
+    "@microsoft/rush-stack-compiler-4.7": "0.1.1",
+    "@microsoft/sp-build-web": "1.21.1",
+    "@microsoft/sp-module-interfaces": "1.21.1",
+    "@rushstack/eslint-config": "4.0.1",
+    "@types/react": "17.0.45",
+    "@types/react-dom": "17.0.17",
+    "ajv": "^6.12.5",
+    "gulp": "4.0.2",
+    "typescript": "5.3.3"
+  }
+}

@@ -203,6 +203,40 @@ function Invoke-WithRetry {
   }
 }
 
+function Add-PageTextPartWithFallback {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$PageName,
+
+    [Parameter(Mandatory = $true)]
+    [int]$Section,
+
+    [Parameter(Mandatory = $true)]
+    [int]$Column,
+
+    [Parameter(Mandatory = $true)]
+    [string]$PrimaryHtml,
+
+    [Parameter(Mandatory = $false)]
+    [string]$FallbackHtml
+  )
+
+  try {
+    Invoke-WithRetry -ScriptBlock {
+      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $PrimaryHtml | Out-Null
+    }
+  } catch {
+    if (-not $FallbackHtml) {
+      throw
+    }
+
+    Write-Warning "Rich text part failed. Falling back to a simpler SharePoint-safe block."
+    Invoke-WithRetry -ScriptBlock {
+      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $FallbackHtml | Out-Null
+    }
+  }
+}
+
 function Add-DashboardTextPart {
   param(
     [Parameter(Mandatory = $true)]
@@ -225,9 +259,7 @@ function Add-DashboardTextPart {
   <div style='margin-top:8px;font-size:16px;line-height:1.65;color:#58707a;'>$($Content.body)</div>
 </div>
 "@
-    Invoke-WithRetry -ScriptBlock {
-      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
-    }
+    Add-PageTextPartWithFallback -PageName $PageName -Section $Section -Column $Column -PrimaryHtml $html -FallbackHtml "<h2>$($Content.title)</h2><p>$($Content.body)</p>"
     return
   }
 
@@ -253,9 +285,8 @@ function Add-DashboardTextPart {
   <div style='margin-top:18px;font-size:18px;line-height:1.7;color:#47616b;'>$($Content.supportingText)</div>
 </div>
 "@
-    Invoke-WithRetry -ScriptBlock {
-      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
-    }
+    $fallbackHtml = "<div><div style='font-size:12px;text-transform:uppercase;color:#27c2c6;font-weight:700;'>$($Content.eyebrow)</div><h1>$($Content.title)</h1><p><strong>$($Content.body)</strong></p><p>$($Content.supportingText)</p></div>"
+    Add-PageTextPartWithFallback -PageName $PageName -Section $Section -Column $Column -PrimaryHtml $html -FallbackHtml $fallbackHtml
     return
   }
 
@@ -280,17 +311,14 @@ function Add-DashboardTextPart {
   </div>
 </div>
 "@
-    Invoke-WithRetry -ScriptBlock {
-      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
-    }
+    $fallbackHtml = "<div><p><strong>$($Content.profileLabel)</strong></p><p>$($Content.statusLabel): $($Content.statusValue)</p><p>$($Content.languageTitle): $($Content.languagePrimary) / $($Content.languageSecondary)</p></div>"
+    Add-PageTextPartWithFallback -PageName $PageName -Section $Section -Column $Column -PrimaryHtml $html -FallbackHtml $fallbackHtml
     return
   }
 
   if ($Content.kind -eq "Text") {
     $html = "<div style='padding:12px 0;'><h1 style='font-size:54px;line-height:1;margin:0;color:#16323a;'>$($Content.title)</h1><p style='margin-top:18px;font-size:22px;color:#27c2c6;font-weight:700;'>$($Content.body)</p></div>"
-    Invoke-WithRetry -ScriptBlock {
-      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
-    }
+    Add-PageTextPartWithFallback -PageName $PageName -Section $Section -Column $Column -PrimaryHtml $html -FallbackHtml "<h1>$($Content.title)</h1><p>$($Content.body)</p>"
     return
   }
 
@@ -339,9 +367,8 @@ $html = @"
   </div>
 </div>
 "@
-  Invoke-WithRetry -ScriptBlock {
-    Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
-  }
+  $fallbackHtml = "<div><p><strong>$($Content.sourceList)</strong></p><h3>$countValue</h3><p>$($Content.title)</p><p>$($Content.subtitle)</p></div>"
+  Add-PageTextPartWithFallback -PageName $PageName -Section $Section -Column $Column -PrimaryHtml $html -FallbackHtml $fallbackHtml
 }
 
 $theme = Get-Content $themePath -Raw | ConvertFrom-Json

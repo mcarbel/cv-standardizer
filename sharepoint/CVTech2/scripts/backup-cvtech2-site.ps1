@@ -120,8 +120,20 @@ $pages = Get-PnPListItem -List "Site Pages" -PageSize 200 -ErrorAction SilentlyC
 $siteInfo = [ordered]@{
   exportedAt = (Get-Date).ToString("o")
   siteUrl = $SiteUrl
-  web = $web
-  site = $site
+  web = [ordered]@{
+    title = $web.Title
+    url = $web.Url
+    description = $web.Description
+    serverRelativeUrl = $web.ServerRelativeUrl
+    created = $web.Created
+    lastItemModifiedDate = $web.LastItemModifiedDate
+  }
+  site = [ordered]@{
+    id = $site.Id
+    url = $site.Url
+    groupId = $site.GroupId
+    hubSiteId = $site.HubSiteId
+  }
 }
 $siteInfo | ConvertTo-Json -Depth 10 | Set-Content -Path (Join-Path $archiveFolder "site-info.json") -Encoding UTF8
 
@@ -131,7 +143,16 @@ $navInfo = [ordered]@{
 }
 $navInfo | ConvertTo-Json -Depth 10 | Set-Content -Path (Join-Path $archiveFolder "navigation.json") -Encoding UTF8
 
-Export-PnPSiteTemplate -Out (Join-Path $archiveFolder "site-template.xml") -Handlers Pages,Navigation,SiteSecurity,RegionalSettings,SupportedUILanguages,PageContents,SiteHeader,SiteFooter,ComposedLook -Force
+$templateExportPath = Join-Path $archiveFolder "site-template.xml"
+if (Get-Command Export-PnPSiteTemplate -ErrorAction SilentlyContinue) {
+  Export-PnPSiteTemplate -Out $templateExportPath -Handlers Pages,Navigation,SiteSecurity,RegionalSettings,SupportedUILanguages,PageContents,SiteHeader,SiteFooter,ComposedLook -Force
+}
+elseif (Get-Command Export-PnPTemplate -ErrorAction SilentlyContinue) {
+  Export-PnPTemplate -Out $templateExportPath -Handlers Pages,Navigation,SiteSecurity,RegionalSettings,SupportedUILanguages,PageContents,SiteHeader,SiteFooter,ComposedLook -Force
+}
+else {
+  Write-Warning "Neither Export-PnPSiteTemplate nor Export-PnPTemplate is available in the installed PnP.PowerShell module. Skipping template XML export."
+}
 
 foreach ($list in $lists) {
   $safeTitle = Sanitize-Name -Value $list.Title

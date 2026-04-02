@@ -84,7 +84,7 @@ The backup currently includes:
 
 - site metadata
 - navigation
-- a PnP site template export
+- a PnP site template export when supported by the installed `PnP.PowerShell` module
 - visible lists metadata
 - visible lists items as JSON
 - site pages metadata

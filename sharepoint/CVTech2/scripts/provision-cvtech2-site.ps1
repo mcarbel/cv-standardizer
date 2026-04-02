@@ -92,7 +92,37 @@ function Ensure-QuickLaunchNode {
     return
   }
 
-  Add-PnPNavigationNode -Title $Node.title -Url $Node.url -Location QuickLaunch | Out-Null
+  try {
+    Add-PnPNavigationNode -Title $Node.title -Url $Node.url -Location QuickLaunch | Out-Null
+  } catch {
+    Write-Warning "Navigation node '$($Node.title)' could not be added as an internal link. Retrying as external."
+    Add-PnPNavigationNode -Title $Node.title -Url $Node.url -Location QuickLaunch -External | Out-Null
+  }
+}
+
+function Ensure-SitePageExistsFromUrl {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$NodeUrl
+  )
+
+  if ($NodeUrl -notmatch '/SitePages/([^/?]+\.aspx)') {
+    return
+  }
+
+  $pageName = $Matches[1]
+  $existingPage = Get-PnPPage -Identity $pageName -ErrorAction SilentlyContinue
+  if ($null -ne $existingPage) {
+    return
+  }
+
+  $pageTitle = [System.IO.Path]::GetFileNameWithoutExtension($pageName).Replace('-', ' ')
+  Write-Host "Creating placeholder page: $pageName"
+  Add-PnPPage -Name $pageName -LayoutType Article -Title $pageTitle | Out-Null
+  Add-PnPPageTextPart -Page $pageName -Text "<div style='padding:24px 0;'><h1>$pageTitle</h1><p>Placeholder page created by the CVTech2 site template provisioning script.</p></div>" | Out-Null
+  if (Get-Command Publish-PnPPage -ErrorAction SilentlyContinue) {
+    Publish-PnPPage -Identity $pageName | Out-Null
+  }
 }
 
 function Add-DashboardTextPart {
@@ -142,10 +172,22 @@ $theme = Get-Content $themePath -Raw | ConvertFrom-Json
 $navigation = Get-Content $navigationPath -Raw | ConvertFrom-Json
 $lists = Get-Content $listsPath -Raw | ConvertFrom-Json
 $layout = Get-Content $layoutPath -Raw | ConvertFrom-Json
+$themePalette = @{}
+$theme.palette.PSObject.Properties | ForEach-Object {
+  $themePalette[$_.Name] = $_.Value
+}
 
 Write-Host "Connecting to tenant admin: $TenantAdminUrl"
 Connect-CVTech2PnP -Url $TenantAdminUrl
-Add-PnPTenantTheme -Identity $theme.name -Palette $theme.palette -IsInverted:$theme.isInverted | Out-Null
+try {
+  Add-PnPTenantTheme -Identity $theme.name -Palette $themePalette -IsInverted:$theme.isInverted | Out-Null
+} catch {
+  if ($_.Exception.Message -match "Theme exists") {
+    Write-Host "Theme already exists: $($theme.name)"
+  } else {
+    throw
+  }
+}
 
 Write-Host "Connecting to site: $SiteUrl"
 Connect-CVTech2PnP -Url $SiteUrl
@@ -158,6 +200,7 @@ foreach ($list in $lists.lists) {
 }
 
 foreach ($node in $navigation.quickLaunch) {
+  Ensure-SitePageExistsFromUrl -NodeUrl $node.url
   Ensure-QuickLaunchNode -Node $node
 }
 

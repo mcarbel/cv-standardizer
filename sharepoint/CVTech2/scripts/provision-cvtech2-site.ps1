@@ -106,8 +106,14 @@ function Remove-QuickLaunchNodeTree {
     $Node
   )
 
-  if ($Node.Children) {
-    foreach ($child in @($Node.Children)) {
+  try {
+    $children = @($Node.Children)
+  } catch {
+    $children = @()
+  }
+
+  if ($children.Count -gt 0) {
+    foreach ($child in $children) {
       Remove-QuickLaunchNodeTree -Node $child
     }
   }
@@ -130,8 +136,7 @@ function Reset-QuickLaunch {
     $preserveTitles = @($NavigationDefinition.preserveQuickLaunchTitles)
   }
 
-  $desiredTitles = @($NavigationDefinition.quickLaunch | ForEach-Object { $_.title })
-  $keepTitles = $desiredTitles + $preserveTitles
+  $keepTitles = $preserveTitles
 
   $existingNodes = @(Get-PnPNavigationNode -Location QuickLaunch)
   foreach ($node in $existingNodes) {
@@ -169,6 +174,35 @@ function Ensure-SitePageExistsFromUrl {
   }
 }
 
+function Invoke-WithRetry {
+  param(
+    [Parameter(Mandatory = $true)]
+    [scriptblock]$ScriptBlock,
+
+    [Parameter(Mandatory = $false)]
+    [int]$MaxAttempts = 4,
+
+    [Parameter(Mandatory = $false)]
+    [int]$DelaySeconds = 2
+  )
+
+  $attempt = 1
+  while ($attempt -le $MaxAttempts) {
+    try {
+      & $ScriptBlock
+      return
+    } catch {
+      if ($attempt -eq $MaxAttempts) {
+        throw
+      }
+
+      Write-Warning "Attempt $attempt failed. Retrying in $DelaySeconds second(s)."
+      Start-Sleep -Seconds $DelaySeconds
+      $attempt++
+    }
+  }
+}
+
 function Add-DashboardTextPart {
   param(
     [Parameter(Mandatory = $true)]
@@ -196,30 +230,24 @@ function Add-DashboardTextPart {
     }
 
     $html = @"
-<div style='background:linear-gradient(135deg, rgba(39,194,198,0.13), rgba(19,109,112,0.05));border-radius:28px;padding:34px 40px;box-shadow:0 18px 45px rgba(15,23,42,0.08);'>
-  <div style='display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;'>
-    <div style='display:flex;align-items:center;gap:22px;'>
-      <div style='width:92px;height:92px;border-radius:999px;background:linear-gradient(135deg, #27c2c6, #169096);color:#ffffff;font-weight:800;font-size:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 24px rgba(39,194,198,0.28);'>MC</div>
-      <div>
-        $eyebrow
-        <h1 style='font-size:58px;line-height:1.02;margin:10px 0 0 0;color:#16323a;'>$($Content.title)</h1>
-        <p style='margin:18px 0 0 0;font-size:26px;color:#27c2c6;font-weight:700;'>$($Content.body)</p>
-      </div>
-    </div>
-    <div style='min-width:220px;text-align:right;'>
-      <div style='display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:18px;background:#ffffff;color:#27c2c6;font-size:28px;box-shadow:0 12px 24px rgba(15,23,42,0.08);'>!</div>
-    </div>
-  </div>
-  $supportingText
+<div style='background-color:#f2fbfb;border:1px solid #d7f4f4;border-radius:24px;padding:28px 32px;'>
+  <div style='font-size:14px;letter-spacing:0.14em;text-transform:uppercase;color:#27c2c6;font-weight:700;'>$($Content.eyebrow)</div>
+  <div style='margin-top:18px;font-size:64px;line-height:1;font-weight:800;color:#16323a;'>$($Content.title)</div>
+  <div style='margin-top:14px;font-size:24px;font-weight:700;color:#27c2c6;'>$($Content.body)</div>
+  <div style='margin-top:18px;font-size:18px;line-height:1.7;color:#47616b;'>$($Content.supportingText)</div>
 </div>
 "@
-    Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+    Invoke-WithRetry -ScriptBlock {
+      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+    }
     return
   }
 
   if ($Content.kind -eq "Text") {
     $html = "<div style='padding:12px 0;'><h1 style='font-size:54px;line-height:1;margin:0;color:#16323a;'>$($Content.title)</h1><p style='margin-top:18px;font-size:22px;color:#27c2c6;font-weight:700;'>$($Content.body)</p></div>"
-    Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+    Invoke-WithRetry -ScriptBlock {
+      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+    }
     return
   }
 
@@ -264,7 +292,9 @@ $html = @"
   </div>
 </div>
 "@
-  Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+  Invoke-WithRetry -ScriptBlock {
+    Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+  }
 }
 
 $theme = Get-Content $themePath -Raw | ConvertFrom-Json
@@ -312,6 +342,7 @@ if ($null -ne $existingPage) {
 }
 
 Add-PnPPage -Name $pageName -LayoutType Home -Title $layout.pageTitle | Out-Null
+Start-Sleep -Seconds 2
 
 $sectionIndex = 1
 foreach ($section in $layout.sections) {
@@ -320,6 +351,7 @@ foreach ($section in $layout.sections) {
     "TwoColumn" { Add-PnPPageSection -Page $pageName -SectionTemplate TwoColumn | Out-Null }
     default { Add-PnPPageSection -Page $pageName -SectionTemplate OneColumn | Out-Null }
   }
+  Start-Sleep -Milliseconds 500
 
   $columnIndex = 1
   foreach ($content in $section.content) {

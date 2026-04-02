@@ -1,8 +1,6 @@
 {
   "replaceQuickLaunch": true,
-  "preserveQuickLaunchTitles": [
-    "Dashboard"
-  ],
+  "preserveQuickLaunchTitles": [],
   "quickLaunch": [
     { "title": "Dashboard", "url": "/sites/CVTech2/SitePages/Home.aspx" },
     { "title": "My Profile", "url": "/sites/CVTech2/SitePages/My-Profile.aspx" },

@@ -100,6 +100,55 @@ function Ensure-QuickLaunchNode {
   }
 }
 
+function Remove-QuickLaunchNodeTree {
+  param(
+    [Parameter(Mandatory = $true)]
+    $Node
+  )
+
+  try {
+    $children = @($Node.Children)
+  } catch {
+    $children = @()
+  }
+
+  if ($children.Count -gt 0) {
+    foreach ($child in $children) {
+      Remove-QuickLaunchNodeTree -Node $child
+    }
+  }
+
+  Remove-PnPNavigationNode -Identity $Node.Id -Force
+}
+
+function Reset-QuickLaunch {
+  param(
+    [Parameter(Mandatory = $true)]
+    [pscustomobject]$NavigationDefinition
+  )
+
+  if (-not ($NavigationDefinition.PSObject.Properties.Name -contains "replaceQuickLaunch") -or -not $NavigationDefinition.replaceQuickLaunch) {
+    return
+  }
+
+  $preserveTitles = @()
+  if ($NavigationDefinition.PSObject.Properties.Name -contains "preserveQuickLaunchTitles") {
+    $preserveTitles = @($NavigationDefinition.preserveQuickLaunchTitles)
+  }
+
+  $keepTitles = $preserveTitles
+
+  $existingNodes = @(Get-PnPNavigationNode -Location QuickLaunch)
+  foreach ($node in $existingNodes) {
+    if ($keepTitles -contains $node.Title) {
+      continue
+    }
+
+    Write-Host "Removing legacy quick launch node: $($node.Title)"
+    Remove-QuickLaunchNodeTree -Node $node
+  }
+}
+
 function Ensure-SitePageExistsFromUrl {
   param(
     [Parameter(Mandatory = $true)]
@@ -125,6 +174,35 @@ function Ensure-SitePageExistsFromUrl {
   }
 }
 
+function Invoke-WithRetry {
+  param(
+    [Parameter(Mandatory = $true)]
+    [scriptblock]$ScriptBlock,
+
+    [Parameter(Mandatory = $false)]
+    [int]$MaxAttempts = 4,
+
+    [Parameter(Mandatory = $false)]
+    [int]$DelaySeconds = 2
+  )
+
+  $attempt = 1
+  while ($attempt -le $MaxAttempts) {
+    try {
+      & $ScriptBlock
+      return
+    } catch {
+      if ($attempt -eq $MaxAttempts) {
+        throw
+      }
+
+      Write-Warning "Attempt $attempt failed. Retrying in $DelaySeconds second(s)."
+      Start-Sleep -Seconds $DelaySeconds
+      $attempt++
+    }
+  }
+}
+
 function Add-DashboardTextPart {
   param(
     [Parameter(Mandatory = $true)]
@@ -140,9 +218,36 @@ function Add-DashboardTextPart {
     [pscustomobject]$Content
   )
 
+  if ($Content.kind -eq "Hero") {
+    $eyebrow = ""
+    if ($Content.PSObject.Properties.Name -contains "eyebrow" -and $Content.eyebrow) {
+      $eyebrow = "<div style='font-size:14px;letter-spacing:0.14em;text-transform:uppercase;color:#27c2c6;font-weight:700;'>$($Content.eyebrow)</div>"
+    }
+
+    $supportingText = ""
+    if ($Content.PSObject.Properties.Name -contains "supportingText" -and $Content.supportingText) {
+      $supportingText = "<p style='margin:18px 0 0 0;font-size:18px;line-height:1.7;color:#47616b;max-width:980px;'>$($Content.supportingText)</p>"
+    }
+
+    $html = @"
+<div style='background-color:#f2fbfb;border:1px solid #d7f4f4;border-radius:24px;padding:28px 32px;'>
+  <div style='font-size:14px;letter-spacing:0.14em;text-transform:uppercase;color:#27c2c6;font-weight:700;'>$($Content.eyebrow)</div>
+  <div style='margin-top:18px;font-size:64px;line-height:1;font-weight:800;color:#16323a;'>$($Content.title)</div>
+  <div style='margin-top:14px;font-size:24px;font-weight:700;color:#27c2c6;'>$($Content.body)</div>
+  <div style='margin-top:18px;font-size:18px;line-height:1.7;color:#47616b;'>$($Content.supportingText)</div>
+</div>
+"@
+    Invoke-WithRetry -ScriptBlock {
+      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+    }
+    return
+  }
+
   if ($Content.kind -eq "Text") {
     $html = "<div style='padding:12px 0;'><h1 style='font-size:54px;line-height:1;margin:0;color:#16323a;'>$($Content.title)</h1><p style='margin-top:18px;font-size:22px;color:#27c2c6;font-weight:700;'>$($Content.body)</p></div>"
-    Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+    Invoke-WithRetry -ScriptBlock {
+      Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+    }
     return
   }
 
@@ -151,21 +256,45 @@ function Add-DashboardTextPart {
     $subtitle = "<div style='font-size:13px;color:#4a5e66;margin-top:6px;'>$($Content.subtitle)</div>"
   }
 
+  $countValue = "0"
+  if ($Content.title -eq "Daily rate range") {
+    $countValue = "-"
+  } elseif ($Content.title -eq "Estimated invoice") {
+    $countValue = "0 EUR"
+  }
+
+  $iconLabel = ""
+  if ($Content.PSObject.Properties.Name -contains "icon" -and $Content.icon) {
+    $iconLabel = $Content.icon
+  }
+
   $background = "#ffffff"
   $textColor = "#16323a"
+  $secondaryColor = "#48616b"
+  $outline = "border:1px solid rgba(15,23,42,0.04);"
   if ($Content.accent -eq "primary") {
     $background = "linear-gradient(135deg, #27c2c6, #136d70)"
     $textColor = "#ffffff"
+    $secondaryColor = "rgba(255,255,255,0.8)"
+    $outline = "border:none;"
   }
 
-  $html = @"
-<div style='background:$background;border-radius:18px;padding:28px 32px;box-shadow:0 10px 26px rgba(15,23,42,0.06);min-height:120px;'>
-  <div style='font-size:14px;letter-spacing:0.08em;text-transform:uppercase;color:$textColor;opacity:0.75;'>$($Content.sourceList)</div>
-  <div style='font-size:22px;font-weight:700;color:$textColor;margin-top:10px;'>$($Content.title)</div>
-  $subtitle
+$html = @"
+<div style='background:$background;$outline border-radius:22px;padding:28px 30px;box-shadow:0 14px 34px rgba(15,23,42,0.06);min-height:150px;'>
+  <div style='display:flex;align-items:flex-start;justify-content:space-between;gap:18px;'>
+    <div>
+      <div style='font-size:14px;letter-spacing:0.08em;text-transform:uppercase;color:$secondaryColor;font-weight:700;'>$($Content.sourceList)</div>
+      <div style='font-size:54px;line-height:1;margin-top:10px;color:$textColor;font-weight:800;'>$countValue</div>
+      <div style='font-size:22px;font-weight:700;color:$textColor;margin-top:10px;'>$($Content.title)</div>
+      $subtitle
+    </div>
+    <div style='min-width:58px;height:58px;padding:0 12px;border-radius:16px;background:rgba(39,194,198,0.12);display:flex;align-items:center;justify-content:center;color:#15858b;font-size:12px;font-weight:800;letter-spacing:0.08em;'>$iconLabel</div>
+  </div>
 </div>
 "@
-  Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+  Invoke-WithRetry -ScriptBlock {
+    Add-PnPPageTextPart -Page $PageName -Section $Section -Column $Column -Text $html | Out-Null
+  }
 }
 
 $theme = Get-Content $themePath -Raw | ConvertFrom-Json
@@ -199,6 +328,8 @@ foreach ($list in $lists.lists) {
   Ensure-ListExists -ListDefinition $list
 }
 
+Reset-QuickLaunch -NavigationDefinition $navigation
+
 foreach ($node in $navigation.quickLaunch) {
   Ensure-SitePageExistsFromUrl -NodeUrl $node.url
   Ensure-QuickLaunchNode -Node $node
@@ -211,6 +342,7 @@ if ($null -ne $existingPage) {
 }
 
 Add-PnPPage -Name $pageName -LayoutType Home -Title $layout.pageTitle | Out-Null
+Start-Sleep -Seconds 2
 
 $sectionIndex = 1
 foreach ($section in $layout.sections) {
@@ -219,6 +351,7 @@ foreach ($section in $layout.sections) {
     "TwoColumn" { Add-PnPPageSection -Page $pageName -SectionTemplate TwoColumn | Out-Null }
     default { Add-PnPPageSection -Page $pageName -SectionTemplate OneColumn | Out-Null }
   }
+  Start-Sleep -Milliseconds 500
 
   $columnIndex = 1
   foreach ($content in $section.content) {

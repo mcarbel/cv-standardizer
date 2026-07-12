@@ -1,0 +1,92 @@
+{
+  "portal": {
+    "name": "CVTech2 Partner Portal",
+    "mode": "SaaS",
+    "coreCapabilities": [
+      "anonymized-cv-search",
+      "mission-brief-matching",
+      "shortlist-management",
+      "identity-reveal-request",
+      "partner-subscription-plans",
+      "audit-trail"
+    ]
+  },
+  "sharepointLists": [
+    {
+      "title": "AnonymizedProfiles",
+      "purpose": "Public partner-facing searchable metadata for anonymized CVs",
+      "fields": [
+        "CandidateAlias",
+        "RoleTitle",
+        "Summary",
+        "Skills",
+        "CloudStack",
+        "Seniority",
+        "Languages",
+        "AvailabilityWindow",
+        "SectorExposure",
+        "MissionFitTags",
+        "Status",
+        "SearchVisibility"
+      ]
+    },
+    {
+      "title": "PartnerOrganizations",
+      "purpose": "SaaS partner tenant/accounts and commercial access settings",
+      "fields": [
+        "PartnerName",
+        "PlanTier",
+        "MonthlySearchQuota",
+        "MonthlyRevealQuota",
+        "AccessStatus",
+        "PrimaryContact",
+        "AllowedDomains"
+      ]
+    },
+    {
+      "title": "PartnerSearchRequests",
+      "purpose": "Log of mission brief searches and skill-based searches",
+      "fields": [
+        "PartnerName",
+        "SubmittedBy",
+        "SearchMode",
+        "MissionBrief",
+        "RequestedSkills",
+        "ReturnedProfiles",
+        "CreatedOn"
+      ]
+    },
+    {
+      "title": "IdentityRevealRequests",
+      "purpose": "Controlled request workflow to reveal candidate identity or original CV",
+      "fields": [
+        "CandidateAlias",
+        "PartnerName",
+        "BusinessJustification",
+        "RequestedBy",
+        "ApprovalStatus",
+        "ApprovedBy",
+        "ApprovedOn",
+        "ReleaseScope"
+      ]
+    }
+  ],
+  "backendApis": [
+    {
+      "route": "POST /api/partner/search-by-skills",
+      "purpose": "Search anonymized profiles from explicit partner-selected skills"
+    },
+    {
+      "route": "POST /api/partner/search-by-mission",
+      "purpose": "Parse a mission brief and return ranked anonymized profiles"
+    },
+    {
+      "route": "POST /api/partner/reveal-request",
+      "purpose": "Create a controlled reveal request for a shortlisted candidate"
+    },
+    {
+      "route": "GET /api/partner/plans",
+      "purpose": "Return plan entitlements and quotas"
+    }
+  ]
+}

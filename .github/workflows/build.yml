@@ -46,6 +46,13 @@ jobs:
         working-directory: apps/spfx-cvtech2-dashboard
         run: npx gulp package-solution --ship
 
+      - name: Build CVTech2 Partner Portal bundle
+        run: npm run build -w @cv-standardizer/spfx-cvtech2-partner-portal
+
+      - name: Package CVTech2 Partner Portal solution
+        working-directory: apps/spfx-cvtech2-partner-portal
+        run: npx gulp package-solution --ship
+
       - name: Upload backend dist
         uses: actions/upload-artifact@v4
         with:
@@ -63,3 +70,9 @@ jobs:
         with:
           name: cvtech2-dashboard-sppkg
           path: apps/spfx-cvtech2-dashboard/sharepoint/solution/cvtech2-dashboard.sppkg
+
+      - name: Upload CVTech2 Partner Portal sppkg
+        uses: actions/upload-artifact@v4
+        with:
+          name: cvtech2-partner-portal-sppkg
+          path: apps/spfx-cvtech2-partner-portal/sharepoint/solution/cvtech2-partner-portal.sppkg

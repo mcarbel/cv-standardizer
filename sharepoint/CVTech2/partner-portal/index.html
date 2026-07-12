@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CVTech2 Partner Portal</title>
+  <style>
+    :root {
+      --bg: #eef4f8;
+      --surface: #ffffff;
+      --surface-soft: #f5fbfc;
+      --line: rgba(16, 36, 46, 0.1);
+      --text: #13323b;
+      --muted: #55727b;
+      --primary: #27c2c6;
+      --primary-dark: #136d70;
+      --primary-soft: rgba(39, 194, 198, 0.12);
+      --success: #118c68;
+      --warning: #d58b1d;
+      --shadow: 0 24px 50px rgba(16, 36, 46, 0.08);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Aptos, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(39, 194, 198, 0.18), transparent 26%),
+        linear-gradient(180deg, #f7fbfd, var(--bg));
+      color: var(--text);
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 290px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      padding: 32px 22px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 26px;
+      position: sticky;
+      top: 0;
+      min-height: 100vh;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 42px;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      text-transform: lowercase;
+    }
+
+    .brand p {
+      margin: 0;
+      color: rgba(255,255,255,0.78);
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .menu a {
+      text-decoration: none;
+      color: #fff;
+      padding: 14px 16px;
+      border-radius: 14px;
+      font-weight: 700;
+      display: block;
+      background: transparent;
+    }
+
+    .menu a.active,
+    .menu a:hover {
+      background: rgba(255,255,255,0.16);
+    }
+
+    .sidebar-card {
+      margin-top: auto;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+    }
+
+    .sidebar-card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .sidebar-card p {
+      margin: 0;
+      color: rgba(255,255,255,0.84);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .content {
+      padding: 34px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(39, 194, 198, 0.18), rgba(19, 109, 112, 0.1));
+      border: 1px solid rgba(39, 194, 198, 0.12);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
+      gap: 22px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.7);
+      border-radius: 999px;
+      color: var(--primary-dark);
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .hero h2 {
+      margin: 16px 0 12px;
+      font-size: 56px;
+      line-height: 0.96;
+      letter-spacing: -0.05em;
+    }
+
+    .hero p {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.6;
+      color: var(--muted);
+      max-width: 760px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+
+    .button {
+      border: none;
+      border-radius: 999px;
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .button.primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      box-shadow: 0 16px 26px rgba(39,194,198,0.24);
+    }
+
+    .button.secondary {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .hero-panel {
+      background: rgba(255,255,255,0.8);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid var(--line);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .search-shell {
+      background: var(--surface);
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(16, 36, 46, 0.06);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .search-head {
+      padding: 26px 28px 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .search-head h3,
+    .section-title {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .search-head p,
+    .section-subtitle {
+      margin: 10px 0 0;
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .search-body {
+      padding: 24px 28px 28px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--surface-soft);
+      border: 1px solid rgba(16, 36, 46, 0.06);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--primary-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    textarea,
+    input,
+    select {
+      width: 100%;
+      padding: 14px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(16, 36, 46, 0.12);
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+    }
+
+    textarea { min-height: 140px; resize: vertical; }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      border: 1px solid rgba(16, 36, 46, 0.12);
+      background: #fff;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chip.active {
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+    }
+
+    .sub-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .results-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) 360px;
+      gap: 20px;
+    }
+
+    .results-panel,
+    .plans-panel,
+    .insights-panel {
+      background: var(--surface);
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(16, 36, 46, 0.06);
+      box-shadow: var(--shadow);
+      padding: 26px;
+    }
+
+    .result-grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .cv-card {
+      border: 1px solid rgba(16, 36, 46, 0.08);
+      border-radius: 20px;
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,1), rgba(245,251,252,0.65));
+    }
+
+    .cv-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .candidate-id {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .cv-top h4 {
+      margin: 12px 0 6px;
+      font-size: 28px;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+
+    .cv-meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .score {
+      background: #fff;
+      border: 1px solid rgba(16, 36, 46, 0.08);
+      border-radius: 18px;
+      padding: 12px 14px;
+      min-width: 118px;
+      text-align: right;
+    }
+
+    .score strong {
+      display: block;
+      font-size: 30px;
+      color: var(--success);
+      line-height: 1;
+    }
+
+    .score span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .skills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .skill-pill {
+      background: #fff;
+      border: 1px solid rgba(16, 36, 46, 0.08);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .cv-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .ghost {
+      background: transparent;
+      border: 1px solid rgba(16, 36, 46, 0.12);
+      color: var(--text);
+    }
+
+    .plan-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .plan {
+      border-radius: 20px;
+      padding: 18px;
+      border: 1px solid rgba(16, 36, 46, 0.08);
+      background: linear-gradient(180deg, #fff, #f8fbfc);
+    }
+
+    .plan.featured {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .plan h4 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+
+    .plan p {
+      margin: 0;
+      line-height: 1.6;
+      font-size: 14px;
+      color: inherit;
+      opacity: 0.92;
+    }
+
+    .plan strong {
+      display: block;
+      margin: 14px 0 10px;
+      font-size: 34px;
+      line-height: 1;
+    }
+
+    .feature-list {
+      margin: 12px 0 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .insights {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .insight {
+      border-radius: 18px;
+      background: var(--surface-soft);
+      padding: 16px;
+      border: 1px solid rgba(16, 36, 46, 0.06);
+    }
+
+    .insight strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 16px;
+    }
+
+    .insight p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .footnote {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1200px) {
+      .hero,
+      .search-body,
+      .results-layout {
+        grid-template-columns: 1fr;
+      }
+      .shell { grid-template-columns: 1fr; }
+      .sidebar {
+        position: static;
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .content { padding: 18px; }
+      .hero h2 { font-size: 40px; }
+      .search-head h3, .section-title { font-size: 26px; }
+      .sub-grid, .stat-grid { grid-template-columns: 1fr; }
+      .button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>cvtech2</h1>
+        <p>Partner Access Portal for anonymized talent sourcing and mission matching.</p>
+      </div>
+
+      <nav class="menu">
+        <a class="active" href="#overview">Overview</a>
+        <a href="#search">CV Library</a>
+        <a href="#mission">Mission Match</a>
+        <a href="#plans">Plans</a>
+        <a href="#compliance">Compliance</a>
+      </nav>
+
+      <div class="sidebar-card">
+        <h3>Partner status</h3>
+        <p>Enterprise workspace ready. Search anonymized profiles, request controlled identity reveal, and track mission fit in one secure flow.</p>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="hero" id="overview">
+        <div>
+          <span class="eyebrow">SaaS partner cockpit</span>
+          <h2>Search anonymized CVs and qualify mission fit in minutes.</h2>
+          <p>
+            This partner portal is designed for B2B access to anonymized candidate profiles. Partners can search by skills,
+            paste a mission brief, compare available profiles, and submit a controlled access request when a shortlist is validated.
+          </p>
+          <div class="hero-actions">
+            <button class="button primary" type="button" onclick="scrollToSection('search')">Start a search</button>
+            <button class="button secondary" type="button" onclick="scrollToSection('plans')">View SaaS plans</button>
+          </div>
+        </div>
+
+        <div class="hero-panel">
+          <div class="stat-grid">
+            <div class="stat"><strong>128</strong><span>anonymized profiles currently indexable</span></div>
+            <div class="stat"><strong>21</strong><span>new profiles in the last 30 days</span></div>
+            <div class="stat"><strong>94%</strong><span>average mission-skill matching relevance on curated searches</span></div>
+            <div class="stat"><strong>&lt; 2h</strong><span>average turnaround to validate access requests</span></div>
+          </div>
+          <p class="footnote">
+            Access to personal identity, direct contact details, and original CV files remains protected until an explicit access workflow is approved.
+          </p>
+        </div>
+      </section>
+
+      <section class="search-shell" id="search">
+        <div class="search-head">
+          <div>
+            <h3>Find available anonymized CVs</h3>
+            <p>Search directly by skills, or paste a mission description to derive the most relevant matching profiles.</p>
+          </div>
+        </div>
+
+        <div class="search-body">
+          <div class="panel">
+            <div>
+              <label for="missionBrief">Mission / offer brief</label>
+              <textarea id="missionBrief" placeholder="Example: Looking for a Cloud Security Architect with Azure landing zone expertise, IAM hardening, Terraform, and banking compliance exposure."></textarea>
+            </div>
+
+            <div>
+              <label for="skillInput">Add explicit skills</label>
+              <input id="skillInput" type="text" placeholder="Type a skill and press Enter (Azure, Kubernetes, IAM, GCP...)" />
+            </div>
+
+            <div>
+              <label>Suggested skills</label>
+              <div class="chip-row" id="suggestedSkills"></div>
+            </div>
+
+            <div class="sub-grid">
+              <div>
+                <label for="seniority">Seniority</label>
+                <select id="seniority">
+                  <option value="">Any</option>
+                  <option>Senior</option>
+                  <option>Lead</option>
+                  <option>Architect</option>
+                </select>
+              </div>
+              <div>
+                <label for="availability">Availability</label>
+                <select id="availability">
+                  <option value="">Any</option>
+                  <option>Immediate</option>
+                  <option>Under 2 weeks</option>
+                  <option>Under 1 month</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="hero-actions" style="margin-top: 0;">
+              <button class="button primary" type="button" onclick="runSearch()">Search profiles</button>
+              <button class="button secondary" type="button" onclick="extractFromBrief()">Analyze mission brief</button>
+            </div>
+          </div>
+
+          <div class="panel" id="mission">
+            <div>
+              <label>Selected search skills</label>
+              <div class="chip-row" id="activeSkills"></div>
+            </div>
+            <div>
+              <label>How the SaaS portal works</label>
+              <div class="insights">
+                <div class="insight">
+                  <strong>1. Discovery</strong>
+                  <p>Partners search only on anonymized metadata: role family, skills, cloud stack, seniority, languages, availability, and mission fit.</p>
+                </div>
+                <div class="insight">
+                  <strong>2. Qualification</strong>
+                  <p>Each result provides a confidence score and a short rationale aligned with the mission brief, without disclosing identity.</p>
+                </div>
+                <div class="insight">
+                  <strong>3. Controlled reveal</strong>
+                  <p>An access request can be raised only on shortlisted candidates, with full audit trail and optional commercial approval workflow.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="results-layout">
+        <div class="results-panel">
+          <h3 class="section-title">Matching candidate profiles</h3>
+          <p class="section-subtitle">Example result set for anonymized CV discovery. Final implementation can connect to SharePoint metadata or a secure search index.</p>
+          <div class="result-grid" id="results"></div>
+        </div>
+
+        <div style="display:grid; gap:20px; align-content:start;">
+          <div class="plans-panel" id="plans">
+            <h3 class="section-title">SaaS access model</h3>
+            <div class="plan-grid">
+              <article class="plan">
+                <h4>Starter</h4>
+                <p>Ideal for low-volume partner sourcing.</p>
+                <strong>€490</strong>
+                <ul class="feature-list">
+                  <li>Up to 50 profile searches / month</li>
+                  <li>3 controlled access requests</li>
+                  <li>Email support</li>
+                </ul>
+              </article>
+              <article class="plan featured">
+                <h4>Partner Pro</h4>
+                <p>Designed for recurring mission pipelines.</p>
+                <strong>€1,290</strong>
+                <ul class="feature-list">
+                  <li>Unlimited searches on anonymized CVs</li>
+                  <li>15 reveal requests / month</li>
+                  <li>Mission brief parsing and saved searches</li>
+                </ul>
+              </article>
+              <article class="plan">
+                <h4>Enterprise</h4>
+                <p>Dedicated commercial governance and APIs.</p>
+                <strong>Custom</strong>
+                <ul class="feature-list">
+                  <li>SSO / Entra ID federation</li>
+                  <li>Access approval workflow</li>
+                  <li>Export, analytics, and audit retention</li>
+                </ul>
+              </article>
+            </div>
+          </div>
+
+          <div class="insights-panel" id="compliance">
+            <h3 class="section-title">Compliance & trust</h3>
+            <div class="insights">
+              <div class="insight">
+                <strong>GDPR-first exposure</strong>
+                <p>Public partner view never exposes names, emails, phone numbers, or raw CV files by default.</p>
+              </div>
+              <div class="insight">
+                <strong>Approval workflow</strong>
+                <p>Identity reveal can require recruiter validation, commercial approval, or both before release.</p>
+              </div>
+              <div class="insight">
+                <strong>Auditability</strong>
+                <p>Every search, shortlist, and reveal request can be logged to a dedicated SharePoint or backend audit dataset.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const profiles = [
+      {
+        id: 'CSA-014',
+        title: 'Cloud Security Architect',
+        meta: 'Architect · Azure / GCP · Banking & compliance · Availability: 2 weeks',
+        score: 96,
+        skills: ['Azure', 'IAM', 'Terraform', 'Landing Zone', 'GCP', 'ISO 27001'],
+        summary: 'Strong alignment for cloud security transformation, IAM hardening, and regulated environments.',
+        seniority: 'Architect',
+        availability: 'Under 2 weeks'
+      },
+      {
+        id: 'DEV-022',
+        title: 'Platform Engineer',
+        meta: 'Senior · Kubernetes / DevSecOps · FinOps aware · Availability: immediate',
+        score: 88,
+        skills: ['Kubernetes', 'Azure', 'Helm', 'DevSecOps', 'Observability', 'CI/CD'],
+        summary: 'Relevant for mission briefs mixing platform engineering, cluster governance, and deployment automation.',
+        seniority: 'Senior',
+        availability: 'Immediate'
+      },
+      {
+        id: 'ARC-037',
+        title: 'Enterprise Cloud Architect',
+        meta: 'Lead · Multi-cloud strategy · Enterprise migration · Availability: 1 month',
+        score: 81,
+        skills: ['Azure', 'GCP', 'Migration', 'Networking', 'Security', 'Governance'],
+        summary: 'Useful for architecture-heavy missions with a strong governance and transformation angle.',
+        seniority: 'Lead',
+        availability: 'Under 1 month'
+      },
+      {
+        id: 'SAP-041',
+        title: 'Data & AI Platform Consultant',
+        meta: 'Senior · Data platform / Azure AI · Availability: immediate',
+        score: 74,
+        skills: ['Azure AI', 'Data Platform', 'Python', 'MLOps', 'Databricks', 'Security'],
+        summary: 'Good secondary fit when the mission blends cloud modernization, analytics, and secure platform setup.',
+        seniority: 'Senior',
+        availability: 'Immediate'
+      }
+    ];
+
+    const suggested = ['Azure', 'GCP', 'AWS', 'Terraform', 'IAM', 'Kubernetes', 'Cybersecurity', 'Compliance', 'DevSecOps', 'Landing Zone'];
+    const activeSkills = new Set(['Azure', 'IAM', 'Terraform']);
+
+    const suggestedSkillsEl = document.getElementById('suggestedSkills');
+    const activeSkillsEl = document.getElementById('activeSkills');
+    const resultsEl = document.getElementById('results');
+    const skillInput = document.getElementById('skillInput');
+
+    function scrollToSection(id) {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderSkillPools() {
+      suggestedSkillsEl.innerHTML = '';
+      suggested.forEach((skill) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `chip${activeSkills.has(skill) ? ' active' : ''}`;
+        button.textContent = skill;
+        button.onclick = () => {
+          if (activeSkills.has(skill)) {
+            activeSkills.delete(skill);
+          } else {
+            activeSkills.add(skill);
+          }
+          renderSkillPools();
+          renderResults();
+        };
+        suggestedSkillsEl.appendChild(button);
+      });
+
+      activeSkillsEl.innerHTML = '';
+      if (activeSkills.size === 0) {
+        activeSkillsEl.innerHTML = '<span class="footnote">No skill selected yet. Add explicit skills or analyze a mission brief.</span>';
+        return;
+      }
+      Array.from(activeSkills).sort().forEach((skill) => {
+        const span = document.createElement('span');
+        span.className = 'chip active';
+        span.textContent = skill;
+        activeSkillsEl.appendChild(span);
+      });
+    }
+
+    function computeScore(profile) {
+      const selected = Array.from(activeSkills);
+      const matches = selected.filter((skill) => profile.skills.includes(skill)).length;
+      return Math.min(99, 62 + (matches * 9));
+    }
+
+    function renderResults() {
+      const seniority = document.getElementById('seniority').value;
+      const availability = document.getElementById('availability').value;
+
+      const filtered = profiles
+        .filter((profile) => !seniority || profile.seniority === seniority)
+        .filter((profile) => !availability || profile.availability === availability)
+        .map((profile) => ({ ...profile, dynamicScore: computeScore(profile) }))
+        .sort((a, b) => b.dynamicScore - a.dynamicScore);
+
+      resultsEl.innerHTML = '';
+      filtered.forEach((profile) => {
+        const card = document.createElement('article');
+        card.className = 'cv-card';
+        card.innerHTML = `
+          <div class="cv-top">
+            <div>
+              <span class="candidate-id">Candidate ${profile.id}</span>
+              <h4>${profile.title}</h4>
+              <p class="cv-meta">${profile.meta}</p>
+            </div>
+            <div class="score">
+              <strong>${profile.dynamicScore}%</strong>
+              <span>mission fit</span>
+            </div>
+          </div>
+          <p class="cv-meta">${profile.summary}</p>
+          <div class="skills">${profile.skills.map((skill) => `<span class="skill-pill">${skill}</span>`).join('')}</div>
+          <div class="cv-actions">
+            <button class="button primary" type="button">Request identity reveal</button>
+            <button class="button ghost" type="button">Save shortlist</button>
+          </div>
+        `;
+        resultsEl.appendChild(card);
+      });
+    }
+
+    function extractFromBrief() {
+      const text = document.getElementById('missionBrief').value.toLowerCase();
+      suggested.forEach((skill) => {
+        if (text.includes(skill.toLowerCase())) {
+          activeSkills.add(skill);
+        }
+      });
+      renderSkillPools();
+      renderResults();
+    }
+
+    function runSearch() {
+      extractFromBrief();
+      renderResults();
+      scrollToSection('search');
+    }
+
+    skillInput.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      const value = skillInput.value.trim();
+      if (!value) return;
+      activeSkills.add(value);
+      if (!suggested.includes(value)) suggested.push(value);
+      skillInput.value = '';
+      renderSkillPools();
+      renderResults();
+    });
+
+    renderSkillPools();
+    renderResults();
+  </script>
+</body>
+</html>

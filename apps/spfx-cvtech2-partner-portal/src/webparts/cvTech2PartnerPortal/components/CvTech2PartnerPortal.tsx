@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ICvTech2PartnerPortalWebPartProps } from '../CvTech2PartnerPortalWebPart';
 
 interface Props {
@@ -106,6 +106,8 @@ function scoreProfile(profile: CandidateProfile, selectedSkills: string[]): numb
   return Math.min(99, 62 + matches * 9);
 }
 
+type LayoutMode = 'desktop' | 'tablet' | 'mobile';
+
 export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Element {
   const {
     brandLabel,
@@ -113,15 +115,46 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
     primaryColor,
     secondaryColor,
     accentTextColor,
-    surfaceColor
+    surfaceColor,
+    webPartMaxWidth,
+    sidebarWidth,
+    minHeight,
+    contentPadding,
+    sectionGap,
+    cardPadding,
+    borderRadius,
+    metricMinWidth,
+    metricMinHeight,
+    titleFontSize,
+    bodyFontSize
   } = webPartProps;
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(webPartMaxWidth);
   const [missionBrief, setMissionBrief] = useState('');
   const [skillInput, setSkillInput] = useState('');
   const [selectedSkills, setSelectedSkills] = useState<string[]>(['Azure', 'IAM', 'Terraform']);
   const [seniority, setSeniority] = useState('');
   const [availability, setAvailability] = useState('');
   const [activeSection, setActiveSection] = useState('overview');
+
+  useEffect(() => {
+    const measure = (): void => {
+      const width = rootRef.current?.getBoundingClientRect().width;
+      if (width) setContainerWidth(width);
+    };
+
+    measure();
+
+    if (typeof ResizeObserver !== 'undefined' && rootRef.current) {
+      const resizeObserver = new ResizeObserver(measure);
+      resizeObserver.observe(rootRef.current);
+      return () => resizeObserver.disconnect();
+    }
+
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
 
   const rankedProfiles = useMemo(() => {
     return profiles
@@ -160,10 +193,28 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const styles = buildStyles(primaryColor, secondaryColor, accentTextColor, surfaceColor);
+  const layoutMode: LayoutMode = containerWidth < 680 ? 'mobile' : containerWidth < 1060 ? 'tablet' : 'desktop';
+  const styles = buildStyles({
+    primaryColor,
+    secondaryColor,
+    accentTextColor,
+    surfaceColor,
+    webPartMaxWidth,
+    sidebarWidth,
+    minHeight,
+    contentPadding,
+    sectionGap,
+    cardPadding,
+    borderRadius,
+    metricMinWidth,
+    metricMinHeight,
+    titleFontSize,
+    bodyFontSize,
+    layoutMode
+  });
 
   return (
-    <div style={styles.shell}>
+    <div ref={rootRef} style={styles.shell}>
       <aside style={styles.sidebar}>
         <div>
           <div style={styles.brand}>{brandLabel}</div>
@@ -380,31 +431,84 @@ function WorkflowStep({ number, title, text, styles }: { number: string; title: 
   );
 }
 
-function buildStyles(primaryColor: string, secondaryColor: string, accentTextColor: string, surfaceColor: string): Record<string, React.CSSProperties> {
+interface StyleOptions {
+  primaryColor: string;
+  secondaryColor: string;
+  accentTextColor: string;
+  surfaceColor: string;
+  webPartMaxWidth: number;
+  sidebarWidth: number;
+  minHeight: number;
+  contentPadding: number;
+  sectionGap: number;
+  cardPadding: number;
+  borderRadius: number;
+  metricMinWidth: number;
+  metricMinHeight: number;
+  titleFontSize: number;
+  bodyFontSize: number;
+  layoutMode: LayoutMode;
+}
+
+function buildStyles(options: StyleOptions): Record<string, React.CSSProperties> {
+  const {
+    primaryColor,
+    secondaryColor,
+    accentTextColor,
+    surfaceColor,
+    webPartMaxWidth,
+    sidebarWidth,
+    minHeight,
+    contentPadding,
+    sectionGap,
+    cardPadding,
+    borderRadius,
+    metricMinWidth,
+    metricMinHeight,
+    titleFontSize,
+    bodyFontSize,
+    layoutMode
+  } = options;
+  const isDesktop = layoutMode === 'desktop';
+  const isMobile = layoutMode === 'mobile';
+  const compactPadding = isMobile ? Math.max(12, Math.round(contentPadding * 0.55)) : contentPadding;
+  const compactCardPadding = isMobile ? Math.max(12, Math.round(cardPadding * 0.72)) : cardPadding;
+  const effectiveTitleSize = isMobile ? Math.max(30, Math.round(titleFontSize * 0.7)) : layoutMode === 'tablet' ? Math.max(34, Math.round(titleFontSize * 0.82)) : titleFontSize;
+  const effectiveBodySize = isMobile ? Math.max(14, bodyFontSize - 2) : bodyFontSize;
+
   return {
     shell: {
       display: 'grid',
-      gridTemplateColumns: '280px minmax(0, 1fr)',
-      minHeight: 920,
+      gridTemplateColumns: isDesktop ? `${sidebarWidth}px minmax(0, 1fr)` : 'minmax(0, 1fr)',
+      width: '100%',
+      maxWidth: webPartMaxWidth,
+      minWidth: 0,
+      minHeight: isMobile ? 'auto' : minHeight,
+      margin: '0 auto',
+      boxSizing: 'border-box',
+      overflow: 'hidden',
       color: accentTextColor,
       background: surfaceColor,
-      fontFamily: 'Aptos, Segoe UI, sans-serif'
+      fontFamily: 'Aptos, Segoe UI, sans-serif',
+      fontSize: effectiveBodySize
     },
     sidebar: {
       background: `linear-gradient(180deg, ${primaryColor}, ${secondaryColor})`,
       color: '#fff',
-      padding: '30px 20px',
+      padding: isDesktop ? `${compactPadding + 2}px ${Math.max(16, compactPadding - 8)}px` : `${compactPadding}px`,
       display: 'flex',
-      flexDirection: 'column',
-      gap: 24
+      flexDirection: isDesktop ? 'column' : 'row',
+      flexWrap: 'wrap',
+      gap: isMobile ? 14 : sectionGap,
+      alignItems: isDesktop ? 'stretch' : 'center'
     },
-    brand: { fontSize: 38, fontWeight: 800, textTransform: 'lowercase' },
-    brandCopy: { margin: '8px 0 0', lineHeight: 1.45, color: 'rgba(255,255,255,0.82)' },
-    nav: { display: 'grid', gap: 8 },
+    brand: { fontSize: isMobile ? 30 : 38, fontWeight: 800, textTransform: 'lowercase' },
+    brandCopy: { margin: '8px 0 0', lineHeight: 1.45, color: 'rgba(255,255,255,0.82)', maxWidth: isDesktop ? 'none' : 460 },
+    nav: { display: 'flex', flexDirection: isDesktop ? 'column' : 'row', flexWrap: 'wrap', gap: 8, flex: isDesktop ? '0 0 auto' : '1 1 420px' },
     navItem: {
-      padding: '13px 14px',
+      padding: isMobile ? '10px 12px' : '13px 14px',
       border: 'none',
-      borderRadius: 8,
+      borderRadius,
       background: 'transparent',
       color: '#fff',
       cursor: 'pointer',
@@ -413,48 +517,48 @@ function buildStyles(primaryColor: string, secondaryColor: string, accentTextCol
       textAlign: 'left'
     },
     navItemActive: { background: 'rgba(255,255,255,0.18)' },
-    sidePanel: { marginTop: 'auto', padding: 16, borderRadius: 8, background: 'rgba(255,255,255,0.14)', display: 'grid', gap: 8 },
-    content: { padding: 28, display: 'grid', gap: 22 },
-    hero: { display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(320px,0.9fr)', gap: 20, padding: 24, background: '#fff', borderRadius: 8, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: 24 },
+    sidePanel: { marginTop: isDesktop ? 'auto' : 0, padding: compactCardPadding, borderRadius, background: 'rgba(255,255,255,0.14)', display: 'grid', gap: 8, flex: isDesktop ? '0 0 auto' : '1 1 280px' },
+    content: { padding: compactPadding, display: 'grid', gap: sectionGap, minWidth: 0 },
+    hero: { display: 'grid', gridTemplateColumns: isDesktop ? `minmax(0,1.3fr) minmax(${metricMinWidth * 2 + sectionGap}px,0.9fr)` : 'minmax(0,1fr)', gap: sectionGap, padding: compactCardPadding, background: '#fff', borderRadius, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: sectionGap, minWidth: 0 },
     eyebrow: { display: 'inline-block', color: secondaryColor, fontWeight: 800, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' },
-    title: { margin: '14px 0 12px', fontSize: 48, lineHeight: 1.05, fontWeight: 800 },
-    lead: { margin: 0, color: '#55727b', fontSize: 17, lineHeight: 1.55 },
+    title: { margin: '14px 0 12px', fontSize: effectiveTitleSize, lineHeight: 1.05, fontWeight: 800, overflowWrap: 'anywhere' },
+    lead: { margin: 0, color: '#55727b', fontSize: effectiveBodySize, lineHeight: 1.55 },
     heroActions: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 20 },
-    primaryButton: { border: 'none', background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: '#fff', padding: '12px 16px', borderRadius: 8, fontWeight: 800, cursor: 'pointer' },
-    secondaryButton: { border: '1px solid rgba(16,36,46,0.14)', background: '#fff', color: accentTextColor, padding: '12px 16px', borderRadius: 8, fontWeight: 800, cursor: 'pointer' },
-    compactButton: { border: 'none', background: secondaryColor, color: '#fff', padding: '12px 14px', borderRadius: 8, fontWeight: 800, cursor: 'pointer' },
-    statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 10 },
-    metric: { background: '#f5fbfc', border: '1px solid rgba(16,36,46,0.08)', borderRadius: 8, padding: 16, display: 'grid', gap: 8 },
-    searchBand: { background: '#fff', borderRadius: 8, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: 24 },
-    searchHeader: { padding: '24px 24px 0' },
-    searchGrid: { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 18, padding: 24 },
-    sectionTitle: { margin: 0, fontSize: 28, lineHeight: 1.15, fontWeight: 800 },
+    primaryButton: { border: 'none', background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: '#fff', padding: '12px 16px', borderRadius, fontWeight: 800, cursor: 'pointer' },
+    secondaryButton: { border: '1px solid rgba(16,36,46,0.14)', background: '#fff', color: accentTextColor, padding: '12px 16px', borderRadius, fontWeight: 800, cursor: 'pointer' },
+    compactButton: { border: 'none', background: secondaryColor, color: '#fff', padding: '12px 14px', borderRadius, fontWeight: 800, cursor: 'pointer' },
+    statsGrid: { display: 'grid', gridTemplateColumns: `repeat(auto-fit,minmax(${metricMinWidth}px,1fr))`, gap: 10, minWidth: 0 },
+    metric: { background: '#f5fbfc', border: '1px solid rgba(16,36,46,0.08)', borderRadius, padding: compactCardPadding, minHeight: metricMinHeight, display: 'grid', alignContent: 'space-between', gap: 8, minWidth: 0, overflowWrap: 'anywhere' },
+    searchBand: { background: '#fff', borderRadius, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: sectionGap, minWidth: 0 },
+    searchHeader: { padding: `${compactCardPadding}px ${compactCardPadding}px 0` },
+    searchGrid: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr)', gap: sectionGap, padding: compactCardPadding, minWidth: 0 },
+    sectionTitle: { margin: 0, fontSize: isMobile ? 24 : 28, lineHeight: 1.15, fontWeight: 800 },
     muted: { margin: '8px 0 0', color: '#55727b', lineHeight: 1.5 },
-    panel: { background: '#f5fbfc', border: '1px solid rgba(16,36,46,0.08)', borderRadius: 8, padding: 18, display: 'grid', gap: 14 },
-    textarea: { minHeight: 132, border: '1px solid rgba(16,36,46,0.14)', borderRadius: 8, padding: 12, font: 'inherit' },
-    inputRow: { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 10 },
-    input: { border: '1px solid rgba(16,36,46,0.14)', borderRadius: 8, padding: 12, font: 'inherit', width: '100%' },
+    panel: { background: '#f5fbfc', border: '1px solid rgba(16,36,46,0.08)', borderRadius, padding: compactCardPadding, display: 'grid', gap: 14, minWidth: 0 },
+    textarea: { minHeight: isMobile ? 112 : 132, border: '1px solid rgba(16,36,46,0.14)', borderRadius, padding: 12, font: 'inherit', boxSizing: 'border-box', width: '100%', minWidth: 0 },
+    inputRow: { display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'minmax(0,1fr) auto', gap: 10, minWidth: 0 },
+    input: { border: '1px solid rgba(16,36,46,0.14)', borderRadius, padding: 12, font: 'inherit', width: '100%', minWidth: 0, boxSizing: 'border-box' },
     chipRow: { display: 'flex', flexWrap: 'wrap', gap: 8 },
     chip: { border: '1px solid rgba(16,36,46,0.14)', background: '#fff', color: accentTextColor, borderRadius: 999, padding: '8px 11px', fontWeight: 700, cursor: 'pointer' },
     chipActive: { borderColor: 'transparent', background: secondaryColor, color: '#fff' },
-    twoColumn: { display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 12 },
+    twoColumn: { display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'repeat(2,minmax(0,1fr))', gap: 12 },
     workflow: { display: 'grid', gap: 10 },
-    workflowStep: { display: 'grid', gridTemplateColumns: '34px minmax(0,1fr)', gap: 10, alignItems: 'start', padding: 12, background: '#fff', borderRadius: 8, border: '1px solid rgba(16,36,46,0.08)' },
-    resultsLayout: { display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) 360px', gap: 20, scrollMarginTop: 24 },
-    resultsPanel: { background: '#fff', borderRadius: 8, padding: 22, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: 24 },
+    workflowStep: { display: 'grid', gridTemplateColumns: '34px minmax(0,1fr)', gap: 10, alignItems: 'start', padding: 12, background: '#fff', borderRadius, border: '1px solid rgba(16,36,46,0.08)', minWidth: 0 },
+    resultsLayout: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1.4fr) minmax(280px,360px)' : 'minmax(0,1fr)', gap: sectionGap, scrollMarginTop: sectionGap, minWidth: 0 },
+    resultsPanel: { background: '#fff', borderRadius, padding: compactCardPadding, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: sectionGap, minWidth: 0 },
     resultList: { display: 'grid', gap: 14, marginTop: 18 },
-    cvCard: { border: '1px solid rgba(16,36,46,0.08)', borderRadius: 8, padding: 18, background: '#fdfefe' },
-    cvTop: { display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' },
+    cvCard: { border: '1px solid rgba(16,36,46,0.08)', borderRadius, padding: compactCardPadding, background: '#fdfefe', minWidth: 0 },
+    cvTop: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: 16, alignItems: isMobile ? 'stretch' : 'flex-start', minWidth: 0 },
     candidateId: { display: 'inline-block', background: 'rgba(39,194,198,0.12)', color: secondaryColor, borderRadius: 999, padding: '7px 10px', fontWeight: 800, fontSize: 12 },
-    cardTitle: { margin: '10px 0 0', fontSize: 24, lineHeight: 1.15 },
-    scoreBox: { minWidth: 96, textAlign: 'right', background: '#fff', border: '1px solid rgba(16,36,46,0.08)', borderRadius: 8, padding: 12 },
+    cardTitle: { margin: '10px 0 0', fontSize: isMobile ? 21 : 24, lineHeight: 1.15, overflowWrap: 'anywhere' },
+    scoreBox: { minWidth: 96, textAlign: isMobile ? 'left' : 'right', background: '#fff', border: '1px solid rgba(16,36,46,0.08)', borderRadius, padding: 12 },
     profileSummary: { margin: '12px 0', color: '#55727b', lineHeight: 1.5 },
     skillPills: { display: 'flex', flexWrap: 'wrap', gap: 7 },
     skillPill: { background: '#fff', border: '1px solid rgba(16,36,46,0.08)', borderRadius: 999, padding: '6px 9px', fontSize: 12, fontWeight: 700 },
     cardActions: { display: 'flex', flexWrap: 'wrap', gap: 9, marginTop: 14 },
     asideStack: { display: 'grid', gap: 18, alignContent: 'start' },
     planList: { display: 'grid', gap: 12, marginTop: 16 },
-    plan: { border: '1px solid rgba(16,36,46,0.08)', borderRadius: 8, padding: 16, background: '#fdfefe' },
+    plan: { border: '1px solid rgba(16,36,46,0.08)', borderRadius, padding: compactCardPadding, background: '#fdfefe' },
     featuredPlan: { background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: '#fff', borderColor: 'transparent' },
     planTitle: { margin: 0, fontSize: 21 },
     planCopy: { margin: '8px 0', lineHeight: 1.45 },

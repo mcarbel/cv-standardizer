@@ -4,7 +4,7 @@ import {
   BaseClientSideWebPart,
   IPropertyPaneConfiguration
 } from '@microsoft/sp-webpart-base';
-import { PropertyPaneTextField } from '@microsoft/sp-property-pane';
+import { PropertyPaneSlider, PropertyPaneTextField } from '@microsoft/sp-property-pane';
 import CvTech2PartnerPortal from './components/CvTech2PartnerPortal';
 
 export interface ICvTech2PartnerPortalWebPartProps {
@@ -14,6 +14,17 @@ export interface ICvTech2PartnerPortalWebPartProps {
   secondaryColor: string;
   accentTextColor: string;
   surfaceColor: string;
+  webPartMaxWidth: number;
+  sidebarWidth: number;
+  minHeight: number;
+  contentPadding: number;
+  sectionGap: number;
+  cardPadding: number;
+  borderRadius: number;
+  metricMinWidth: number;
+  metricMinHeight: number;
+  titleFontSize: number;
+  bodyFontSize: number;
 }
 
 const DEFAULT_PROPS: ICvTech2PartnerPortalWebPartProps = {
@@ -22,7 +33,18 @@ const DEFAULT_PROPS: ICvTech2PartnerPortalWebPartProps = {
   primaryColor: '#27c2c6',
   secondaryColor: '#136d70',
   accentTextColor: '#16323a',
-  surfaceColor: '#eef4f8'
+  surfaceColor: '#eef4f8',
+  webPartMaxWidth: 1440,
+  sidebarWidth: 280,
+  minHeight: 760,
+  contentPadding: 28,
+  sectionGap: 22,
+  cardPadding: 22,
+  borderRadius: 10,
+  metricMinWidth: 180,
+  metricMinHeight: 132,
+  titleFontSize: 48,
+  bodyFontSize: 17
 };
 
 export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<ICvTech2PartnerPortalWebPartProps> {
@@ -33,6 +55,17 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
     this.properties.secondaryColor = this.properties.secondaryColor || DEFAULT_PROPS.secondaryColor;
     this.properties.accentTextColor = this.properties.accentTextColor || DEFAULT_PROPS.accentTextColor;
     this.properties.surfaceColor = this.properties.surfaceColor || DEFAULT_PROPS.surfaceColor;
+    this.properties.webPartMaxWidth = this.properties.webPartMaxWidth || DEFAULT_PROPS.webPartMaxWidth;
+    this.properties.sidebarWidth = this.properties.sidebarWidth || DEFAULT_PROPS.sidebarWidth;
+    this.properties.minHeight = this.properties.minHeight || DEFAULT_PROPS.minHeight;
+    this.properties.contentPadding = this.properties.contentPadding || DEFAULT_PROPS.contentPadding;
+    this.properties.sectionGap = this.properties.sectionGap || DEFAULT_PROPS.sectionGap;
+    this.properties.cardPadding = this.properties.cardPadding || DEFAULT_PROPS.cardPadding;
+    this.properties.borderRadius = this.properties.borderRadius || DEFAULT_PROPS.borderRadius;
+    this.properties.metricMinWidth = this.properties.metricMinWidth || DEFAULT_PROPS.metricMinWidth;
+    this.properties.metricMinHeight = this.properties.metricMinHeight || DEFAULT_PROPS.metricMinHeight;
+    this.properties.titleFontSize = this.properties.titleFontSize || DEFAULT_PROPS.titleFontSize;
+    this.properties.bodyFontSize = this.properties.bodyFontSize || DEFAULT_PROPS.bodyFontSize;
 
     await super.onInit();
   }
@@ -69,6 +102,22 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
                 PropertyPaneTextField('secondaryColor', { label: 'Secondary color' }),
                 PropertyPaneTextField('accentTextColor', { label: 'Accent text color' }),
                 PropertyPaneTextField('surfaceColor', { label: 'Surface color' })
+              ]
+            },
+            {
+              groupName: 'Responsive layout',
+              groupFields: [
+                PropertyPaneSlider('webPartMaxWidth', { label: 'Web part max width (px)', min: 720, max: 1920, step: 20 }),
+                PropertyPaneSlider('sidebarWidth', { label: 'Sidebar width (px)', min: 180, max: 420, step: 10 }),
+                PropertyPaneSlider('minHeight', { label: 'Minimum height (px)', min: 420, max: 1200, step: 20 }),
+                PropertyPaneSlider('contentPadding', { label: 'Content padding (px)', min: 8, max: 56, step: 2 }),
+                PropertyPaneSlider('sectionGap', { label: 'Section gap (px)', min: 8, max: 48, step: 2 }),
+                PropertyPaneSlider('cardPadding', { label: 'Card padding (px)', min: 10, max: 40, step: 2 }),
+                PropertyPaneSlider('borderRadius', { label: 'Border radius (px)', min: 0, max: 32, step: 1 }),
+                PropertyPaneSlider('metricMinWidth', { label: 'Metric card min width (px)', min: 120, max: 320, step: 10 }),
+                PropertyPaneSlider('metricMinHeight', { label: 'Metric card min height (px)', min: 80, max: 220, step: 10 }),
+                PropertyPaneSlider('titleFontSize', { label: 'Title font size (px)', min: 28, max: 72, step: 2 }),
+                PropertyPaneSlider('bodyFontSize', { label: 'Body font size (px)', min: 13, max: 22, step: 1 })
               ]
             }
           ]

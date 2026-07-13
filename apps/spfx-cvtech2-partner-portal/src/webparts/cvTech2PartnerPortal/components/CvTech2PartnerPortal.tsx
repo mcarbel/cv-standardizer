@@ -90,6 +90,14 @@ const plans = [
   }
 ];
 
+const navItems = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'cv-library', label: 'CV Library' },
+  { id: 'mission-match', label: 'Mission Match' },
+  { id: 'plans', label: 'Plans' },
+  { id: 'compliance', label: 'Compliance' }
+];
+
 function scoreProfile(profile: CandidateProfile, selectedSkills: string[]): number {
   const matches = selectedSkills.filter((skill) =>
     profile.skills.some((profileSkill) => profileSkill.toLowerCase() === skill.toLowerCase())
@@ -113,6 +121,7 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
   const [selectedSkills, setSelectedSkills] = useState<string[]>(['Azure', 'IAM', 'Terraform']);
   const [seniority, setSeniority] = useState('');
   const [availability, setAvailability] = useState('');
+  const [activeSection, setActiveSection] = useState('overview');
 
   const rankedProfiles = useMemo(() => {
     return profiles
@@ -143,6 +152,12 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
     const lower = missionBrief.toLowerCase();
     const extracted = suggestedSkills.filter((skill) => lower.includes(skill.toLowerCase()));
     setSelectedSkills((current) => Array.from(new Set([...current, ...extracted])));
+    navigateToSection('mission-match');
+  };
+
+  const navigateToSection = (sectionId: string): void => {
+    setActiveSection(sectionId);
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const styles = buildStyles(primaryColor, secondaryColor, accentTextColor, surfaceColor);
@@ -155,10 +170,15 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
           <p style={styles.brandCopy}>Partner access for anonymized CV discovery and mission matching.</p>
         </div>
         <nav style={styles.nav}>
-          {['Overview', 'CV Library', 'Mission Match', 'Plans', 'Compliance'].map((label, index) => (
-            <div key={label} style={index === 0 ? { ...styles.navItem, ...styles.navItemActive } : styles.navItem}>
-              {label}
-            </div>
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              style={activeSection === item.id ? { ...styles.navItem, ...styles.navItemActive } : styles.navItem}
+              onClick={() => navigateToSection(item.id)}
+            >
+              {item.label}
+            </button>
           ))}
         </nav>
         <div style={styles.sidePanel}>
@@ -168,7 +188,7 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
       </aside>
 
       <main style={styles.content}>
-        <section style={styles.hero}>
+        <section id="overview" style={styles.hero}>
           <div>
             <span style={styles.eyebrow}>SaaS partner cockpit</span>
             <h1 style={styles.title}>{portalTitle}</h1>
@@ -180,7 +200,7 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
               <button type="button" style={styles.primaryButton} onClick={extractSkillsFromBrief}>
                 Analyze mission
               </button>
-              <button type="button" style={styles.secondaryButton}>
+              <button type="button" style={styles.secondaryButton} onClick={() => navigateToSection('plans')}>
                 Request partner access
               </button>
             </div>
@@ -193,7 +213,7 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
           </div>
         </section>
 
-        <section style={styles.searchBand}>
+        <section id="mission-match" style={styles.searchBand}>
           <div style={styles.searchHeader}>
             <div>
               <h2 style={styles.sectionTitle}>Find available CVs</h2>
@@ -276,7 +296,7 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
           </div>
         </section>
 
-        <section style={styles.resultsLayout}>
+        <section id="cv-library" style={styles.resultsLayout}>
           <div style={styles.resultsPanel}>
             <h2 style={styles.sectionTitle}>Matching candidate profiles</h2>
             <p style={styles.muted}>Example result set; the next integration step is binding this to SharePoint metadata or a secure search index.</p>
@@ -308,7 +328,7 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
           </div>
 
           <aside style={styles.asideStack}>
-            <div style={styles.resultsPanel}>
+            <div id="plans" style={styles.resultsPanel}>
               <h2 style={styles.sectionTitle}>SaaS plans</h2>
               <div style={styles.planList}>
                 {plans.map((plan) => (
@@ -323,7 +343,7 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
                 ))}
               </div>
             </div>
-            <div style={styles.resultsPanel}>
+            <div id="compliance" style={styles.resultsPanel}>
               <h2 style={styles.sectionTitle}>Compliance</h2>
               <WorkflowStep number="G" title="GDPR-first" text="Names, contacts, and raw CVs stay protected by default." styles={styles} />
               <WorkflowStep number="A" title="Audit trail" text="Searches, shortlists, and reveal requests can be logged." styles={styles} />
@@ -381,11 +401,21 @@ function buildStyles(primaryColor: string, secondaryColor: string, accentTextCol
     brand: { fontSize: 38, fontWeight: 800, textTransform: 'lowercase' },
     brandCopy: { margin: '8px 0 0', lineHeight: 1.45, color: 'rgba(255,255,255,0.82)' },
     nav: { display: 'grid', gap: 8 },
-    navItem: { padding: '13px 14px', borderRadius: 8, fontWeight: 700 },
+    navItem: {
+      padding: '13px 14px',
+      border: 'none',
+      borderRadius: 8,
+      background: 'transparent',
+      color: '#fff',
+      cursor: 'pointer',
+      font: 'inherit',
+      fontWeight: 700,
+      textAlign: 'left'
+    },
     navItemActive: { background: 'rgba(255,255,255,0.18)' },
     sidePanel: { marginTop: 'auto', padding: 16, borderRadius: 8, background: 'rgba(255,255,255,0.14)', display: 'grid', gap: 8 },
     content: { padding: 28, display: 'grid', gap: 22 },
-    hero: { display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(320px,0.9fr)', gap: 20, padding: 24, background: '#fff', borderRadius: 8, boxShadow: '0 16px 34px rgba(15,23,42,0.07)' },
+    hero: { display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(320px,0.9fr)', gap: 20, padding: 24, background: '#fff', borderRadius: 8, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: 24 },
     eyebrow: { display: 'inline-block', color: secondaryColor, fontWeight: 800, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' },
     title: { margin: '14px 0 12px', fontSize: 48, lineHeight: 1.05, fontWeight: 800 },
     lead: { margin: 0, color: '#55727b', fontSize: 17, lineHeight: 1.55 },
@@ -395,7 +425,7 @@ function buildStyles(primaryColor: string, secondaryColor: string, accentTextCol
     compactButton: { border: 'none', background: secondaryColor, color: '#fff', padding: '12px 14px', borderRadius: 8, fontWeight: 800, cursor: 'pointer' },
     statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 10 },
     metric: { background: '#f5fbfc', border: '1px solid rgba(16,36,46,0.08)', borderRadius: 8, padding: 16, display: 'grid', gap: 8 },
-    searchBand: { background: '#fff', borderRadius: 8, boxShadow: '0 16px 34px rgba(15,23,42,0.07)' },
+    searchBand: { background: '#fff', borderRadius: 8, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: 24 },
     searchHeader: { padding: '24px 24px 0' },
     searchGrid: { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 18, padding: 24 },
     sectionTitle: { margin: 0, fontSize: 28, lineHeight: 1.15, fontWeight: 800 },
@@ -410,8 +440,8 @@ function buildStyles(primaryColor: string, secondaryColor: string, accentTextCol
     twoColumn: { display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 12 },
     workflow: { display: 'grid', gap: 10 },
     workflowStep: { display: 'grid', gridTemplateColumns: '34px minmax(0,1fr)', gap: 10, alignItems: 'start', padding: 12, background: '#fff', borderRadius: 8, border: '1px solid rgba(16,36,46,0.08)' },
-    resultsLayout: { display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) 360px', gap: 20 },
-    resultsPanel: { background: '#fff', borderRadius: 8, padding: 22, boxShadow: '0 16px 34px rgba(15,23,42,0.07)' },
+    resultsLayout: { display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) 360px', gap: 20, scrollMarginTop: 24 },
+    resultsPanel: { background: '#fff', borderRadius: 8, padding: 22, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: 24 },
     resultList: { display: 'grid', gap: 14, marginTop: 18 },
     cvCard: { border: '1px solid rgba(16,36,46,0.08)', borderRadius: 8, padding: 18, background: '#fdfefe' },
     cvTop: { display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' },

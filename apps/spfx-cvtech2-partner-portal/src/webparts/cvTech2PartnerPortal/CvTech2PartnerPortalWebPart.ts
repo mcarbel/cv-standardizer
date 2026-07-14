@@ -26,11 +26,17 @@ export interface ICvTech2PartnerPortalWebPartProps {
   metricMinHeight: number;
   titleFontSize: number;
   bodyFontSize: number;
+  dataSiteUrl: string;
   cvListTitle: string;
   auditListTitle: string;
   partnerName: string;
   partnerMonthlyQuota: number;
   cvRowLimit: number;
+  overviewPosition: number;
+  cvLibraryPosition: number;
+  missionMatchPosition: number;
+  plansPosition: number;
+  compliancePosition: number;
 }
 
 const DEFAULT_PROPS: ICvTech2PartnerPortalWebPartProps = {
@@ -51,11 +57,17 @@ const DEFAULT_PROPS: ICvTech2PartnerPortalWebPartProps = {
   metricMinHeight: 132,
   titleFontSize: 48,
   bodyFontSize: 17,
+  dataSiteUrl: 'https://braineesysms365.sharepoint.com/sites/CVTech2',
   cvListTitle: 'PartnerCVs',
   auditListTitle: 'PartnerSearchLogs',
   partnerName: 'Default Partner',
   partnerMonthlyQuota: 100,
-  cvRowLimit: 500
+  cvRowLimit: 500,
+  overviewPosition: 1,
+  missionMatchPosition: 2,
+  cvLibraryPosition: 3,
+  plansPosition: 4,
+  compliancePosition: 5
 };
 
 export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<ICvTech2PartnerPortalWebPartProps> {
@@ -77,11 +89,17 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
     this.properties.metricMinHeight = this.properties.metricMinHeight || DEFAULT_PROPS.metricMinHeight;
     this.properties.titleFontSize = this.properties.titleFontSize || DEFAULT_PROPS.titleFontSize;
     this.properties.bodyFontSize = this.properties.bodyFontSize || DEFAULT_PROPS.bodyFontSize;
+    this.properties.dataSiteUrl = this.properties.dataSiteUrl || DEFAULT_PROPS.dataSiteUrl;
     this.properties.cvListTitle = this.properties.cvListTitle || DEFAULT_PROPS.cvListTitle;
     this.properties.auditListTitle = this.properties.auditListTitle || DEFAULT_PROPS.auditListTitle;
     this.properties.partnerName = this.properties.partnerName || DEFAULT_PROPS.partnerName;
     this.properties.partnerMonthlyQuota = this.properties.partnerMonthlyQuota || DEFAULT_PROPS.partnerMonthlyQuota;
     this.properties.cvRowLimit = this.properties.cvRowLimit || DEFAULT_PROPS.cvRowLimit;
+    this.properties.overviewPosition = this.properties.overviewPosition || DEFAULT_PROPS.overviewPosition;
+    this.properties.missionMatchPosition = this.properties.missionMatchPosition || DEFAULT_PROPS.missionMatchPosition;
+    this.properties.cvLibraryPosition = this.properties.cvLibraryPosition || DEFAULT_PROPS.cvLibraryPosition;
+    this.properties.plansPosition = this.properties.plansPosition || DEFAULT_PROPS.plansPosition;
+    this.properties.compliancePosition = this.properties.compliancePosition || DEFAULT_PROPS.compliancePosition;
 
     await super.onInit();
   }
@@ -90,7 +108,7 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
     const element = React.createElement(CvTech2PartnerPortal, {
       webPartProps: this.properties,
       spHttpClient: this.context.spHttpClient as SPHttpClient,
-      siteUrl: this.context.pageContext.web.absoluteUrl,
+      siteUrl: this.properties.dataSiteUrl || this.context.pageContext.web.absoluteUrl,
       userDisplayName: this.context.pageContext.user.displayName,
       userEmail: this.context.pageContext.user.email || this.context.pageContext.user.loginName
     });
@@ -118,6 +136,7 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
             {
               groupName: 'SharePoint data',
               groupFields: [
+                PropertyPaneTextField('dataSiteUrl', { label: 'Data site URL' }),
                 PropertyPaneTextField('cvListTitle', { label: 'CV list title' }),
                 PropertyPaneTextField('auditListTitle', { label: 'Search audit list title' }),
                 PropertyPaneTextField('partnerName', { label: 'Partner name' }),
@@ -132,6 +151,16 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
                 PropertyPaneTextField('secondaryColor', { label: 'Secondary color' }),
                 PropertyPaneTextField('accentTextColor', { label: 'Accent text color' }),
                 PropertyPaneTextField('surfaceColor', { label: 'Surface color' })
+              ]
+            },
+            {
+              groupName: 'Section order',
+              groupFields: [
+                PropertyPaneSlider('overviewPosition', { label: 'Overview position', min: 1, max: 10, step: 1 }),
+                PropertyPaneSlider('missionMatchPosition', { label: 'Mission Match position', min: 1, max: 10, step: 1 }),
+                PropertyPaneSlider('cvLibraryPosition', { label: 'CV Library position', min: 1, max: 10, step: 1 }),
+                PropertyPaneSlider('plansPosition', { label: 'Plans position', min: 1, max: 10, step: 1 }),
+                PropertyPaneSlider('compliancePosition', { label: 'Compliance position', min: 1, max: 10, step: 1 })
               ]
             },
             {

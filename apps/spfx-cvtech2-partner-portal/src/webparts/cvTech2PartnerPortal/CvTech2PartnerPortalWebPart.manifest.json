@@ -42,11 +42,17 @@
         "metricMinHeight": 132,
         "titleFontSize": 48,
         "bodyFontSize": 17,
+        "dataSiteUrl": "https://braineesysms365.sharepoint.com/sites/CVTech2",
         "cvListTitle": "PartnerCVs",
         "auditListTitle": "PartnerSearchLogs",
         "partnerName": "Default Partner",
         "partnerMonthlyQuota": 100,
-        "cvRowLimit": 500
+        "cvRowLimit": 500,
+        "overviewPosition": 1,
+        "missionMatchPosition": 2,
+        "cvLibraryPosition": 3,
+        "plansPosition": 4,
+        "compliancePosition": 5
       }
     }
   ]

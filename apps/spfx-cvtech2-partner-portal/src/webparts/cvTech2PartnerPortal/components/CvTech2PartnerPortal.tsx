@@ -59,12 +59,14 @@ const plans = [
   }
 ];
 
-const navItems = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'cv-library', label: 'CV Library' },
-  { id: 'mission-match', label: 'Mission Match' },
-  { id: 'plans', label: 'Plans' },
-  { id: 'compliance', label: 'Compliance' }
+type SectionId = 'overview' | 'cv-library' | 'mission-match' | 'plans' | 'compliance';
+
+const navItems: Array<{ id: SectionId; label: string; defaultOrder: number }> = [
+  { id: 'overview', label: 'Overview', defaultOrder: 1 },
+  { id: 'mission-match', label: 'Mission Match', defaultOrder: 2 },
+  { id: 'cv-library', label: 'CV Library', defaultOrder: 3 },
+  { id: 'plans', label: 'Plans', defaultOrder: 4 },
+  { id: 'compliance', label: 'Compliance', defaultOrder: 5 }
 ];
 
 function scoreProfile(profile: CandidateProfile, selectedSkills: string[]): number {
@@ -135,7 +137,12 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     metricMinHeight,
     titleFontSize,
     bodyFontSize,
-    partnerMonthlyQuota
+    partnerMonthlyQuota,
+    overviewPosition,
+    missionMatchPosition,
+    cvLibraryPosition,
+    plansPosition,
+    compliancePosition
   } = webPartProps;
 
   const rootRef = useRef<HTMLDivElement>(null);
@@ -265,6 +272,16 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
   };
 
   const layoutMode: LayoutMode = containerWidth < 680 ? 'mobile' : containerWidth < 1060 ? 'tablet' : 'desktop';
+  const sectionPositions: Record<SectionId, number> = {
+    overview: overviewPosition,
+    'mission-match': missionMatchPosition,
+    'cv-library': cvLibraryPosition,
+    plans: plansPosition,
+    compliance: compliancePosition
+  };
+  const orderedNavItems = [...navItems].sort((left, right) =>
+    (sectionPositions[left.id] - sectionPositions[right.id]) || (left.defaultOrder - right.defaultOrder)
+  );
   const styles = buildStyles({
     primaryColor,
     secondaryColor,
@@ -292,7 +309,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
           <p style={styles.brandCopy}>Partner access for anonymized CV discovery and mission matching.</p>
         </div>
         <nav style={styles.nav}>
-          {navItems.map((item) => (
+          {orderedNavItems.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -311,7 +328,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
       </aside>
 
       <main style={styles.content}>
-        <section id="overview" style={styles.hero}>
+        <section id="overview" style={{ ...styles.hero, order: sectionPositions.overview }}>
           <div>
             <span style={styles.eyebrow}>SaaS partner cockpit</span>
             <h1 style={styles.title}>{portalTitle}</h1>
@@ -336,7 +353,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
           </div>
         </section>
 
-        <section id="mission-match" style={styles.searchBand}>
+        <section id="mission-match" style={{ ...styles.searchBand, order: sectionPositions['mission-match'] }}>
           <div style={styles.searchHeader}>
             <div>
               <h2 style={styles.sectionTitle}>Find available CVs</h2>
@@ -424,69 +441,66 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
           </div>
         </section>
 
-        <section id="cv-library" style={styles.resultsLayout}>
-          <div style={styles.resultsPanel}>
-            <h2 style={styles.sectionTitle}>Matching candidate profiles</h2>
-            <p style={styles.muted}>
-              Results are loaded from the SharePoint list "{webPartProps.cvListTitle}" and each search is logged in "{webPartProps.auditListTitle}".
-            </p>
-            <div style={styles.resultList}>
-              {isLoadingCvs ? <p style={styles.muted}>Loading SharePoint CVs...</p> : null}
-              {!isLoadingCvs && rankedProfiles.length === 0 ? <p style={styles.muted}>No available CV matched the current search.</p> : null}
-              {!isLoadingCvs && rankedProfiles.map((profile) => (
-                <article key={profile.id} style={styles.cvCard}>
-                  <div style={styles.cvTop}>
-                    <div>
-                      <span style={styles.candidateId}>Candidate {profile.id}</span>
-                      <h3 style={styles.cardTitle}>{profile.title}</h3>
-                      <p style={styles.muted}>{profile.meta}</p>
-                    </div>
-                    <div style={styles.scoreBox}>
-                      <strong>{profile.score}%</strong>
-                      <span>fit</span>
-                    </div>
+        <section id="cv-library" style={{ ...styles.resultsPanel, order: sectionPositions['cv-library'] }}>
+          <h2 style={styles.sectionTitle}>Matching candidate profiles</h2>
+          <p style={styles.muted}>
+            Results are loaded from the SharePoint list "{webPartProps.cvListTitle}" and each search is logged in "{webPartProps.auditListTitle}".
+          </p>
+          <div style={styles.resultList}>
+            {isLoadingCvs ? <p style={styles.muted}>Loading SharePoint CVs...</p> : null}
+            {!isLoadingCvs && rankedProfiles.length === 0 ? <p style={styles.muted}>No available CV matched the current search.</p> : null}
+            {!isLoadingCvs && rankedProfiles.map((profile) => (
+              <article key={profile.id} style={styles.cvCard}>
+                <div style={styles.cvTop}>
+                  <div>
+                    <span style={styles.candidateId}>Candidate {profile.id}</span>
+                    <h3 style={styles.cardTitle}>{profile.title}</h3>
+                    <p style={styles.muted}>{profile.meta}</p>
                   </div>
-                  <p style={styles.profileSummary}>{profile.summary}</p>
-                  <div style={styles.skillPills}>
-                    {profile.skills.map((skill) => <span key={skill} style={styles.skillPill}>{skill}</span>)}
+                  <div style={styles.scoreBox}>
+                    <strong>{profile.score}%</strong>
+                    <span>fit</span>
                   </div>
-                  <div style={styles.cardActions}>
-                    <button type="button" style={styles.primaryButton}>Request identity reveal</button>
-                    {profile.cvUrl ? (
-                      <a href={profile.cvUrl} target="_blank" rel="noreferrer" style={styles.secondaryButton}>
-                        Open CV
-                      </a>
-                    ) : (
-                      <button type="button" style={styles.secondaryButton}>Save shortlist</button>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
+                </div>
+                <p style={styles.profileSummary}>{profile.summary}</p>
+                <div style={styles.skillPills}>
+                  {profile.skills.map((skill) => <span key={skill} style={styles.skillPill}>{skill}</span>)}
+                </div>
+                <div style={styles.cardActions}>
+                  <button type="button" style={styles.primaryButton}>Request identity reveal</button>
+                  {profile.cvUrl ? (
+                    <a href={profile.cvUrl} target="_blank" rel="noreferrer" style={styles.secondaryButton}>
+                      Open CV
+                    </a>
+                  ) : (
+                    <button type="button" style={styles.secondaryButton}>Save shortlist</button>
+                  )}
+                </div>
+              </article>
+            ))}
           </div>
+        </section>
 
-          <aside style={styles.asideStack}>
-            <div id="plans" style={styles.resultsPanel}>
-              <h2 style={styles.sectionTitle}>SaaS plans</h2>
-              <div style={styles.planList}>
-                {plans.map((plan) => (
-                  <article key={plan.name} style={plan.featured ? { ...styles.plan, ...styles.featuredPlan } : styles.plan}>
-                    <h3 style={styles.planTitle}>{plan.name}</h3>
-                    <p style={styles.planCopy}>{plan.detail}</p>
-                    <strong style={styles.price}>{plan.price}</strong>
-                    <ul style={styles.featureList}>
-                      {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
-                    </ul>
-                  </article>
-                ))}
-              </div>
-            </div>
-            <div id="compliance" style={styles.resultsPanel}>
-              <h2 style={styles.sectionTitle}>Compliance</h2>
-              <WorkflowStep number="G" title="GDPR-first" text="Names, contacts, and raw CVs stay protected by default." styles={styles} />
-              <WorkflowStep number="A" title="Audit trail" text="Searches, shortlists, and reveal requests can be logged." styles={styles} />
-            </div>
-          </aside>
+        <section id="plans" style={{ ...styles.resultsPanel, order: sectionPositions.plans }}>
+          <h2 style={styles.sectionTitle}>SaaS plans</h2>
+          <div style={styles.planList}>
+            {plans.map((plan) => (
+              <article key={plan.name} style={plan.featured ? { ...styles.plan, ...styles.featuredPlan } : styles.plan}>
+                <h3 style={styles.planTitle}>{plan.name}</h3>
+                <p style={styles.planCopy}>{plan.detail}</p>
+                <strong style={styles.price}>{plan.price}</strong>
+                <ul style={styles.featureList}>
+                  {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="compliance" style={{ ...styles.resultsPanel, order: sectionPositions.compliance }}>
+          <h2 style={styles.sectionTitle}>Compliance</h2>
+          <WorkflowStep number="G" title="GDPR-first" text="Names, contacts, and raw CVs stay protected by default." styles={styles} />
+          <WorkflowStep number="A" title="Audit trail" text="Searches, shortlists, and reveal requests can be logged." styles={styles} />
         </section>
       </main>
     </div>

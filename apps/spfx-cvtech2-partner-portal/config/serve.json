@@ -4,7 +4,7 @@
   "https": true,
   "serveConfigurations": {
     "default": {
-      "pageUrl": "https://braineesysms365.sharepoint.com/_layouts/15/workbench.aspx"
+      "pageUrl": "https://braineesysms365.sharepoint.com/sites/CVTech2/_layouts/15/workbench.aspx"
     }
   }
 }

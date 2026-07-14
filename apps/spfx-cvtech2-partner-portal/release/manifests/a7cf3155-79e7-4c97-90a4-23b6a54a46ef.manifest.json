@@ -41,11 +41,17 @@
         "metricMinHeight": 132,
         "titleFontSize": 48,
         "bodyFontSize": 17,
+        "dataSiteUrl": "https://braineesysms365.sharepoint.com/sites/CVTech2",
         "cvListTitle": "PartnerCVs",
         "auditListTitle": "PartnerSearchLogs",
         "partnerName": "Default Partner",
         "partnerMonthlyQuota": 100,
-        "cvRowLimit": 500
+        "cvRowLimit": 500,
+        "overviewPosition": 1,
+        "missionMatchPosition": 2,
+        "cvLibraryPosition": 3,
+        "plansPosition": 4,
+        "compliancePosition": 5
       }
     }
   ],
@@ -57,7 +63,7 @@
     "scriptResources": {
       "cvtech2-partner-portal-web-part": {
         "type": "path",
-        "path": "cvtech2-partner-portal-web-part_eea5fafaac00bbe33fda.js"
+        "path": "cvtech2-partner-portal-web-part_3d936e91a2ade5ff4296.js"
       },
       "react": {
         "type": "component",

@@ -16,6 +16,7 @@ Proposer une expérience B2B permettant à des partenaires de :
 
 - `index.html` : prototype visuel et interactif de la page partenaire SaaS
 - `data-model.json` : modèle de données recommandé pour une implémentation SharePoint + backend
+- `../scripts/provision-partner-portal-lists.ps1` : crée les listes SharePoint utilisées par la webpart SPFx
 
 ## Positionnement architecture
 
@@ -28,9 +29,9 @@ Ce prototype est volontairement orienté `SaaS Partner Portal`.
 
 ### Backend recommandé
 
-- index sécurisé des CV anonymisés
-- moteur de matching `skills / mission brief`
-- journalisation des recherches
+- liste SharePoint `PartnerCVs` pour les CV anonymisés disponibles
+- filtrage/matching côté SPFx sur les métadonnées anonymisées
+- liste SharePoint `PartnerSearchLogs` pour journaliser les recherches
 - workflow d'accès et d'approbation pour la levée d'anonymat
 
 ### Gouvernance recommandée
@@ -40,10 +41,45 @@ Ce prototype est volontairement orienté `SaaS Partner Portal`.
 - audit trail par partenaire
 - segmentation par compte / organisation / quota
 
+## Listes SharePoint
+
+La webpart `CVTech2 Partner Portal` lit les CVs dans la liste configurée par la propriété `CV list title`, par défaut `PartnerCVs`.
+
+Colonnes attendues dans `PartnerCVs` :
+
+- `Title`
+- `CandidateId`
+- `ProfileTitle`
+- `Seniority`
+- `Availability`
+- `Skills`
+- `Summary`
+- `IsAvailable`
+- `CvUrl`
+
+Chaque recherche est loguée dans la liste configurée par `Search audit list title`, par défaut `PartnerSearchLogs`.
+
+Colonnes créées dans `PartnerSearchLogs` :
+
+- `PartnerName`
+- `UserEmail`
+- `SearchQuery`
+- `SearchSkills`
+- `ResultsCount`
+- `PartnerQuotaMaximum`
+- `SearchesRemaining`
+- `MonthKey`
+
+## Provisioning
+
+```powershell
+./sharepoint/CVTech2/scripts/provision-partner-portal-lists.ps1 `
+  -SiteUrl "https://braineesysms365.sharepoint.com/sites/CVTech2" `
+  -Tenant "braineesysms365.onmicrosoft.com" `
+  -ClientId "9fb46f90-4038-4225-9241-0ced8ad3318b" `
+  -DeviceLogin
+```
+
 ## Étape suivante recommandée
 
-Transformer ce prototype HTML en :
-
-1. un package SPFx dédié `spfx-cvtech2-partner-portal`
-2. une page SharePoint partenaire
-3. une recherche connectée aux métadonnées réelles des CV anonymisés
+Ajouter une liste `PartnerAccounts` pour gérer les quotas par partenaire au lieu de les stocker uniquement dans les propriétés de webpart.

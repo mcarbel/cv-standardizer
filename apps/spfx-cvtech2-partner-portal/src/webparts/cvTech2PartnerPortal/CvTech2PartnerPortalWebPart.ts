@@ -5,6 +5,7 @@ import {
   IPropertyPaneConfiguration
 } from '@microsoft/sp-webpart-base';
 import { PropertyPaneSlider, PropertyPaneTextField } from '@microsoft/sp-property-pane';
+import { SPHttpClient } from '@microsoft/sp-http';
 import CvTech2PartnerPortal from './components/CvTech2PartnerPortal';
 
 export interface ICvTech2PartnerPortalWebPartProps {
@@ -25,6 +26,11 @@ export interface ICvTech2PartnerPortalWebPartProps {
   metricMinHeight: number;
   titleFontSize: number;
   bodyFontSize: number;
+  cvListTitle: string;
+  auditListTitle: string;
+  partnerName: string;
+  partnerMonthlyQuota: number;
+  cvRowLimit: number;
 }
 
 const DEFAULT_PROPS: ICvTech2PartnerPortalWebPartProps = {
@@ -44,7 +50,12 @@ const DEFAULT_PROPS: ICvTech2PartnerPortalWebPartProps = {
   metricMinWidth: 180,
   metricMinHeight: 132,
   titleFontSize: 48,
-  bodyFontSize: 17
+  bodyFontSize: 17,
+  cvListTitle: 'PartnerCVs',
+  auditListTitle: 'PartnerSearchLogs',
+  partnerName: 'Default Partner',
+  partnerMonthlyQuota: 100,
+  cvRowLimit: 500
 };
 
 export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<ICvTech2PartnerPortalWebPartProps> {
@@ -66,13 +77,22 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
     this.properties.metricMinHeight = this.properties.metricMinHeight || DEFAULT_PROPS.metricMinHeight;
     this.properties.titleFontSize = this.properties.titleFontSize || DEFAULT_PROPS.titleFontSize;
     this.properties.bodyFontSize = this.properties.bodyFontSize || DEFAULT_PROPS.bodyFontSize;
+    this.properties.cvListTitle = this.properties.cvListTitle || DEFAULT_PROPS.cvListTitle;
+    this.properties.auditListTitle = this.properties.auditListTitle || DEFAULT_PROPS.auditListTitle;
+    this.properties.partnerName = this.properties.partnerName || DEFAULT_PROPS.partnerName;
+    this.properties.partnerMonthlyQuota = this.properties.partnerMonthlyQuota || DEFAULT_PROPS.partnerMonthlyQuota;
+    this.properties.cvRowLimit = this.properties.cvRowLimit || DEFAULT_PROPS.cvRowLimit;
 
     await super.onInit();
   }
 
   public render(): void {
     const element = React.createElement(CvTech2PartnerPortal, {
-      webPartProps: this.properties
+      webPartProps: this.properties,
+      spHttpClient: this.context.spHttpClient as SPHttpClient,
+      siteUrl: this.context.pageContext.web.absoluteUrl,
+      userDisplayName: this.context.pageContext.user.displayName,
+      userEmail: this.context.pageContext.user.email || this.context.pageContext.user.loginName
     });
 
     ReactDom.render(element, this.domElement);
@@ -93,6 +113,16 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
               groupFields: [
                 PropertyPaneTextField('brandLabel', { label: 'Brand label' }),
                 PropertyPaneTextField('portalTitle', { label: 'Portal title' })
+              ]
+            },
+            {
+              groupName: 'SharePoint data',
+              groupFields: [
+                PropertyPaneTextField('cvListTitle', { label: 'CV list title' }),
+                PropertyPaneTextField('auditListTitle', { label: 'Search audit list title' }),
+                PropertyPaneTextField('partnerName', { label: 'Partner name' }),
+                PropertyPaneSlider('partnerMonthlyQuota', { label: 'Monthly search quota', min: 1, max: 1000, step: 1 }),
+                PropertyPaneSlider('cvRowLimit', { label: 'Maximum CV rows to load', min: 20, max: 5000, step: 20 })
               ]
             },
             {

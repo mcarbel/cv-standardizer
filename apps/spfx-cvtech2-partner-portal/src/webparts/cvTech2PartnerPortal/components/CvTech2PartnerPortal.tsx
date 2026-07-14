@@ -1,9 +1,15 @@
 import * as React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { SPHttpClient } from '@microsoft/sp-http';
 import type { ICvTech2PartnerPortalWebPartProps } from '../CvTech2PartnerPortalWebPart';
+import { IPartnerCvListItem, SharePointPartnerPortalService } from '../services/SharePointPartnerPortalService';
 
 interface Props {
   webPartProps: ICvTech2PartnerPortalWebPartProps;
+  spHttpClient: SPHttpClient;
+  siteUrl: string;
+  userDisplayName: string;
+  userEmail: string;
 }
 
 interface CandidateProfile {
@@ -14,6 +20,8 @@ interface CandidateProfile {
   availability: string;
   skills: string[];
   summary: string;
+  cvUrl?: string;
+  score?: number;
 }
 
 const suggestedSkills = [
@@ -27,45 +35,6 @@ const suggestedSkills = [
   'Compliance',
   'DevSecOps',
   'Landing Zone'
-];
-
-const profiles: CandidateProfile[] = [
-  {
-    id: 'CSA-014',
-    title: 'Cloud Security Architect',
-    meta: 'Architect | Azure / GCP | Banking & compliance | Availability: 2 weeks',
-    seniority: 'Architect',
-    availability: 'Under 2 weeks',
-    skills: ['Azure', 'IAM', 'Terraform', 'Landing Zone', 'GCP', 'Compliance'],
-    summary: 'Strong alignment for cloud security transformation, IAM hardening, and regulated environments.'
-  },
-  {
-    id: 'DEV-022',
-    title: 'Platform Engineer',
-    meta: 'Senior | Kubernetes / DevSecOps | FinOps aware | Availability: immediate',
-    seniority: 'Senior',
-    availability: 'Immediate',
-    skills: ['Kubernetes', 'Azure', 'DevSecOps', 'Observability', 'CI/CD'],
-    summary: 'Relevant for missions mixing platform engineering, cluster governance, and deployment automation.'
-  },
-  {
-    id: 'ARC-037',
-    title: 'Enterprise Cloud Architect',
-    meta: 'Lead | Multi-cloud strategy | Enterprise migration | Availability: 1 month',
-    seniority: 'Lead',
-    availability: 'Under 1 month',
-    skills: ['Azure', 'GCP', 'Migration', 'Networking', 'Security', 'Governance'],
-    summary: 'Useful for architecture-heavy missions with a strong governance and transformation angle.'
-  },
-  {
-    id: 'SAP-041',
-    title: 'Data & AI Platform Consultant',
-    meta: 'Senior | Data platform / Azure AI | Availability: immediate',
-    seniority: 'Senior',
-    availability: 'Immediate',
-    skills: ['Azure AI', 'Data Platform', 'Python', 'MLOps', 'Databricks', 'Security'],
-    summary: 'Good secondary fit when the mission blends cloud modernization, analytics, and secure platform setup.'
-  }
 ];
 
 const plans = [
@@ -108,7 +77,46 @@ function scoreProfile(profile: CandidateProfile, selectedSkills: string[]): numb
 
 type LayoutMode = 'desktop' | 'tablet' | 'mobile';
 
-export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Element {
+function mapSharePointCv(item: IPartnerCvListItem): CandidateProfile {
+  return {
+    id: item.CandidateId || `CV-${item.Id}`,
+    title: item.ProfileTitle || item.Title || 'Anonymized candidate',
+    meta: [
+      item.Seniority || 'Unspecified seniority',
+      item.Availability || 'Availability to confirm'
+    ].join(' | '),
+    seniority: item.Seniority || '',
+    availability: item.Availability || '',
+    skills: splitSkills(item.Skills || ''),
+    summary: item.Summary || 'No summary available yet.',
+    cvUrl: item.CvUrl?.Url
+  };
+}
+
+function splitSkills(value: string): string[] {
+  return value
+    .split(/[,;\n]/)
+    .map((skill) => skill.trim())
+    .filter(Boolean);
+}
+
+function getMonthKey(date: Date): string {
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  return `${date.getFullYear()}-${month}`;
+}
+
+function filterProfiles(sourceProfiles: CandidateProfile[], selectedSkills: string[], seniority: string, availability: string): CandidateProfile[] {
+  return sourceProfiles
+    .filter((profile) => !seniority || profile.seniority === seniority)
+    .filter((profile) => !availability || profile.availability === availability)
+    .map((profile) => ({
+      ...profile,
+      score: scoreProfile(profile, selectedSkills)
+    }))
+    .sort((left, right) => (right.score || 0) - (left.score || 0));
+}
+
+export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteUrl, userDisplayName, userEmail }: Props): JSX.Element {
   const {
     brandLabel,
     portalTitle,
@@ -126,10 +134,12 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
     metricMinWidth,
     metricMinHeight,
     titleFontSize,
-    bodyFontSize
+    bodyFontSize,
+    partnerMonthlyQuota
   } = webPartProps;
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const serviceRef = useRef(new SharePointPartnerPortalService(spHttpClient, siteUrl));
   const [containerWidth, setContainerWidth] = useState(webPartMaxWidth);
   const [missionBrief, setMissionBrief] = useState('');
   const [skillInput, setSkillInput] = useState('');
@@ -137,6 +147,15 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
   const [seniority, setSeniority] = useState('');
   const [availability, setAvailability] = useState('');
   const [activeSection, setActiveSection] = useState('overview');
+  const [availableProfiles, setAvailableProfiles] = useState<CandidateProfile[]>([]);
+  const [isLoadingCvs, setIsLoadingCvs] = useState(true);
+  const [dataError, setDataError] = useState('');
+  const [searchStatus, setSearchStatus] = useState('');
+  const [searchesRemaining, setSearchesRemaining] = useState(partnerMonthlyQuota);
+
+  useEffect(() => {
+    serviceRef.current = new SharePointPartnerPortalService(spHttpClient, siteUrl);
+  }, [siteUrl, spHttpClient]);
 
   useEffect(() => {
     const measure = (): void => {
@@ -156,16 +175,36 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
     return () => window.removeEventListener('resize', measure);
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadCvs(): Promise<void> {
+      setIsLoadingCvs(true);
+      setDataError('');
+
+      try {
+        const items = await serviceRef.current.getAvailableCvs(webPartProps.cvListTitle, webPartProps.cvRowLimit);
+        if (!isMounted) return;
+        setAvailableProfiles(items.map(mapSharePointCv));
+      } catch (error) {
+        if (!isMounted) return;
+        setDataError(error instanceof Error ? error.message : 'Unable to load CVs from SharePoint.');
+        setAvailableProfiles([]);
+      } finally {
+        if (isMounted) setIsLoadingCvs(false);
+      }
+    }
+
+    loadCvs().catch(() => undefined);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [webPartProps.cvListTitle, webPartProps.cvRowLimit]);
+
   const rankedProfiles = useMemo(() => {
-    return profiles
-      .filter((profile) => !seniority || profile.seniority === seniority)
-      .filter((profile) => !availability || profile.availability === availability)
-      .map((profile) => ({
-        ...profile,
-        score: scoreProfile(profile, selectedSkills)
-      }))
-      .sort((left, right) => right.score - left.score);
-  }, [availability, seniority, selectedSkills]);
+    return filterProfiles(availableProfiles, selectedSkills, seniority, availability);
+  }, [availability, availableProfiles, seniority, selectedSkills]);
 
   const toggleSkill = (skill: string): void => {
     setSelectedSkills((current) =>
@@ -184,8 +223,40 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
   const extractSkillsFromBrief = (): void => {
     const lower = missionBrief.toLowerCase();
     const extracted = suggestedSkills.filter((skill) => lower.includes(skill.toLowerCase()));
-    setSelectedSkills((current) => Array.from(new Set([...current, ...extracted])));
+    const nextSkills = Array.from(new Set([...selectedSkills, ...extracted]));
+    setSelectedSkills(nextSkills);
+    logSearch(nextSkills).catch((error) => {
+      setSearchStatus(error instanceof Error ? error.message : 'Search log failed.');
+    });
     navigateToSection('mission-match');
+  };
+
+  const logSearch = async (skillsForSearch = selectedSkills): Promise<void> => {
+    setSearchStatus('Logging search...');
+    const monthKey = getMonthKey(new Date());
+    const usedSearches = await serviceRef.current.countMonthlySearches(
+      webPartProps.auditListTitle,
+      webPartProps.partnerName,
+      userEmail,
+      monthKey
+    );
+    const results = filterProfiles(availableProfiles, skillsForSearch, seniority, availability);
+    const remaining = Math.max(0, partnerMonthlyQuota - usedSearches - 1);
+
+    await serviceRef.current.logSearch(webPartProps.auditListTitle, {
+      title: `${webPartProps.partnerName} search ${new Date().toISOString()}`,
+      partnerName: webPartProps.partnerName,
+      userEmail,
+      query: missionBrief,
+      skills: skillsForSearch,
+      resultsCount: results.length,
+      quotaMaximum: partnerMonthlyQuota,
+      searchesRemaining: remaining,
+      monthKey
+    });
+
+    setSearchesRemaining(remaining);
+    setSearchStatus(`Search logged. ${results.length} CV(s) found. ${remaining} search(es) remaining this month.`);
   };
 
   const navigateToSection = (sectionId: string): void => {
@@ -234,7 +305,8 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
         </nav>
         <div style={styles.sidePanel}>
           <strong>Partner status</strong>
-          <span>Enterprise workspace ready. Identity reveal remains approval-based.</span>
+          <span>{webPartProps.partnerName}</span>
+          <span>{searchesRemaining} / {partnerMonthlyQuota} searches remaining this month.</span>
         </div>
       </aside>
 
@@ -257,10 +329,10 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
             </div>
           </div>
           <div style={styles.statsGrid}>
-            <Metric value="128" label="anonymized profiles" styles={styles} />
-            <Metric value="21" label="new profiles this month" styles={styles} />
+            <Metric value={`${availableProfiles.length}`} label="available SharePoint CVs" styles={styles} />
+            <Metric value={isLoadingCvs ? '...' : `${rankedProfiles.length}`} label="matching current search" styles={styles} />
             <Metric value="94%" label="curated match relevance" styles={styles} />
-            <Metric value="< 2h" label="reveal request triage" styles={styles} />
+            <Metric value={`${searchesRemaining}`} label="searches remaining" styles={styles} />
           </div>
         </section>
 
@@ -296,6 +368,11 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
                 />
                 <button type="button" style={styles.compactButton} onClick={addSkill}>Add</button>
               </div>
+              <button type="button" style={styles.primaryButton} onClick={() => logSearch()}>
+                Search SharePoint CVs
+              </button>
+              {searchStatus ? <p style={styles.statusText}>{searchStatus}</p> : null}
+              {dataError ? <p style={styles.errorText}>{dataError}</p> : null}
               <FieldLabel label="Suggested skills" />
               <div style={styles.chipRow}>
                 {suggestedSkills.map((skill) => (
@@ -350,9 +427,13 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
         <section id="cv-library" style={styles.resultsLayout}>
           <div style={styles.resultsPanel}>
             <h2 style={styles.sectionTitle}>Matching candidate profiles</h2>
-            <p style={styles.muted}>Example result set; the next integration step is binding this to SharePoint metadata or a secure search index.</p>
+            <p style={styles.muted}>
+              Results are loaded from the SharePoint list "{webPartProps.cvListTitle}" and each search is logged in "{webPartProps.auditListTitle}".
+            </p>
             <div style={styles.resultList}>
-              {rankedProfiles.map((profile) => (
+              {isLoadingCvs ? <p style={styles.muted}>Loading SharePoint CVs...</p> : null}
+              {!isLoadingCvs && rankedProfiles.length === 0 ? <p style={styles.muted}>No available CV matched the current search.</p> : null}
+              {!isLoadingCvs && rankedProfiles.map((profile) => (
                 <article key={profile.id} style={styles.cvCard}>
                   <div style={styles.cvTop}>
                     <div>
@@ -371,7 +452,13 @@ export default function CvTech2PartnerPortal({ webPartProps }: Props): JSX.Eleme
                   </div>
                   <div style={styles.cardActions}>
                     <button type="button" style={styles.primaryButton}>Request identity reveal</button>
-                    <button type="button" style={styles.secondaryButton}>Save shortlist</button>
+                    {profile.cvUrl ? (
+                      <a href={profile.cvUrl} target="_blank" rel="noreferrer" style={styles.secondaryButton}>
+                        Open CV
+                      </a>
+                    ) : (
+                      <button type="button" style={styles.secondaryButton}>Save shortlist</button>
+                    )}
                   </div>
                 </article>
               ))}
@@ -534,6 +621,8 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     searchGrid: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr)', gap: sectionGap, padding: compactCardPadding, minWidth: 0 },
     sectionTitle: { margin: 0, fontSize: isMobile ? 24 : 28, lineHeight: 1.15, fontWeight: 800 },
     muted: { margin: '8px 0 0', color: '#55727b', lineHeight: 1.5 },
+    statusText: { margin: '0', color: secondaryColor, fontWeight: 700, lineHeight: 1.45 },
+    errorText: { margin: '0', color: '#b42318', fontWeight: 700, lineHeight: 1.45 },
     panel: { background: '#f5fbfc', border: '1px solid rgba(16,36,46,0.08)', borderRadius, padding: compactCardPadding, display: 'grid', gap: 14, minWidth: 0 },
     textarea: { minHeight: isMobile ? 112 : 132, border: '1px solid rgba(16,36,46,0.14)', borderRadius, padding: 12, font: 'inherit', boxSizing: 'border-box', width: '100%', minWidth: 0 },
     inputRow: { display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'minmax(0,1fr) auto', gap: 10, minWidth: 0 },

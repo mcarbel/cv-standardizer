@@ -153,7 +153,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
   const [selectedSkills, setSelectedSkills] = useState<string[]>(['Azure', 'IAM', 'Terraform']);
   const [seniority, setSeniority] = useState('');
   const [availability, setAvailability] = useState('');
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeSection, setActiveSection] = useState<SectionId>('overview');
   const [availableProfiles, setAvailableProfiles] = useState<CandidateProfile[]>([]);
   const [isLoadingCvs, setIsLoadingCvs] = useState(true);
   const [dataError, setDataError] = useState('');
@@ -266,9 +266,8 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     setSearchStatus(`Search logged. ${results.length} CV(s) found. ${remaining} search(es) remaining this month.`);
   };
 
-  const navigateToSection = (sectionId: string): void => {
+  const navigateToSection = (sectionId: SectionId): void => {
     setActiveSection(sectionId);
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const layoutMode: LayoutMode = containerWidth < 680 ? 'mobile' : containerWidth < 1060 ? 'tablet' : 'desktop';
@@ -328,6 +327,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
       </aside>
 
       <main style={styles.content}>
+        {activeSection === 'overview' ? (
         <section id="overview" style={{ ...styles.hero, order: sectionPositions.overview }}>
           <div>
             <span style={styles.eyebrow}>SaaS partner cockpit</span>
@@ -352,7 +352,9 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
             <Metric value={`${searchesRemaining}`} label="searches remaining" styles={styles} />
           </div>
         </section>
+        ) : null}
 
+        {activeSection === 'mission-match' ? (
         <section id="mission-match" style={{ ...styles.searchBand, order: sectionPositions['mission-match'] }}>
           <div style={styles.searchHeader}>
             <div>
@@ -440,7 +442,9 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
             </div>
           </div>
         </section>
+        ) : null}
 
+        {activeSection === 'cv-library' ? (
         <section id="cv-library" style={{ ...styles.resultsPanel, order: sectionPositions['cv-library'] }}>
           <h2 style={styles.sectionTitle}>Matching candidate profiles</h2>
           <p style={styles.muted}>
@@ -480,7 +484,9 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
             ))}
           </div>
         </section>
+        ) : null}
 
+        {activeSection === 'plans' ? (
         <section id="plans" style={{ ...styles.resultsPanel, order: sectionPositions.plans }}>
           <h2 style={styles.sectionTitle}>SaaS plans</h2>
           <div style={styles.planList}>
@@ -496,12 +502,15 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
             ))}
           </div>
         </section>
+        ) : null}
 
+        {activeSection === 'compliance' ? (
         <section id="compliance" style={{ ...styles.resultsPanel, order: sectionPositions.compliance }}>
           <h2 style={styles.sectionTitle}>Compliance</h2>
           <WorkflowStep number="G" title="GDPR-first" text="Names, contacts, and raw CVs stay protected by default." styles={styles} />
           <WorkflowStep number="A" title="Audit trail" text="Searches, shortlists, and reveal requests can be logged." styles={styles} />
         </section>
+        ) : null}
       </main>
     </div>
   );

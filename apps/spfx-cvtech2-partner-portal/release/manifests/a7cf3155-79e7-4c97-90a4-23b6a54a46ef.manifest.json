@@ -24,6 +24,7 @@
       },
       "officeFabricIconFontName": "People",
       "properties": {
+        "portalTemplate": "cockpit-saas",
         "brandLabel": "cvtech2",
         "portalTitle": "Partner Portal",
         "primaryColor": "#27c2c6",
@@ -44,6 +45,9 @@
         "dataSiteUrl": "https://braineesysms365.sharepoint.com/sites/CVTech2",
         "cvListTitle": "PartnerCVs",
         "auditListTitle": "PartnerSearchLogs",
+        "missionListTitle": "PartnerMissions",
+        "adminListTitle": "PartnerPortalAdmins",
+        "cvDocumentLibraryTitle": "Documents",
         "partnerName": "Default Partner",
         "partnerMonthlyQuota": 100,
         "cvRowLimit": 500,
@@ -63,7 +67,7 @@
     "scriptResources": {
       "cvtech2-partner-portal-web-part": {
         "type": "path",
-        "path": "cvtech2-partner-portal-web-part_3d936e91a2ade5ff4296.js"
+        "path": "cvtech2-partner-portal-web-part_926ac017497625fbb138.js"
       },
       "react": {
         "type": "component",

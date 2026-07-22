@@ -3,7 +3,7 @@
   "solution": {
     "name": "cvtech2-partner-portal-solution",
     "id": "e3395591-9881-44b3-b972-d0a02ce6a482",
-    "version": "1.0.0.4",
+    "version": "1.0.0.5",
     "includeClientSideAssets": true,
     "skipFeatureDeployment": true,
     "isDomainIsolated": false

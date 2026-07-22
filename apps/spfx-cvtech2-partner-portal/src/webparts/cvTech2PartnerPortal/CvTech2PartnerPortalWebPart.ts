@@ -4,11 +4,14 @@ import {
   BaseClientSideWebPart,
   IPropertyPaneConfiguration
 } from '@microsoft/sp-webpart-base';
-import { PropertyPaneSlider, PropertyPaneTextField } from '@microsoft/sp-property-pane';
+import { PropertyPaneDropdown, PropertyPaneSlider, PropertyPaneTextField } from '@microsoft/sp-property-pane';
 import { SPHttpClient } from '@microsoft/sp-http';
 import CvTech2PartnerPortal from './components/CvTech2PartnerPortal';
 
+export type PartnerPortalTemplate = 'cockpit-saas' | 'executive-partner' | 'marketplace-talent' | 'mission-match-studio';
+
 export interface ICvTech2PartnerPortalWebPartProps {
+  portalTemplate: PartnerPortalTemplate;
   brandLabel: string;
   portalTitle: string;
   primaryColor: string;
@@ -40,6 +43,7 @@ export interface ICvTech2PartnerPortalWebPartProps {
 }
 
 const DEFAULT_PROPS: ICvTech2PartnerPortalWebPartProps = {
+  portalTemplate: 'cockpit-saas',
   brandLabel: 'cvtech2',
   portalTitle: 'Partner Portal',
   primaryColor: '#27c2c6',
@@ -73,6 +77,7 @@ const DEFAULT_PROPS: ICvTech2PartnerPortalWebPartProps = {
 export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<ICvTech2PartnerPortalWebPartProps> {
   protected async onInit(): Promise<void> {
     this.properties.brandLabel = this.properties.brandLabel || DEFAULT_PROPS.brandLabel;
+    this.properties.portalTemplate = this.properties.portalTemplate || DEFAULT_PROPS.portalTemplate;
     this.properties.portalTitle = this.properties.portalTitle || DEFAULT_PROPS.portalTitle;
     this.properties.primaryColor = this.properties.primaryColor || DEFAULT_PROPS.primaryColor;
     this.properties.secondaryColor = this.properties.secondaryColor || DEFAULT_PROPS.secondaryColor;
@@ -129,6 +134,15 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
             {
               groupName: 'Content',
               groupFields: [
+                PropertyPaneDropdown('portalTemplate', {
+                  label: 'Portal template',
+                  options: [
+                    { key: 'cockpit-saas', text: 'Cockpit SaaS' },
+                    { key: 'executive-partner', text: 'Executive Partner' },
+                    { key: 'marketplace-talent', text: 'Marketplace Talent' },
+                    { key: 'mission-match-studio', text: 'Mission Match Studio' }
+                  ]
+                }),
                 PropertyPaneTextField('brandLabel', { label: 'Brand label' }),
                 PropertyPaneTextField('portalTitle', { label: 'Portal title' })
               ]

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SPHttpClient } from '@microsoft/sp-http';
-import type { ICvTech2PartnerPortalWebPartProps } from '../CvTech2PartnerPortalWebPart';
+import type { ICvTech2PartnerPortalWebPartProps, PartnerPortalTemplate } from '../CvTech2PartnerPortalWebPart';
 import { IPartnerCvListItem, SharePointPartnerPortalService } from '../services/SharePointPartnerPortalService';
 
 interface Props {
@@ -79,6 +79,28 @@ function scoreProfile(profile: CandidateProfile, selectedSkills: string[]): numb
 
 type LayoutMode = 'desktop' | 'tablet' | 'mobile';
 
+interface TemplateTokens {
+  navigation: 'side' | 'top';
+  shellBackground: string;
+  sidebarBackground: string;
+  sidebarTextColor: string;
+  sidebarMutedColor: string;
+  sidebarRadius: number | string;
+  sidebarShadow: string;
+  navTextColor: string;
+  navActiveBackground: string;
+  navActiveTextColor: string;
+  sidePanelBackground: string;
+  cardBackground: string;
+  panelBackground: string;
+  cardBorder: string;
+  cardShadow: string;
+  mutedTextColor: string;
+  fontFamily: string;
+  heroColumns: (metricMinWidth: number, sectionGap: number) => string;
+  cardRadius: (borderRadius: number) => number;
+}
+
 function mapSharePointCv(item: IPartnerCvListItem): CandidateProfile {
   return {
     id: item.CandidateId || `CV-${item.Id}`,
@@ -120,6 +142,7 @@ function filterProfiles(sourceProfiles: CandidateProfile[], selectedSkills: stri
 
 export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteUrl, userDisplayName, userEmail }: Props): JSX.Element {
   const {
+    portalTemplate,
     brandLabel,
     portalTitle,
     primaryColor,
@@ -282,6 +305,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     (sectionPositions[left.id] - sectionPositions[right.id]) || (left.defaultOrder - right.defaultOrder)
   );
   const styles = buildStyles({
+    portalTemplate,
     primaryColor,
     secondaryColor,
     accentTextColor,
@@ -542,6 +566,7 @@ function WorkflowStep({ number, title, text, styles }: { number: string; title: 
 }
 
 interface StyleOptions {
+  portalTemplate: PartnerPortalTemplate;
   primaryColor: string;
   secondaryColor: string;
   accentTextColor: string;
@@ -558,6 +583,109 @@ interface StyleOptions {
   titleFontSize: number;
   bodyFontSize: number;
   layoutMode: LayoutMode;
+}
+
+function buildTemplateTokens(
+  portalTemplate: PartnerPortalTemplate,
+  primaryColor: string,
+  secondaryColor: string,
+  accentTextColor: string,
+  surfaceColor: string
+): TemplateTokens {
+  const defaultHeroColumns = (metricMinWidth: number, sectionGap: number): string =>
+    `minmax(0,1.3fr) minmax(${metricMinWidth * 2 + sectionGap}px,0.9fr)`;
+
+  switch (portalTemplate) {
+    case 'executive-partner':
+      return {
+        navigation: 'top',
+        shellBackground: '#f7f9fb',
+        sidebarBackground: '#ffffff',
+        sidebarTextColor: accentTextColor,
+        sidebarMutedColor: '#607078',
+        sidebarRadius: 0,
+        sidebarShadow: '0 10px 28px rgba(15,23,42,0.06)',
+        navTextColor: accentTextColor,
+        navActiveBackground: 'rgba(19,109,112,0.1)',
+        navActiveTextColor: secondaryColor,
+        sidePanelBackground: '#eef6f7',
+        cardBackground: '#ffffff',
+        panelBackground: '#f8fbfc',
+        cardBorder: '1px solid rgba(16,36,46,0.1)',
+        cardShadow: '0 18px 42px rgba(15,23,42,0.08)',
+        mutedTextColor: '#5a6f77',
+        fontFamily: 'Georgia, Aptos, Segoe UI, sans-serif',
+        heroColumns: defaultHeroColumns,
+        cardRadius: (borderRadius) => Math.max(6, borderRadius)
+      };
+    case 'marketplace-talent':
+      return {
+        navigation: 'side',
+        shellBackground: '#f3faf9',
+        sidebarBackground: `linear-gradient(160deg, ${secondaryColor}, #0d3439)`,
+        sidebarTextColor: '#ffffff',
+        sidebarMutedColor: 'rgba(255,255,255,0.76)',
+        sidebarRadius: 28,
+        sidebarShadow: '0 22px 50px rgba(13,52,57,0.22)',
+        navTextColor: '#ffffff',
+        navActiveBackground: 'rgba(255,255,255,0.2)',
+        navActiveTextColor: '#ffffff',
+        sidePanelBackground: 'rgba(255,255,255,0.14)',
+        cardBackground: '#ffffff',
+        panelBackground: '#f0fbfb',
+        cardBorder: '1px solid rgba(39,194,198,0.18)',
+        cardShadow: '0 14px 30px rgba(15,23,42,0.07)',
+        mutedTextColor: '#55727b',
+        fontFamily: 'Aptos, Segoe UI, sans-serif',
+        heroColumns: (_metricMinWidth, _sectionGap) => 'minmax(0,0.9fr) minmax(0,1.1fr)',
+        cardRadius: (borderRadius) => Math.max(18, borderRadius)
+      };
+    case 'mission-match-studio':
+      return {
+        navigation: 'top',
+        shellBackground: `radial-gradient(circle at top left, rgba(39,194,198,0.2), transparent 34%), linear-gradient(135deg, #10242e, ${secondaryColor})`,
+        sidebarBackground: 'rgba(255,255,255,0.08)',
+        sidebarTextColor: '#ffffff',
+        sidebarMutedColor: 'rgba(255,255,255,0.72)',
+        sidebarRadius: 26,
+        sidebarShadow: 'none',
+        navTextColor: '#ffffff',
+        navActiveBackground: primaryColor,
+        navActiveTextColor: '#ffffff',
+        sidePanelBackground: 'rgba(255,255,255,0.12)',
+        cardBackground: 'rgba(255,255,255,0.96)',
+        panelBackground: 'rgba(255,255,255,0.88)',
+        cardBorder: '1px solid rgba(255,255,255,0.34)',
+        cardShadow: '0 24px 64px rgba(0,0,0,0.22)',
+        mutedTextColor: '#5e7278',
+        fontFamily: 'Aptos Display, Aptos, Segoe UI, sans-serif',
+        heroColumns: (_metricMinWidth, _sectionGap) => 'minmax(0,1fr) minmax(280px,0.72fr)',
+        cardRadius: (borderRadius) => Math.max(22, borderRadius)
+      };
+    case 'cockpit-saas':
+    default:
+      return {
+        navigation: 'side',
+        shellBackground: surfaceColor,
+        sidebarBackground: `linear-gradient(180deg, ${primaryColor}, ${secondaryColor})`,
+        sidebarTextColor: '#ffffff',
+        sidebarMutedColor: 'rgba(255,255,255,0.82)',
+        sidebarRadius: 0,
+        sidebarShadow: 'none',
+        navTextColor: '#ffffff',
+        navActiveBackground: 'rgba(255,255,255,0.18)',
+        navActiveTextColor: '#ffffff',
+        sidePanelBackground: 'rgba(255,255,255,0.14)',
+        cardBackground: '#ffffff',
+        panelBackground: '#f5fbfc',
+        cardBorder: '1px solid rgba(16,36,46,0.08)',
+        cardShadow: '0 16px 34px rgba(15,23,42,0.07)',
+        mutedTextColor: '#55727b',
+        fontFamily: 'Aptos, Segoe UI, sans-serif',
+        heroColumns: defaultHeroColumns,
+        cardRadius: (borderRadius) => borderRadius
+      };
+  }
 }
 
 function buildStyles(options: StyleOptions): Record<string, React.CSSProperties> {
@@ -577,6 +705,7 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     metricMinHeight,
     titleFontSize,
     bodyFontSize,
+    portalTemplate,
     layoutMode
   } = options;
   const isDesktop = layoutMode === 'desktop';
@@ -586,10 +715,13 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
   const effectiveTitleSize = isMobile ? Math.max(30, Math.round(titleFontSize * 0.7)) : layoutMode === 'tablet' ? Math.max(34, Math.round(titleFontSize * 0.82)) : titleFontSize;
   const effectiveBodySize = isMobile ? Math.max(14, bodyFontSize - 2) : bodyFontSize;
 
+  const template = buildTemplateTokens(portalTemplate, primaryColor, secondaryColor, accentTextColor, surfaceColor);
+  const usesTopNavigation = template.navigation === 'top';
+
   return {
     shell: {
       display: 'grid',
-      gridTemplateColumns: isDesktop ? `${sidebarWidth}px minmax(0, 1fr)` : 'minmax(0, 1fr)',
+      gridTemplateColumns: isDesktop && !usesTopNavigation ? `${sidebarWidth}px minmax(0, 1fr)` : 'minmax(0, 1fr)',
       width: '100%',
       maxWidth: webPartMaxWidth,
       minWidth: 0,
@@ -598,38 +730,40 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       boxSizing: 'border-box',
       overflow: 'hidden',
       color: accentTextColor,
-      background: surfaceColor,
-      fontFamily: 'Aptos, Segoe UI, sans-serif',
+      background: template.shellBackground,
+      fontFamily: template.fontFamily,
       fontSize: effectiveBodySize
     },
     sidebar: {
-      background: `linear-gradient(180deg, ${primaryColor}, ${secondaryColor})`,
-      color: '#fff',
+      background: template.sidebarBackground,
+      color: template.sidebarTextColor,
       padding: isDesktop ? `${compactPadding + 2}px ${Math.max(16, compactPadding - 8)}px` : `${compactPadding}px`,
       display: 'flex',
-      flexDirection: isDesktop ? 'column' : 'row',
+      flexDirection: isDesktop && !usesTopNavigation ? 'column' : 'row',
       flexWrap: 'wrap',
       gap: isMobile ? 14 : sectionGap,
-      alignItems: isDesktop ? 'stretch' : 'center'
+      alignItems: isDesktop && !usesTopNavigation ? 'stretch' : 'center',
+      borderRadius: template.sidebarRadius,
+      boxShadow: template.sidebarShadow
     },
     brand: { fontSize: isMobile ? 30 : 38, fontWeight: 800, textTransform: 'lowercase' },
-    brandCopy: { margin: '8px 0 0', lineHeight: 1.45, color: 'rgba(255,255,255,0.82)', maxWidth: isDesktop ? 'none' : 460 },
-    nav: { display: 'flex', flexDirection: isDesktop ? 'column' : 'row', flexWrap: 'wrap', gap: 8, flex: isDesktop ? '0 0 auto' : '1 1 420px' },
+    brandCopy: { margin: '8px 0 0', lineHeight: 1.45, color: template.sidebarMutedColor, maxWidth: isDesktop && !usesTopNavigation ? 'none' : 460 },
+    nav: { display: 'flex', flexDirection: isDesktop && !usesTopNavigation ? 'column' : 'row', flexWrap: 'wrap', gap: 8, flex: isDesktop && !usesTopNavigation ? '0 0 auto' : '1 1 420px' },
     navItem: {
       padding: isMobile ? '10px 12px' : '13px 14px',
       border: 'none',
       borderRadius,
       background: 'transparent',
-      color: '#fff',
+      color: template.navTextColor,
       cursor: 'pointer',
       font: 'inherit',
       fontWeight: 700,
       textAlign: 'left'
     },
-    navItemActive: { background: 'rgba(255,255,255,0.18)' },
-    sidePanel: { marginTop: isDesktop ? 'auto' : 0, padding: compactCardPadding, borderRadius, background: 'rgba(255,255,255,0.14)', display: 'grid', gap: 8, flex: isDesktop ? '0 0 auto' : '1 1 280px' },
+    navItemActive: { background: template.navActiveBackground, color: template.navActiveTextColor },
+    sidePanel: { marginTop: isDesktop && !usesTopNavigation ? 'auto' : 0, padding: compactCardPadding, borderRadius, background: template.sidePanelBackground, display: 'grid', gap: 8, flex: isDesktop && !usesTopNavigation ? '0 0 auto' : '1 1 280px' },
     content: { padding: compactPadding, display: 'grid', gap: sectionGap, minWidth: 0 },
-    hero: { display: 'grid', gridTemplateColumns: isDesktop ? `minmax(0,1.3fr) minmax(${metricMinWidth * 2 + sectionGap}px,0.9fr)` : 'minmax(0,1fr)', gap: sectionGap, padding: compactCardPadding, background: '#fff', borderRadius, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: sectionGap, minWidth: 0 },
+    hero: { display: 'grid', gridTemplateColumns: isDesktop ? template.heroColumns(metricMinWidth, sectionGap) : 'minmax(0,1fr)', gap: sectionGap, padding: compactCardPadding, background: template.cardBackground, borderRadius: template.cardRadius(borderRadius), boxShadow: template.cardShadow, border: template.cardBorder, scrollMarginTop: sectionGap, minWidth: 0 },
     eyebrow: { display: 'inline-block', color: secondaryColor, fontWeight: 800, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' },
     title: { margin: '14px 0 12px', fontSize: effectiveTitleSize, lineHeight: 1.05, fontWeight: 800, overflowWrap: 'anywhere' },
     lead: { margin: 0, color: '#55727b', fontSize: effectiveBodySize, lineHeight: 1.55 },
@@ -643,10 +777,10 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     searchHeader: { padding: `${compactCardPadding}px ${compactCardPadding}px 0` },
     searchGrid: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr)', gap: sectionGap, padding: compactCardPadding, minWidth: 0 },
     sectionTitle: { margin: 0, fontSize: isMobile ? 24 : 28, lineHeight: 1.15, fontWeight: 800 },
-    muted: { margin: '8px 0 0', color: '#55727b', lineHeight: 1.5 },
+    muted: { margin: '8px 0 0', color: template.mutedTextColor, lineHeight: 1.5 },
     statusText: { margin: '0', color: secondaryColor, fontWeight: 700, lineHeight: 1.45 },
     errorText: { margin: '0', color: '#b42318', fontWeight: 700, lineHeight: 1.45 },
-    panel: { background: '#f5fbfc', border: '1px solid rgba(16,36,46,0.08)', borderRadius, padding: compactCardPadding, display: 'grid', gap: 14, minWidth: 0 },
+    panel: { background: template.panelBackground, border: template.cardBorder, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, display: 'grid', gap: 14, minWidth: 0 },
     textarea: { minHeight: isMobile ? 112 : 132, border: '1px solid rgba(16,36,46,0.14)', borderRadius, padding: 12, font: 'inherit', boxSizing: 'border-box', width: '100%', minWidth: 0 },
     inputRow: { display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'minmax(0,1fr) auto', gap: 10, minWidth: 0 },
     input: { border: '1px solid rgba(16,36,46,0.14)', borderRadius, padding: 12, font: 'inherit', width: '100%', minWidth: 0, boxSizing: 'border-box' },
@@ -657,7 +791,7 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     workflow: { display: 'grid', gap: 10 },
     workflowStep: { display: 'grid', gridTemplateColumns: '34px minmax(0,1fr)', gap: 10, alignItems: 'start', padding: 12, background: '#fff', borderRadius, border: '1px solid rgba(16,36,46,0.08)', minWidth: 0 },
     resultsLayout: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1.4fr) minmax(280px,360px)' : 'minmax(0,1fr)', gap: sectionGap, scrollMarginTop: sectionGap, minWidth: 0 },
-    resultsPanel: { background: '#fff', borderRadius, padding: compactCardPadding, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: sectionGap, minWidth: 0 },
+    resultsPanel: { background: template.cardBackground, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, boxShadow: template.cardShadow, border: template.cardBorder, scrollMarginTop: sectionGap, minWidth: 0 },
     resultList: { display: 'grid', gap: 14, marginTop: 18 },
     cvCard: { border: '1px solid rgba(16,36,46,0.08)', borderRadius, padding: compactCardPadding, background: '#fdfefe', minWidth: 0 },
     cvTop: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: 16, alignItems: isMobile ? 'stretch' : 'flex-start', minWidth: 0 },

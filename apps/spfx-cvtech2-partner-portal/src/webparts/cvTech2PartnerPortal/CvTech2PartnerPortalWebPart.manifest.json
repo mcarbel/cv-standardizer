@@ -46,6 +46,7 @@
         "dataSiteUrl": "https://braineesysms365.sharepoint.com/sites/CVTech2",
         "cvListTitle": "PartnerCVs",
         "auditListTitle": "PartnerSearchLogs",
+        "missionListTitle": "PartnerMissions",
         "partnerName": "Default Partner",
         "partnerMonthlyQuota": 100,
         "cvRowLimit": 500,

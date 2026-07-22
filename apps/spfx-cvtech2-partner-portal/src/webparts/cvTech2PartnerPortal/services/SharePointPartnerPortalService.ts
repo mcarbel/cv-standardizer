@@ -33,6 +33,30 @@ export interface IPartnerSearchLogInput {
   monthKey: string;
 }
 
+export interface IPartnerMissionItem {
+  Id: number;
+  Title?: string;
+  Created?: string;
+  PartnerName?: string;
+  UserEmail?: string;
+  MissionBrief?: string;
+  MissionSkills?: string;
+  Seniority?: string;
+  Availability?: string;
+  ResultsCount?: number;
+}
+
+export interface IPartnerMissionInput {
+  title: string;
+  partnerName: string;
+  userEmail: string;
+  missionBrief: string;
+  skills: string[];
+  seniority: string;
+  availability: string;
+  resultsCount: number;
+}
+
 export class SharePointPartnerPortalService {
   public constructor(
     private readonly spHttpClient: SPHttpClient,
@@ -93,6 +117,43 @@ export class SharePointPartnerPortalService {
     });
 
     await this.ensureSuccess(response, `Unable to write search audit item in "${auditListTitle}"`);
+  }
+
+  public async getPartnerMissions(missionListTitle: string, partnerName: string, rowLimit: number): Promise<IPartnerMissionItem[]> {
+    const filter = `PartnerName eq '${this.escapeODataString(partnerName)}'`;
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(missionListTitle)}')/items`
+      + `?$top=${rowLimit}`
+      + '&$select=Id,Title,Created,PartnerName,UserEmail,MissionBrief,MissionSkills,Seniority,Availability,ResultsCount'
+      + '&$orderby=Created desc'
+      + `&$filter=${encodeURIComponent(filter)}`;
+
+    const response = await this.spHttpClient.get(endpoint, SPHttpClient.configurations.v1);
+    await this.ensureSuccess(response, `Unable to load partner mission list "${missionListTitle}"`);
+
+    const payload = await response.json();
+    return payload.value || [];
+  }
+
+  public async savePartnerMission(missionListTitle: string, input: IPartnerMissionInput): Promise<void> {
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(missionListTitle)}')/items`;
+    const response = await this.spHttpClient.post(endpoint, SPHttpClient.configurations.v1, {
+      headers: {
+        Accept: 'application/json;odata=nometadata',
+        'Content-Type': 'application/json;odata=nometadata'
+      },
+      body: JSON.stringify({
+        Title: input.title,
+        PartnerName: input.partnerName,
+        UserEmail: input.userEmail,
+        MissionBrief: input.missionBrief,
+        MissionSkills: input.skills.join(', '),
+        Seniority: input.seniority,
+        Availability: input.availability,
+        ResultsCount: input.resultsCount
+      })
+    });
+
+    await this.ensureSuccess(response, `Unable to write partner mission item in "${missionListTitle}"`);
   }
 
   private async ensureSuccess(response: SPHttpClientResponse, message: string): Promise<void> {

@@ -32,6 +32,7 @@ export interface ICvTech2PartnerPortalWebPartProps {
   dataSiteUrl: string;
   cvListTitle: string;
   auditListTitle: string;
+  missionListTitle: string;
   partnerName: string;
   partnerMonthlyQuota: number;
   cvRowLimit: number;
@@ -64,6 +65,7 @@ const DEFAULT_PROPS: ICvTech2PartnerPortalWebPartProps = {
   dataSiteUrl: 'https://braineesysms365.sharepoint.com/sites/CVTech2',
   cvListTitle: 'PartnerCVs',
   auditListTitle: 'PartnerSearchLogs',
+  missionListTitle: 'PartnerMissions',
   partnerName: 'Default Partner',
   partnerMonthlyQuota: 100,
   cvRowLimit: 500,
@@ -97,6 +99,7 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
     this.properties.dataSiteUrl = this.properties.dataSiteUrl || DEFAULT_PROPS.dataSiteUrl;
     this.properties.cvListTitle = this.properties.cvListTitle || DEFAULT_PROPS.cvListTitle;
     this.properties.auditListTitle = this.properties.auditListTitle || DEFAULT_PROPS.auditListTitle;
+    this.properties.missionListTitle = this.properties.missionListTitle || DEFAULT_PROPS.missionListTitle;
     this.properties.partnerName = this.properties.partnerName || DEFAULT_PROPS.partnerName;
     this.properties.partnerMonthlyQuota = this.properties.partnerMonthlyQuota || DEFAULT_PROPS.partnerMonthlyQuota;
     this.properties.cvRowLimit = this.properties.cvRowLimit || DEFAULT_PROPS.cvRowLimit;
@@ -153,6 +156,7 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
                 PropertyPaneTextField('dataSiteUrl', { label: 'Data site URL' }),
                 PropertyPaneTextField('cvListTitle', { label: 'CV list title' }),
                 PropertyPaneTextField('auditListTitle', { label: 'Search audit list title' }),
+                PropertyPaneTextField('missionListTitle', { label: 'Partner mission list title' }),
                 PropertyPaneTextField('partnerName', { label: 'Partner name' }),
                 PropertyPaneSlider('partnerMonthlyQuota', { label: 'Monthly search quota', min: 1, max: 1000, step: 1 }),
                 PropertyPaneSlider('cvRowLimit', { label: 'Maximum CV rows to load', min: 20, max: 5000, step: 20 })

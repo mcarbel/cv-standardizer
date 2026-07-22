@@ -15,7 +15,10 @@ param(
   [string]$CvListTitle = "PartnerCVs",
 
   [Parameter(Mandatory = $false)]
-  [string]$AuditListTitle = "PartnerSearchLogs"
+  [string]$AuditListTitle = "PartnerSearchLogs",
+
+  [Parameter(Mandatory = $false)]
+  [string]$MissionListTitle = "PartnerMissions"
 )
 
 $ErrorActionPreference = "Stop"
@@ -118,5 +121,14 @@ Ensure-Field -List $AuditListTitle -InternalName "ResultsCount" -DisplayName "Re
 Ensure-Field -List $AuditListTitle -InternalName "PartnerQuotaMaximum" -DisplayName "Partner Quota Maximum" -Type Number
 Ensure-Field -List $AuditListTitle -InternalName "SearchesRemaining" -DisplayName "Searches Remaining" -Type Number
 Ensure-Field -List $AuditListTitle -InternalName "MonthKey" -DisplayName "Month Key" -Type Text
+
+Ensure-List -Title $MissionListTitle -Description "Partner mission briefs and criteria saved from Partner Portal searches."
+Ensure-Field -List $MissionListTitle -InternalName "PartnerName" -DisplayName "Partner Name" -Type Text
+Ensure-Field -List $MissionListTitle -InternalName "UserEmail" -DisplayName "User Email" -Type Text
+Ensure-Field -List $MissionListTitle -InternalName "MissionBrief" -DisplayName "Mission Brief" -Type Note
+Ensure-Field -List $MissionListTitle -InternalName "MissionSkills" -DisplayName "Mission Skills" -Type Note
+Ensure-Field -List $MissionListTitle -InternalName "Seniority" -DisplayName "Seniority" -Type Text
+Ensure-Field -List $MissionListTitle -InternalName "Availability" -DisplayName "Availability" -Type Text
+Ensure-Field -List $MissionListTitle -InternalName "ResultsCount" -DisplayName "Results Count" -Type Number
 
 Write-Host "Partner Portal lists are ready."

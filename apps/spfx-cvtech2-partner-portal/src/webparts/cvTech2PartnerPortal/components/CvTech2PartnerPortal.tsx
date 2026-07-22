@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SPHttpClient } from '@microsoft/sp-http';
 import type { ICvTech2PartnerPortalWebPartProps, PartnerPortalTemplate } from '../CvTech2PartnerPortalWebPart';
-import { IPartnerCvListItem, SharePointPartnerPortalService } from '../services/SharePointPartnerPortalService';
+import { IPartnerCvListItem, IPartnerMissionItem, SharePointPartnerPortalService } from '../services/SharePointPartnerPortalService';
 
 interface Props {
   webPartProps: ICvTech2PartnerPortalWebPartProps;
@@ -129,6 +129,11 @@ function getMonthKey(date: Date): string {
   return `${date.getFullYear()}-${month}`;
 }
 
+function formatMissionDate(value?: string): string {
+  if (!value) return 'Date unavailable';
+  return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+}
+
 function filterProfiles(sourceProfiles: CandidateProfile[], selectedSkills: string[], seniority: string, availability: string): CandidateProfile[] {
   return sourceProfiles
     .filter((profile) => !seniority || profile.seniority === seniority)
@@ -180,6 +185,9 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
   const [availableProfiles, setAvailableProfiles] = useState<CandidateProfile[]>([]);
   const [isLoadingCvs, setIsLoadingCvs] = useState(true);
   const [dataError, setDataError] = useState('');
+  const [missionError, setMissionError] = useState('');
+  const [partnerMissions, setPartnerMissions] = useState<IPartnerMissionItem[]>([]);
+  const [isLoadingMissions, setIsLoadingMissions] = useState(true);
   const [searchStatus, setSearchStatus] = useState('');
   const [searchesRemaining, setSearchesRemaining] = useState(partnerMonthlyQuota);
 
@@ -232,6 +240,29 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     };
   }, [webPartProps.cvListTitle, webPartProps.cvRowLimit]);
 
+  const loadPartnerMissions = async (): Promise<void> => {
+    setIsLoadingMissions(true);
+    setMissionError('');
+
+    try {
+      const missions = await serviceRef.current.getPartnerMissions(
+        webPartProps.missionListTitle,
+        webPartProps.partnerName,
+        100
+      );
+      setPartnerMissions(missions);
+    } catch (error) {
+      setMissionError(error instanceof Error ? error.message : 'Unable to load partner missions from SharePoint.');
+      setPartnerMissions([]);
+    } finally {
+      setIsLoadingMissions(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPartnerMissions().catch(() => undefined);
+  }, [webPartProps.missionListTitle, webPartProps.partnerName]);
+
   const rankedProfiles = useMemo(() => {
     return filterProfiles(availableProfiles, selectedSkills, seniority, availability);
   }, [availability, availableProfiles, seniority, selectedSkills]);
@@ -272,6 +303,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     );
     const results = filterProfiles(availableProfiles, skillsForSearch, seniority, availability);
     const remaining = Math.max(0, partnerMonthlyQuota - usedSearches - 1);
+    const missionTitle = missionBrief.trim().split(/\n|[.!?]/)[0]?.trim() || `Skills search: ${skillsForSearch.slice(0, 3).join(', ')}`;
 
     await serviceRef.current.logSearch(webPartProps.auditListTitle, {
       title: `${webPartProps.partnerName} search ${new Date().toISOString()}`,
@@ -285,8 +317,28 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
       monthKey
     });
 
+    await serviceRef.current.savePartnerMission(webPartProps.missionListTitle, {
+      title: missionTitle,
+      partnerName: webPartProps.partnerName,
+      userEmail,
+      missionBrief,
+      skills: skillsForSearch,
+      seniority,
+      availability,
+      resultsCount: results.length
+    });
+
     setSearchesRemaining(remaining);
     setSearchStatus(`Search logged. ${results.length} CV(s) found. ${remaining} search(es) remaining this month.`);
+    await loadPartnerMissions();
+  };
+
+  const reuseMission = (mission: IPartnerMissionItem): void => {
+    setMissionBrief(mission.MissionBrief || '');
+    setSelectedSkills(splitSkills(mission.MissionSkills || ''));
+    setSeniority(mission.Seniority || '');
+    setAvailability(mission.Availability || '');
+    setSearchStatus(`Loaded mission "${mission.Title || `#${mission.Id}`}". You can refine and search again.`);
   };
 
   const navigateToSection = (sectionId: SectionId): void => {
@@ -432,6 +484,36 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
             </div>
 
             <div style={styles.panel}>
+              <FieldLabel label="Partner mission history" />
+              {isLoadingMissions ? <p style={styles.muted}>Loading partner missions...</p> : null}
+              {missionError ? <p style={styles.errorText}>{missionError}</p> : null}
+              {!isLoadingMissions && !missionError && partnerMissions.length === 0 ? (
+                <p style={styles.muted}>No mission saved yet for {webPartProps.partnerName}.</p>
+              ) : null}
+              <div style={styles.missionList}>
+                {partnerMissions.map((mission) => (
+                  <article key={mission.Id} style={styles.missionCard}>
+                    <div style={styles.missionHeader}>
+                      <div>
+                        <strong>{mission.Title || `Mission #${mission.Id}`}</strong>
+                        <p style={styles.muted}>{formatMissionDate(mission.Created)} · {mission.UserEmail || 'Partner user'}</p>
+                      </div>
+                      <span style={styles.resultBadge}>{mission.ResultsCount || 0} CVs</span>
+                    </div>
+                    <p style={styles.profileSummary}>{mission.MissionBrief || 'No mission brief captured.'}</p>
+                    <div style={styles.skillPills}>
+                      {splitSkills(mission.MissionSkills || '').map((skill) => <span key={skill} style={styles.skillPill}>{skill}</span>)}
+                    </div>
+                    <p style={styles.muted}>
+                      Criteria: {mission.Seniority || 'Any seniority'} · {mission.Availability || 'Any availability'}
+                    </p>
+                    <button type="button" style={styles.secondaryButton} onClick={() => reuseMission(mission)}>
+                      Reuse criteria
+                    </button>
+                  </article>
+                ))}
+              </div>
+
               <FieldLabel label="Selected search" />
               <div style={styles.chipRow}>
                 {selectedSkills.map((skill) => (
@@ -790,6 +872,10 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     twoColumn: { display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'repeat(2,minmax(0,1fr))', gap: 12 },
     workflow: { display: 'grid', gap: 10 },
     workflowStep: { display: 'grid', gridTemplateColumns: '34px minmax(0,1fr)', gap: 10, alignItems: 'start', padding: 12, background: '#fff', borderRadius, border: '1px solid rgba(16,36,46,0.08)', minWidth: 0 },
+    missionList: { display: 'grid', gap: 12 },
+    missionCard: { background: '#fff', border: template.cardBorder, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, display: 'grid', gap: 10, minWidth: 0 },
+    missionHeader: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: 10, alignItems: isMobile ? 'stretch' : 'flex-start', minWidth: 0 },
+    resultBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 72, padding: '8px 10px', borderRadius: 999, background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: '#fff', fontWeight: 800 },
     resultsLayout: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1.4fr) minmax(280px,360px)' : 'minmax(0,1fr)', gap: sectionGap, scrollMarginTop: sectionGap, minWidth: 0 },
     resultsPanel: { background: template.cardBackground, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, boxShadow: template.cardShadow, border: template.cardBorder, scrollMarginTop: sectionGap, minWidth: 0 },
     resultList: { display: 'grid', gap: 14, marginTop: 18 },

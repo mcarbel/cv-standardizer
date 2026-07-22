@@ -119,12 +119,14 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
   }
 
   public render(): void {
+    const loginName = this.context.pageContext.user.loginName || '';
+    const normalizedUserEmail = this.context.pageContext.user.email || loginName.split('|').pop() || loginName;
     const element = React.createElement(CvTech2PartnerPortal, {
       webPartProps: this.properties,
       spHttpClient: this.context.spHttpClient as SPHttpClient,
       siteUrl: this.properties.dataSiteUrl || this.context.pageContext.web.absoluteUrl,
       userDisplayName: this.context.pageContext.user.displayName,
-      userEmail: this.context.pageContext.user.email || this.context.pageContext.user.loginName
+      userEmail: normalizedUserEmail
     });
 
     ReactDom.render(element, this.domElement);

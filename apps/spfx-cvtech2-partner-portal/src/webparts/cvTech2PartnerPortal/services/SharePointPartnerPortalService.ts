@@ -163,18 +163,18 @@ export class SharePointPartnerPortalService {
   }
 
   public async isPartnerPortalAdmin(adminListTitle: string, userEmail: string): Promise<boolean> {
-    const normalizedEmail = userEmail.trim().toLowerCase();
+    const normalizedEmail = this.normalizeEmail(userEmail);
     if (!normalizedEmail) return false;
 
-    const filter = `UserEmail eq '${this.escapeODataString(normalizedEmail)}' and IsActive eq 1`;
+    const filter = `UserEmail eq '${this.escapeODataString(normalizedEmail)}'`;
     const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(adminListTitle)}')/items`
-      + `?$top=1&$select=Id,UserEmail,IsActive&$filter=${encodeURIComponent(filter)}`;
+      + `?$top=5&$select=Id,UserEmail,IsActive&$filter=${encodeURIComponent(filter)}`;
 
     const response = await this.spHttpClient.get(endpoint, SPHttpClient.configurations.v1);
     await this.ensureSuccess(response, `Unable to load Partner Portal admin list "${adminListTitle}"`);
 
     const payload = await response.json();
-    return (payload.value || []).length > 0;
+    return (payload.value || []).some((item: { IsActive?: boolean }) => item.IsActive !== false);
   }
 
   public async countMonthlySearches(
@@ -267,5 +267,9 @@ export class SharePointPartnerPortalService {
 
   private escapeODataString(value: string): string {
     return value.replace(/'/g, "''");
+  }
+
+  private normalizeEmail(value: string): string {
+    return (value.split('|').pop() || value).trim().toLowerCase();
   }
 }

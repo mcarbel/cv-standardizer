@@ -2,7 +2,13 @@ import * as React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SPHttpClient } from '@microsoft/sp-http';
 import type { ICvTech2PartnerPortalWebPartProps, PartnerPortalTemplate } from '../CvTech2PartnerPortalWebPart';
-import { IPartnerCvListItem, IPartnerMissionItem, SharePointPartnerPortalService } from '../services/SharePointPartnerPortalService';
+import {
+  IPartnerCvInput,
+  IPartnerCvListItem,
+  IPartnerMissionItem,
+  ISharePointCvDocumentItem,
+  SharePointPartnerPortalService
+} from '../services/SharePointPartnerPortalService';
 
 interface Props {
   webPartProps: ICvTech2PartnerPortalWebPartProps;
@@ -59,14 +65,44 @@ const plans = [
   }
 ];
 
-type SectionId = 'overview' | 'cv-library' | 'mission-match' | 'plans' | 'compliance';
+type SectionId = 'overview' | 'cv-library' | 'mission-match' | 'plans' | 'compliance' | 'administration';
 
 const navItems: Array<{ id: SectionId; label: string; defaultOrder: number }> = [
   { id: 'overview', label: 'Overview', defaultOrder: 1 },
   { id: 'mission-match', label: 'Mission Match', defaultOrder: 2 },
   { id: 'cv-library', label: 'CV Library', defaultOrder: 3 },
   { id: 'plans', label: 'Plans', defaultOrder: 4 },
-  { id: 'compliance', label: 'Compliance', defaultOrder: 5 }
+  { id: 'compliance', label: 'Compliance', defaultOrder: 5 },
+  { id: 'administration', label: 'Administration', defaultOrder: 99 }
+];
+
+const skillSynonyms = [
+  'Azure',
+  'GCP',
+  'AWS',
+  'Terraform',
+  'IAM',
+  'Kubernetes',
+  'Cybersecurity',
+  'Compliance',
+  'DevSecOps',
+  'Landing Zone',
+  'Cloud Security',
+  'Zero Trust',
+  'Network',
+  'SOC',
+  'SIEM',
+  'M365',
+  'SharePoint',
+  'Power Platform',
+  'Java',
+  'React',
+  'Node',
+  'Python',
+  'Data',
+  'AI',
+  'PMO',
+  'Agile'
 ];
 
 function scoreProfile(profile: CandidateProfile, selectedSkills: string[]): number {
@@ -134,6 +170,56 @@ function formatMissionDate(value?: string): string {
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
 }
 
+function cleanProfileTitle(value: string): string {
+  const withoutExtension = value.replace(/\.(pdf|docx)$/i, '');
+  return withoutExtension
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b(cv|resume|anonymous|anonymized|standardise|standardized|v\d+(\.\d+)*)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim() || 'Anonymized consultant';
+}
+
+function inferSkillsFromText(value: string): string[] {
+  const lower = value.toLowerCase();
+  const skills = skillSynonyms.filter((skill) => lower.includes(skill.toLowerCase()));
+  return Array.from(new Set(skills.length ? skills : ['General IT Consulting']));
+}
+
+function inferSeniority(value: string): string {
+  const lower = value.toLowerCase();
+  if (/\b(architect|principal)\b/.test(lower)) return 'Architect';
+  if (/\b(lead|manager|head)\b/.test(lower)) return 'Lead';
+  if (/\b(senior|sr)\b/.test(lower)) return 'Senior';
+  if (/\b(junior|jr)\b/.test(lower)) return 'Junior';
+  return 'Senior';
+}
+
+function buildAbsoluteSharePointUrl(siteUrl: string, document: ISharePointCvDocumentItem): string {
+  if (document.File?.LinkingUrl) return document.File.LinkingUrl;
+  const serverRelativeUrl = document.File?.ServerRelativeUrl || '';
+  if (!serverRelativeUrl) return siteUrl;
+  return `${new URL(siteUrl).origin}${serverRelativeUrl}`;
+}
+
+function mapDocumentToPartnerCv(siteUrl: string, document: ISharePointCvDocumentItem): IPartnerCvInput {
+  const fileName = document.File?.Name || document.Title || `CV document ${document.Id}`;
+  const profileTitle = cleanProfileTitle(document.Title || fileName);
+  const skills = inferSkillsFromText(`${profileTitle} ${fileName}`);
+  const cvUrl = buildAbsoluteSharePointUrl(siteUrl, document);
+
+  return {
+    title: profileTitle,
+    candidateId: `DOC-${document.Id}`,
+    profileTitle,
+    seniority: inferSeniority(`${profileTitle} ${fileName}`),
+    availability: 'Availability to confirm',
+    skills,
+    summary: `Anonymized profile imported from SharePoint document "${fileName}". Initial metadata was inferred from the document name and library metadata.`,
+    cvUrl,
+    cvUrlDescription: fileName
+  };
+}
+
 function filterProfiles(sourceProfiles: CandidateProfile[], selectedSkills: string[], seniority: string, availability: string): CandidateProfile[] {
   return sourceProfiles
     .filter((profile) => !seniority || profile.seniority === seniority)
@@ -188,6 +274,11 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
   const [missionError, setMissionError] = useState('');
   const [partnerMissions, setPartnerMissions] = useState<IPartnerMissionItem[]>([]);
   const [isLoadingMissions, setIsLoadingMissions] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
+  const [adminError, setAdminError] = useState('');
+  const [adminStatus, setAdminStatus] = useState('');
+  const [isImportingDocuments, setIsImportingDocuments] = useState(false);
   const [searchStatus, setSearchStatus] = useState('');
   const [searchesRemaining, setSearchesRemaining] = useState(partnerMonthlyQuota);
 
@@ -262,6 +353,36 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
   useEffect(() => {
     loadPartnerMissions().catch(() => undefined);
   }, [webPartProps.missionListTitle, webPartProps.partnerName]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function checkAdminAccess(): Promise<void> {
+      setIsCheckingAdmin(true);
+      setAdminError('');
+
+      try {
+        const hasAccess = await serviceRef.current.isPartnerPortalAdmin(webPartProps.adminListTitle, userEmail);
+        if (!isMounted) return;
+        setIsAdmin(hasAccess);
+        if (!hasAccess && activeSection === 'administration') {
+          setActiveSection('overview');
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        setIsAdmin(false);
+        setAdminError(error instanceof Error ? error.message : 'Unable to check Partner Portal admin access.');
+      } finally {
+        if (isMounted) setIsCheckingAdmin(false);
+      }
+    }
+
+    checkAdminAccess().catch(() => undefined);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeSection, userEmail, webPartProps.adminListTitle]);
 
   const rankedProfiles = useMemo(() => {
     return filterProfiles(availableProfiles, selectedSkills, seniority, availability);
@@ -341,6 +462,36 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     setSearchStatus(`Loaded mission "${mission.Title || `#${mission.Id}`}". You can refine and search again.`);
   };
 
+  const importCvDocuments = async (): Promise<void> => {
+    setIsImportingDocuments(true);
+    setAdminStatus('Scanning SharePoint CV documents...');
+    setAdminError('');
+
+    try {
+      const [documents, existingCvs] = await Promise.all([
+        serviceRef.current.getCvDocuments(webPartProps.cvDocumentLibraryTitle, webPartProps.cvRowLimit),
+        serviceRef.current.getPartnerCvKeys(webPartProps.cvListTitle, webPartProps.cvRowLimit)
+      ]);
+      const existingCandidateIds = new Set(existingCvs.map((item) => item.CandidateId).filter(Boolean));
+      const existingUrls = new Set(existingCvs.map((item) => item.CvUrl?.Url).filter(Boolean));
+      const candidates = documents
+        .map((document) => mapDocumentToPartnerCv(siteUrl, document))
+        .filter((candidate) => !existingCandidateIds.has(candidate.candidateId) && !existingUrls.has(candidate.cvUrl));
+
+      for (const candidate of candidates) {
+        await serviceRef.current.createPartnerCv(webPartProps.cvListTitle, candidate);
+      }
+
+      setAdminStatus(`Import complete. ${documents.length} document(s) scanned, ${candidates.length} new PartnerCV item(s) created.`);
+      const items = await serviceRef.current.getAvailableCvs(webPartProps.cvListTitle, webPartProps.cvRowLimit);
+      setAvailableProfiles(items.map(mapSharePointCv));
+    } catch (error) {
+      setAdminError(error instanceof Error ? error.message : 'Unable to import CV documents.');
+    } finally {
+      setIsImportingDocuments(false);
+    }
+  };
+
   const navigateToSection = (sectionId: SectionId): void => {
     setActiveSection(sectionId);
   };
@@ -351,9 +502,11 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     'mission-match': missionMatchPosition,
     'cv-library': cvLibraryPosition,
     plans: plansPosition,
-    compliance: compliancePosition
+    compliance: compliancePosition,
+    administration: 99
   };
-  const orderedNavItems = [...navItems].sort((left, right) =>
+  const visibleNavItems = navItems.filter((item) => item.id !== 'administration' || isAdmin);
+  const orderedNavItems = [...visibleNavItems].sort((left, right) =>
     (sectionPositions[left.id] - sectionPositions[right.id]) || (left.defaultOrder - right.defaultOrder)
   );
   const styles = buildStyles({
@@ -617,6 +770,43 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
           <WorkflowStep number="A" title="Audit trail" text="Searches, shortlists, and reveal requests can be logged." styles={styles} />
         </section>
         ) : null}
+
+        {activeSection === 'administration' && isAdmin ? (
+        <section id="administration" style={{ ...styles.resultsPanel, order: sectionPositions.administration }}>
+          <h2 style={styles.sectionTitle}>Administration</h2>
+          <p style={styles.muted}>
+            Admin tools are visible only for active users declared in "{webPartProps.adminListTitle}".
+          </p>
+          <div style={styles.adminGrid}>
+            <div style={styles.panel}>
+              <FieldLabel label="SharePoint CV import" />
+              <p style={styles.muted}>
+                Scan PDF/DOCX files from "{webPartProps.cvDocumentLibraryTitle}" and create missing anonymized entries in "{webPartProps.cvListTitle}".
+              </p>
+              <div style={styles.workflow}>
+                <WorkflowStep number="1" title="Scan documents" text="Read PDF/DOCX metadata from the configured SharePoint library." styles={styles} />
+                <WorkflowStep number="2" title="Infer metadata" text="Build profile title, candidate alias, seniority, availability and skills from file metadata." styles={styles} />
+                <WorkflowStep number="3" title="Fill PartnerCVs" text="Create only missing CV records and skip existing candidate/document URLs." styles={styles} />
+              </div>
+              <button type="button" style={styles.primaryButton} onClick={importCvDocuments} disabled={isImportingDocuments}>
+                {isImportingDocuments ? 'Importing...' : 'Parse SharePoint documents into PartnerCVs'}
+              </button>
+              {adminStatus ? <p style={styles.statusText}>{adminStatus}</p> : null}
+              {adminError ? <p style={styles.errorText}>{adminError}</p> : null}
+            </div>
+            <div style={styles.panel}>
+              <FieldLabel label="Current configuration" />
+              <div style={styles.configList}>
+                <span>Admin list: <strong>{webPartProps.adminListTitle}</strong></span>
+                <span>Document library: <strong>{webPartProps.cvDocumentLibraryTitle}</strong></span>
+                <span>Target CV list: <strong>{webPartProps.cvListTitle}</strong></span>
+                <span>Current user: <strong>{userEmail}</strong></span>
+                <span>Admin check: <strong>{isCheckingAdmin ? 'checking...' : isAdmin ? 'allowed' : 'denied'}</strong></span>
+              </div>
+            </div>
+          </div>
+        </section>
+        ) : null}
       </main>
     </div>
   );
@@ -872,6 +1062,8 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     twoColumn: { display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'repeat(2,minmax(0,1fr))', gap: 12 },
     workflow: { display: 'grid', gap: 10 },
     workflowStep: { display: 'grid', gridTemplateColumns: '34px minmax(0,1fr)', gap: 10, alignItems: 'start', padding: 12, background: '#fff', borderRadius, border: '1px solid rgba(16,36,46,0.08)', minWidth: 0 },
+    adminGrid: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1.2fr) minmax(280px,0.8fr)' : 'minmax(0,1fr)', gap: sectionGap, marginTop: 18, minWidth: 0 },
+    configList: { display: 'grid', gap: 10, lineHeight: 1.45, overflowWrap: 'anywhere' },
     missionList: { display: 'grid', gap: 12 },
     missionCard: { background: '#fff', border: template.cardBorder, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, display: 'grid', gap: 10, minWidth: 0 },
     missionHeader: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: 10, alignItems: isMobile ? 'stretch' : 'flex-start', minWidth: 0 },

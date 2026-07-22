@@ -16,6 +16,38 @@ export interface IPartnerCvListItem {
   };
 }
 
+export interface IPartnerCvKeyItem {
+  Id: number;
+  CandidateId?: string;
+  CvUrl?: {
+    Url?: string;
+    Description?: string;
+  };
+}
+
+export interface IPartnerCvInput {
+  title: string;
+  candidateId: string;
+  profileTitle: string;
+  seniority: string;
+  availability: string;
+  skills: string[];
+  summary: string;
+  cvUrl: string;
+  cvUrlDescription: string;
+}
+
+export interface ISharePointCvDocumentItem {
+  Id: number;
+  Title?: string;
+  Modified?: string;
+  File?: {
+    Name?: string;
+    ServerRelativeUrl?: string;
+    LinkingUrl?: string;
+  };
+}
+
 export interface IPartnerSearchLogItem {
   Id: number;
   Created?: string;
@@ -73,6 +105,76 @@ export class SharePointPartnerPortalService {
 
     const payload = await response.json();
     return (payload.value || []).filter((item: IPartnerCvListItem) => item.IsAvailable !== false);
+  }
+
+  public async getPartnerCvKeys(listTitle: string, rowLimit: number): Promise<IPartnerCvKeyItem[]> {
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(listTitle)}')/items`
+      + `?$top=${rowLimit}`
+      + '&$select=Id,CandidateId,CvUrl';
+
+    const response = await this.spHttpClient.get(endpoint, SPHttpClient.configurations.v1);
+    await this.ensureSuccess(response, `Unable to load CV keys from "${listTitle}"`);
+
+    const payload = await response.json();
+    return payload.value || [];
+  }
+
+  public async createPartnerCv(listTitle: string, input: IPartnerCvInput): Promise<void> {
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(listTitle)}')/items`;
+    const response = await this.spHttpClient.post(endpoint, SPHttpClient.configurations.v1, {
+      headers: {
+        Accept: 'application/json;odata=nometadata',
+        'Content-Type': 'application/json;odata=nometadata'
+      },
+      body: JSON.stringify({
+        Title: input.title,
+        CandidateId: input.candidateId,
+        ProfileTitle: input.profileTitle,
+        Seniority: input.seniority,
+        Availability: input.availability,
+        Skills: input.skills.join(', '),
+        Summary: input.summary,
+        IsAvailable: true,
+        CvUrl: {
+          Url: input.cvUrl,
+          Description: input.cvUrlDescription
+        }
+      })
+    });
+
+    await this.ensureSuccess(response, `Unable to create PartnerCV item in "${listTitle}"`);
+  }
+
+  public async getCvDocuments(documentLibraryTitle: string, rowLimit: number): Promise<ISharePointCvDocumentItem[]> {
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(documentLibraryTitle)}')/items`
+      + `?$top=${rowLimit}`
+      + '&$select=Id,Title,Modified,File/Name,File/ServerRelativeUrl,File/LinkingUrl'
+      + '&$expand=File'
+      + '&$orderby=Modified desc';
+
+    const response = await this.spHttpClient.get(endpoint, SPHttpClient.configurations.v1);
+    await this.ensureSuccess(response, `Unable to load CV documents from "${documentLibraryTitle}"`);
+
+    const payload = await response.json();
+    return (payload.value || []).filter((item: ISharePointCvDocumentItem) => {
+      const fileName = item.File?.Name || '';
+      return /\.(pdf|docx)$/i.test(fileName);
+    });
+  }
+
+  public async isPartnerPortalAdmin(adminListTitle: string, userEmail: string): Promise<boolean> {
+    const normalizedEmail = userEmail.trim().toLowerCase();
+    if (!normalizedEmail) return false;
+
+    const filter = `UserEmail eq '${this.escapeODataString(normalizedEmail)}' and IsActive eq 1`;
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(adminListTitle)}')/items`
+      + `?$top=1&$select=Id,UserEmail,IsActive&$filter=${encodeURIComponent(filter)}`;
+
+    const response = await this.spHttpClient.get(endpoint, SPHttpClient.configurations.v1);
+    await this.ensureSuccess(response, `Unable to load Partner Portal admin list "${adminListTitle}"`);
+
+    const payload = await response.json();
+    return (payload.value || []).length > 0;
   }
 
   public async countMonthlySearches(

@@ -47,6 +47,8 @@
         "cvListTitle": "PartnerCVs",
         "auditListTitle": "PartnerSearchLogs",
         "missionListTitle": "PartnerMissions",
+        "adminListTitle": "PartnerPortalAdmins",
+        "cvDocumentLibraryTitle": "Documents",
         "partnerName": "Default Partner",
         "partnerMonthlyQuota": 100,
         "cvRowLimit": 500,

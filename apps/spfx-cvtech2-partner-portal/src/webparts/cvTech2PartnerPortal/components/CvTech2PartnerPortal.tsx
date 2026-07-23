@@ -649,13 +649,20 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
         ) : null}
 
         {activeSection === 'mission-match' ? (
-        <section id="mission-match" style={{ ...styles.searchBand, order: sectionPositions['mission-match'] }}>
-          <div style={styles.searchHeader}>
+        <section id="mission-match" style={{ ...styles.pageFrame, order: sectionPositions['mission-match'] }}>
+          <div style={styles.pageHero}>
             <div>
-              <h2 style={styles.sectionTitle}>Find available CVs</h2>
-              <p style={styles.muted}>Work from explicit skills, a mission description, or both.</p>
+              <span style={styles.pageKicker}>Mission intelligence</span>
+              <h2 style={styles.pageTitle}>Mission Match</h2>
+              <p style={styles.pageLead}>Capture a mission brief, extract explicit skills, and turn every search into a reusable partner mission record.</p>
+            </div>
+            <div style={styles.pageStats}>
+              <PageStat value={`${partnerMissions.length}`} label="saved missions" styles={styles} />
+              <PageStat value={`${selectedSkills.length}`} label="active skills" styles={styles} />
+              <PageStat value={`${searchesRemaining}`} label="searches left" styles={styles} />
             </div>
           </div>
+          <div style={styles.pageBody}>
           <div style={styles.searchGrid}>
             <div style={styles.panel}>
               <FieldLabel label="Mission / offer brief" />
@@ -765,15 +772,27 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
               </div>
             </div>
           </div>
+          </div>
         </section>
         ) : null}
 
         {activeSection === 'cv-library' ? (
-        <section id="cv-library" style={{ ...styles.resultsPanel, order: sectionPositions['cv-library'] }}>
-          <h2 style={styles.sectionTitle}>Matching candidate profiles</h2>
-          <p style={styles.muted}>
-            Results are loaded from the SharePoint list "{webPartProps.cvListTitle}" and each search is logged in "{webPartProps.auditListTitle}".
-          </p>
+        <section id="cv-library" style={{ ...styles.pageFrame, order: sectionPositions['cv-library'] }}>
+          <div style={styles.pageHero}>
+            <div>
+              <span style={styles.pageKicker}>Curated anonymized talent</span>
+              <h2 style={styles.pageTitle}>CV Library</h2>
+              <p style={styles.pageLead}>
+                Results are loaded from "{webPartProps.cvListTitle}" and each search is logged in "{webPartProps.auditListTitle}".
+              </p>
+            </div>
+            <div style={styles.pageStats}>
+              <PageStat value={`${availableProfiles.length}`} label="available CVs" styles={styles} />
+              <PageStat value={isLoadingCvs ? '...' : `${rankedProfiles.length}`} label="matched profiles" styles={styles} />
+              <PageStat value="94%" label="curated relevance" styles={styles} />
+            </div>
+          </div>
+          <div style={styles.pageBody}>
           <div style={styles.resultList}>
             {isLoadingCvs ? <p style={styles.muted}>Loading SharePoint CVs...</p> : null}
             {!isLoadingCvs && rankedProfiles.length === 0 ? <p style={styles.muted}>No available CV matched the current search.</p> : null}
@@ -807,12 +826,25 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
               </article>
             ))}
           </div>
+          </div>
         </section>
         ) : null}
 
         {activeSection === 'plans' ? (
-        <section id="plans" style={{ ...styles.resultsPanel, order: sectionPositions.plans }}>
-          <h2 style={styles.sectionTitle}>SaaS plans</h2>
+        <section id="plans" style={{ ...styles.pageFrame, order: sectionPositions.plans }}>
+          <div style={styles.pageHero}>
+            <div>
+              <span style={styles.pageKicker}>Partner access tiers</span>
+              <h2 style={styles.pageTitle}>Plans</h2>
+              <p style={styles.pageLead}>Package search quotas, controlled identity reveal, and governed audit retention into clear partner-ready tiers.</p>
+            </div>
+            <div style={styles.pageStats}>
+              <PageStat value="3" label="subscription tiers" styles={styles} />
+              <PageStat value={`${partnerMonthlyQuota}`} label="default quota" styles={styles} />
+              <PageStat value="SSO" label="enterprise ready" styles={styles} />
+            </div>
+          </div>
+          <div style={styles.pageBody}>
           <div style={styles.planList}>
             {plans.map((plan) => (
               <article key={plan.name} style={plan.featured ? { ...styles.plan, ...styles.featuredPlan } : styles.plan}>
@@ -825,23 +857,51 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
               </article>
             ))}
           </div>
+          </div>
         </section>
         ) : null}
 
         {activeSection === 'compliance' ? (
-        <section id="compliance" style={{ ...styles.resultsPanel, order: sectionPositions.compliance }}>
-          <h2 style={styles.sectionTitle}>Compliance</h2>
-          <WorkflowStep number="G" title="GDPR-first" text="Names, contacts, and raw CVs stay protected by default." styles={styles} />
-          <WorkflowStep number="A" title="Audit trail" text="Searches, shortlists, and reveal requests can be logged." styles={styles} />
+        <section id="compliance" style={{ ...styles.pageFrame, order: sectionPositions.compliance }}>
+          <div style={styles.pageHero}>
+            <div>
+              <span style={styles.pageKicker}>Trust by design</span>
+              <h2 style={styles.pageTitle}>Compliance</h2>
+              <p style={styles.pageLead}>Keep partners productive while preserving anonymization, auditability, and controlled reveal governance.</p>
+            </div>
+            <div style={styles.pageStats}>
+              <PageStat value="GDPR" label="privacy first" styles={styles} />
+              <PageStat value="Audit" label="traceable actions" styles={styles} />
+              <PageStat value="Reveal" label="approval gated" styles={styles} />
+            </div>
+          </div>
+          <div style={styles.pageBody}>
+            <div style={styles.complianceGrid}>
+              <WorkflowStep number="G" title="GDPR-first" text="Names, contacts, and raw CVs stay protected by default." styles={styles} />
+              <WorkflowStep number="A" title="Audit trail" text="Searches, shortlists, and reveal requests can be logged." styles={styles} />
+              <WorkflowStep number="R" title="Reveal control" text="Identity release remains an explicit, reviewable workflow event." styles={styles} />
+            </div>
+          </div>
         </section>
         ) : null}
 
         {activeSection === 'administration' && isAdmin ? (
-        <section id="administration" style={{ ...styles.resultsPanel, order: sectionPositions.administration }}>
-          <h2 style={styles.sectionTitle}>Administration</h2>
-          <p style={styles.muted}>
-            Admin tools are visible only for active users declared in "{webPartProps.adminListTitle}".
-          </p>
+        <section id="administration" style={{ ...styles.pageFrame, order: sectionPositions.administration }}>
+          <div style={styles.pageHero}>
+            <div>
+              <span style={styles.pageKicker}>Governed operations</span>
+              <h2 style={styles.pageTitle}>Administration</h2>
+              <p style={styles.pageLead}>
+                Admin tools are visible only for active users declared in "{webPartProps.adminListTitle}".
+              </p>
+            </div>
+            <div style={styles.pageStats}>
+              <PageStat value={isCheckingAdmin ? '...' : isAdmin ? 'OK' : 'No'} label="admin access" styles={styles} />
+              <PageStat value={webPartProps.cvListTitle} label="target list" styles={styles} />
+              <PageStat value={webPartProps.cvDocumentLibraryTitle} label="source library" styles={styles} />
+            </div>
+          </div>
+          <div style={styles.pageBody}>
           <div style={styles.adminGrid}>
             <div style={styles.panel}>
               <FieldLabel label="SharePoint CV import" />
@@ -870,6 +930,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
               </div>
             </div>
           </div>
+          </div>
         </section>
         ) : null}
       </main>
@@ -879,6 +940,15 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
 
 function FieldLabel({ label }: { label: string }): JSX.Element {
   return <label style={{ display: 'block', fontSize: 12, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>{label}</label>;
+}
+
+function PageStat({ value, label, styles }: { value: string; label: string; styles: Record<string, React.CSSProperties> }): JSX.Element {
+  return (
+    <div style={styles.pageStat}>
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  );
 }
 
 function getSectionGlyph(sectionId: SectionId): string {
@@ -1491,6 +1561,83 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       boxShadow: '0 14px 26px rgba(0,116,124,0.18)'
     },
     metricCopy: { display: 'grid', gap: 4, minWidth: 0 },
+    pageFrame: {
+      position: 'relative',
+      display: 'grid',
+      minWidth: 0,
+      overflow: 'hidden',
+      background: '#eef7fb',
+      borderRadius: isCockpitSaas ? 0 : template.cardRadius(borderRadius),
+      scrollMarginTop: sectionGap
+    },
+    pageHero: {
+      display: 'grid',
+      gridTemplateColumns: isDesktop ? 'minmax(0,0.95fr) minmax(360px,0.72fr)' : 'minmax(0,1fr)',
+      gap: isMobile ? 22 : 34,
+      alignItems: 'center',
+      padding: isMobile ? '34px 22px 70px' : '46px 60px 86px',
+      background: `radial-gradient(circle at 86% 36%, rgba(72,255,238,0.62), transparent 28%), linear-gradient(118deg, #073541 0%, #0b6970 54%, ${primaryColor} 100%)`,
+      color: '#ffffff'
+    },
+    pageKicker: {
+      display: 'inline-block',
+      color: '#67fbf1',
+      fontSize: isMobile ? 11 : 13,
+      lineHeight: 1.5,
+      letterSpacing: 2.6,
+      textTransform: 'uppercase',
+      fontWeight: 900
+    },
+    pageTitle: {
+      margin: isMobile ? '14px 0 12px' : '18px 0 14px',
+      fontSize: isMobile ? 40 : 56,
+      lineHeight: 1,
+      fontWeight: 900,
+      letterSpacing: -1.7,
+      textShadow: '0 8px 22px rgba(0,0,0,0.26)'
+    },
+    pageLead: {
+      margin: 0,
+      maxWidth: 720,
+      fontSize: isMobile ? 16 : 19,
+      lineHeight: 1.55,
+      color: 'rgba(255,255,255,0.9)'
+    },
+    pageStats: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'repeat(3,minmax(0,1fr))',
+      gap: 12,
+      alignSelf: 'stretch'
+    },
+    pageStat: {
+      minHeight: isMobile ? 92 : 122,
+      padding: isMobile ? 16 : 20,
+      borderRadius: 14,
+      background: 'linear-gradient(135deg, rgba(255,255,255,0.24), rgba(255,255,255,0.08))',
+      border: '1px solid rgba(255,255,255,0.34)',
+      boxShadow: '0 18px 42px rgba(0,62,73,0.18)',
+      display: 'grid',
+      alignContent: 'space-between',
+      gap: 16,
+      minWidth: 0,
+      overflowWrap: 'anywhere',
+      backdropFilter: 'blur(10px)'
+    },
+    pageBody: {
+      position: 'relative',
+      zIndex: 1,
+      margin: isMobile ? '-44px 16px 24px' : '-52px 42px 34px',
+      padding: isMobile ? 18 : 28,
+      borderRadius: 16,
+      background: '#ffffff',
+      boxShadow: '0 26px 70px rgba(15,23,42,0.13)',
+      minWidth: 0
+    },
+    complianceGrid: {
+      display: 'grid',
+      gridTemplateColumns: isDesktop ? 'repeat(3,minmax(0,1fr))' : 'minmax(0,1fr)',
+      gap: 14
+    },
     searchBand: { background: '#fff', borderRadius, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: sectionGap, minWidth: 0 },
     searchHeader: { padding: `${compactCardPadding}px ${compactCardPadding}px 0` },
     searchGrid: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr)', gap: sectionGap, padding: compactCardPadding, minWidth: 0 },
@@ -1498,7 +1645,7 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     muted: { margin: '8px 0 0', color: template.mutedTextColor, lineHeight: 1.5 },
     statusText: { margin: '0', color: secondaryColor, fontWeight: 700, lineHeight: 1.45 },
     errorText: { margin: '0', color: '#b42318', fontWeight: 700, lineHeight: 1.45 },
-    panel: { background: template.panelBackground, border: template.cardBorder, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, display: 'grid', gap: 14, minWidth: 0 },
+    panel: { background: template.panelBackground, border: template.cardBorder, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, display: 'grid', gap: 14, minWidth: 0, boxShadow: '0 14px 30px rgba(15,23,42,0.04)' },
     textarea: { minHeight: isMobile ? 112 : 132, border: '1px solid rgba(16,36,46,0.14)', borderRadius, padding: 12, font: 'inherit', boxSizing: 'border-box', width: '100%', minWidth: 0 },
     inputRow: { display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'minmax(0,1fr) auto', gap: 10, minWidth: 0 },
     input: { border: '1px solid rgba(16,36,46,0.14)', borderRadius, padding: 12, font: 'inherit', width: '100%', minWidth: 0, boxSizing: 'border-box' },
@@ -1507,17 +1654,17 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     chipActive: { borderColor: 'transparent', background: secondaryColor, color: '#fff' },
     twoColumn: { display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'repeat(2,minmax(0,1fr))', gap: 12 },
     workflow: { display: 'grid', gap: 10 },
-    workflowStep: { display: 'grid', gridTemplateColumns: '34px minmax(0,1fr)', gap: 10, alignItems: 'start', padding: 12, background: '#fff', borderRadius, border: '1px solid rgba(16,36,46,0.08)', minWidth: 0 },
+    workflowStep: { display: 'grid', gridTemplateColumns: '42px minmax(0,1fr)', gap: 12, alignItems: 'start', padding: 16, background: '#fff', borderRadius, border: '1px solid rgba(39,194,198,0.16)', boxShadow: '0 12px 28px rgba(15,23,42,0.04)', minWidth: 0 },
     adminGrid: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1.2fr) minmax(280px,0.8fr)' : 'minmax(0,1fr)', gap: sectionGap, marginTop: 18, minWidth: 0 },
     configList: { display: 'grid', gap: 10, lineHeight: 1.45, overflowWrap: 'anywhere' },
     missionList: { display: 'grid', gap: 12 },
-    missionCard: { background: '#fff', border: template.cardBorder, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, display: 'grid', gap: 10, minWidth: 0 },
+    missionCard: { background: '#fff', border: '1px solid rgba(39,194,198,0.16)', borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, display: 'grid', gap: 10, minWidth: 0, boxShadow: '0 12px 28px rgba(15,23,42,0.04)' },
     missionHeader: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: 10, alignItems: isMobile ? 'stretch' : 'flex-start', minWidth: 0 },
     resultBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 72, padding: '8px 10px', borderRadius: 999, background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: '#fff', fontWeight: 800 },
     resultsLayout: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1.4fr) minmax(280px,360px)' : 'minmax(0,1fr)', gap: sectionGap, scrollMarginTop: sectionGap, minWidth: 0 },
     resultsPanel: { background: template.cardBackground, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, boxShadow: template.cardShadow, border: template.cardBorder, scrollMarginTop: sectionGap, minWidth: 0 },
     resultList: { display: 'grid', gap: 14, marginTop: 18 },
-    cvCard: { border: '1px solid rgba(16,36,46,0.08)', borderRadius, padding: compactCardPadding, background: '#fdfefe', minWidth: 0 },
+    cvCard: { border: '1px solid rgba(39,194,198,0.16)', borderRadius, padding: compactCardPadding, background: '#fdfefe', minWidth: 0, boxShadow: '0 16px 34px rgba(15,23,42,0.05)' },
     cvTop: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: 16, alignItems: isMobile ? 'stretch' : 'flex-start', minWidth: 0 },
     candidateId: { display: 'inline-block', background: 'rgba(39,194,198,0.12)', color: secondaryColor, borderRadius: 999, padding: '7px 10px', fontWeight: 800, fontSize: 12 },
     cardTitle: { margin: '10px 0 0', fontSize: isMobile ? 21 : 24, lineHeight: 1.15, overflowWrap: 'anywhere' },
@@ -1527,8 +1674,8 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     skillPill: { background: '#fff', border: '1px solid rgba(16,36,46,0.08)', borderRadius: 999, padding: '6px 9px', fontSize: 12, fontWeight: 700 },
     cardActions: { display: 'flex', flexWrap: 'wrap', gap: 9, marginTop: 14 },
     asideStack: { display: 'grid', gap: 18, alignContent: 'start' },
-    planList: { display: 'grid', gap: 12, marginTop: 16 },
-    plan: { border: '1px solid rgba(16,36,46,0.08)', borderRadius, padding: compactCardPadding, background: '#fdfefe' },
+    planList: { display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3,minmax(0,1fr))' : 'minmax(0,1fr)', gap: 16 },
+    plan: { border: '1px solid rgba(39,194,198,0.16)', borderRadius, padding: compactCardPadding, background: '#fdfefe', boxShadow: '0 16px 34px rgba(15,23,42,0.05)' },
     featuredPlan: { background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: '#fff', borderColor: 'transparent' },
     planTitle: { margin: 0, fontSize: 21 },
     planCopy: { margin: '8px 0', lineHeight: 1.45 },

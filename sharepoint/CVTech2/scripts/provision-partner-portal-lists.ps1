@@ -15,7 +15,16 @@ param(
   [string]$CvListTitle = "PartnerCVs",
 
   [Parameter(Mandatory = $false)]
-  [string]$AuditListTitle = "PartnerSearchLogs"
+  [string]$AuditListTitle = "PartnerSearchLogs",
+
+  [Parameter(Mandatory = $false)]
+  [string]$MissionListTitle = "PartnerMissions",
+
+  [Parameter(Mandatory = $false)]
+  [string]$AdminListTitle = "PartnerPortalAdmins",
+
+  [Parameter(Mandatory = $false)]
+  [string]$InitialAdminEmail
 )
 
 $ErrorActionPreference = "Stop"
@@ -118,5 +127,37 @@ Ensure-Field -List $AuditListTitle -InternalName "ResultsCount" -DisplayName "Re
 Ensure-Field -List $AuditListTitle -InternalName "PartnerQuotaMaximum" -DisplayName "Partner Quota Maximum" -Type Number
 Ensure-Field -List $AuditListTitle -InternalName "SearchesRemaining" -DisplayName "Searches Remaining" -Type Number
 Ensure-Field -List $AuditListTitle -InternalName "MonthKey" -DisplayName "Month Key" -Type Text
+
+Ensure-List -Title $MissionListTitle -Description "Partner mission briefs and criteria saved from Partner Portal searches."
+Ensure-Field -List $MissionListTitle -InternalName "PartnerName" -DisplayName "Partner Name" -Type Text
+Ensure-Field -List $MissionListTitle -InternalName "UserEmail" -DisplayName "User Email" -Type Text
+Ensure-Field -List $MissionListTitle -InternalName "MissionBrief" -DisplayName "Mission Brief" -Type Note
+Ensure-Field -List $MissionListTitle -InternalName "MissionSkills" -DisplayName "Mission Skills" -Type Note
+Ensure-Field -List $MissionListTitle -InternalName "Seniority" -DisplayName "Seniority" -Type Text
+Ensure-Field -List $MissionListTitle -InternalName "Availability" -DisplayName "Availability" -Type Text
+Ensure-Field -List $MissionListTitle -InternalName "ResultsCount" -DisplayName "Results Count" -Type Number
+
+Ensure-List -Title $AdminListTitle -Description "Users allowed to access Partner Portal administration features."
+Ensure-Field -List $AdminListTitle -InternalName "UserEmail" -DisplayName "User Email" -Type Text
+Ensure-Field -List $AdminListTitle -InternalName "IsActive" -DisplayName "Is Active" -Type Boolean
+
+if ($InitialAdminEmail) {
+  $normalizedEmail = $InitialAdminEmail.Trim().ToLowerInvariant()
+  $existingAdmin = Get-PnPListItem -List $AdminListTitle -PageSize 500 | Where-Object {
+    $_["UserEmail"] -and $_["UserEmail"].ToString().ToLowerInvariant() -eq $normalizedEmail
+  } | Select-Object -First 1
+
+  if ($existingAdmin) {
+    Write-Host "Initial admin already exists: $normalizedEmail"
+  }
+  else {
+    Write-Host "Adding initial Partner Portal admin: $normalizedEmail"
+    Add-PnPListItem -List $AdminListTitle -Values @{
+      Title = $normalizedEmail
+      UserEmail = $normalizedEmail
+      IsActive = $true
+    } | Out-Null
+  }
+}
 
 Write-Host "Partner Portal lists are ready."

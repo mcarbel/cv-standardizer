@@ -16,6 +16,38 @@ export interface IPartnerCvListItem {
   };
 }
 
+export interface IPartnerCvKeyItem {
+  Id: number;
+  CandidateId?: string;
+  CvUrl?: {
+    Url?: string;
+    Description?: string;
+  };
+}
+
+export interface IPartnerCvInput {
+  title: string;
+  candidateId: string;
+  profileTitle: string;
+  seniority: string;
+  availability: string;
+  skills: string[];
+  summary: string;
+  cvUrl: string;
+  cvUrlDescription: string;
+}
+
+export interface ISharePointCvDocumentItem {
+  Id: number;
+  Title?: string;
+  Modified?: string;
+  File?: {
+    Name?: string;
+    ServerRelativeUrl?: string;
+    LinkingUrl?: string;
+  };
+}
+
 export interface IPartnerSearchLogItem {
   Id: number;
   Created?: string;
@@ -31,6 +63,30 @@ export interface IPartnerSearchLogInput {
   quotaMaximum: number;
   searchesRemaining: number;
   monthKey: string;
+}
+
+export interface IPartnerMissionItem {
+  Id: number;
+  Title?: string;
+  Created?: string;
+  PartnerName?: string;
+  UserEmail?: string;
+  MissionBrief?: string;
+  MissionSkills?: string;
+  Seniority?: string;
+  Availability?: string;
+  ResultsCount?: number;
+}
+
+export interface IPartnerMissionInput {
+  title: string;
+  partnerName: string;
+  userEmail: string;
+  missionBrief: string;
+  skills: string[];
+  seniority: string;
+  availability: string;
+  resultsCount: number;
 }
 
 export class SharePointPartnerPortalService {
@@ -49,6 +105,76 @@ export class SharePointPartnerPortalService {
 
     const payload = await response.json();
     return (payload.value || []).filter((item: IPartnerCvListItem) => item.IsAvailable !== false);
+  }
+
+  public async getPartnerCvKeys(listTitle: string, rowLimit: number): Promise<IPartnerCvKeyItem[]> {
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(listTitle)}')/items`
+      + `?$top=${rowLimit}`
+      + '&$select=Id,CandidateId,CvUrl';
+
+    const response = await this.spHttpClient.get(endpoint, SPHttpClient.configurations.v1);
+    await this.ensureSuccess(response, `Unable to load CV keys from "${listTitle}"`);
+
+    const payload = await response.json();
+    return payload.value || [];
+  }
+
+  public async createPartnerCv(listTitle: string, input: IPartnerCvInput): Promise<void> {
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(listTitle)}')/items`;
+    const response = await this.spHttpClient.post(endpoint, SPHttpClient.configurations.v1, {
+      headers: {
+        Accept: 'application/json;odata=nometadata',
+        'Content-Type': 'application/json;odata=nometadata'
+      },
+      body: JSON.stringify({
+        Title: input.title,
+        CandidateId: input.candidateId,
+        ProfileTitle: input.profileTitle,
+        Seniority: input.seniority,
+        Availability: input.availability,
+        Skills: input.skills.join(', '),
+        Summary: input.summary,
+        IsAvailable: true,
+        CvUrl: {
+          Url: input.cvUrl,
+          Description: input.cvUrlDescription
+        }
+      })
+    });
+
+    await this.ensureSuccess(response, `Unable to create PartnerCV item in "${listTitle}"`);
+  }
+
+  public async getCvDocuments(documentLibraryTitle: string, rowLimit: number): Promise<ISharePointCvDocumentItem[]> {
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(documentLibraryTitle)}')/items`
+      + `?$top=${rowLimit}`
+      + '&$select=Id,Title,Modified,File/Name,File/ServerRelativeUrl,File/LinkingUrl'
+      + '&$expand=File'
+      + '&$orderby=Modified desc';
+
+    const response = await this.spHttpClient.get(endpoint, SPHttpClient.configurations.v1);
+    await this.ensureSuccess(response, `Unable to load CV documents from "${documentLibraryTitle}"`);
+
+    const payload = await response.json();
+    return (payload.value || []).filter((item: ISharePointCvDocumentItem) => {
+      const fileName = item.File?.Name || '';
+      return /\.(pdf|docx)$/i.test(fileName);
+    });
+  }
+
+  public async isPartnerPortalAdmin(adminListTitle: string, userEmail: string): Promise<boolean> {
+    const normalizedEmail = this.normalizeEmail(userEmail);
+    if (!normalizedEmail) return false;
+
+    const filter = `UserEmail eq '${this.escapeODataString(normalizedEmail)}'`;
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(adminListTitle)}')/items`
+      + `?$top=5&$select=Id,UserEmail,IsActive&$filter=${encodeURIComponent(filter)}`;
+
+    const response = await this.spHttpClient.get(endpoint, SPHttpClient.configurations.v1);
+    await this.ensureSuccess(response, `Unable to load Partner Portal admin list "${adminListTitle}"`);
+
+    const payload = await response.json();
+    return (payload.value || []).some((item: { IsActive?: boolean }) => item.IsActive !== false);
   }
 
   public async countMonthlySearches(
@@ -95,6 +221,43 @@ export class SharePointPartnerPortalService {
     await this.ensureSuccess(response, `Unable to write search audit item in "${auditListTitle}"`);
   }
 
+  public async getPartnerMissions(missionListTitle: string, partnerName: string, rowLimit: number): Promise<IPartnerMissionItem[]> {
+    const filter = `PartnerName eq '${this.escapeODataString(partnerName)}'`;
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(missionListTitle)}')/items`
+      + `?$top=${rowLimit}`
+      + '&$select=Id,Title,Created,PartnerName,UserEmail,MissionBrief,MissionSkills,Seniority,Availability,ResultsCount'
+      + '&$orderby=Created desc'
+      + `&$filter=${encodeURIComponent(filter)}`;
+
+    const response = await this.spHttpClient.get(endpoint, SPHttpClient.configurations.v1);
+    await this.ensureSuccess(response, `Unable to load partner mission list "${missionListTitle}"`);
+
+    const payload = await response.json();
+    return payload.value || [];
+  }
+
+  public async savePartnerMission(missionListTitle: string, input: IPartnerMissionInput): Promise<void> {
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(missionListTitle)}')/items`;
+    const response = await this.spHttpClient.post(endpoint, SPHttpClient.configurations.v1, {
+      headers: {
+        Accept: 'application/json;odata=nometadata',
+        'Content-Type': 'application/json;odata=nometadata'
+      },
+      body: JSON.stringify({
+        Title: input.title,
+        PartnerName: input.partnerName,
+        UserEmail: input.userEmail,
+        MissionBrief: input.missionBrief,
+        MissionSkills: input.skills.join(', '),
+        Seniority: input.seniority,
+        Availability: input.availability,
+        ResultsCount: input.resultsCount
+      })
+    });
+
+    await this.ensureSuccess(response, `Unable to write partner mission item in "${missionListTitle}"`);
+  }
+
   private async ensureSuccess(response: SPHttpClientResponse, message: string): Promise<void> {
     if (response.ok) return;
 
@@ -104,5 +267,9 @@ export class SharePointPartnerPortalService {
 
   private escapeODataString(value: string): string {
     return value.replace(/'/g, "''");
+  }
+
+  private normalizeEmail(value: string): string {
+    return (value.split('|').pop() || value).trim().toLowerCase();
   }
 }

@@ -4,11 +4,14 @@ import {
   BaseClientSideWebPart,
   IPropertyPaneConfiguration
 } from '@microsoft/sp-webpart-base';
-import { PropertyPaneSlider, PropertyPaneTextField } from '@microsoft/sp-property-pane';
+import { PropertyPaneDropdown, PropertyPaneSlider, PropertyPaneTextField } from '@microsoft/sp-property-pane';
 import { SPHttpClient } from '@microsoft/sp-http';
 import CvTech2PartnerPortal from './components/CvTech2PartnerPortal';
 
+export type PartnerPortalTemplate = 'cockpit-saas' | 'executive-partner' | 'marketplace-talent' | 'mission-match-studio';
+
 export interface ICvTech2PartnerPortalWebPartProps {
+  portalTemplate: PartnerPortalTemplate;
   brandLabel: string;
   portalTitle: string;
   primaryColor: string;
@@ -29,6 +32,9 @@ export interface ICvTech2PartnerPortalWebPartProps {
   dataSiteUrl: string;
   cvListTitle: string;
   auditListTitle: string;
+  missionListTitle: string;
+  adminListTitle: string;
+  cvDocumentLibraryTitle: string;
   partnerName: string;
   partnerMonthlyQuota: number;
   cvRowLimit: number;
@@ -40,6 +46,7 @@ export interface ICvTech2PartnerPortalWebPartProps {
 }
 
 const DEFAULT_PROPS: ICvTech2PartnerPortalWebPartProps = {
+  portalTemplate: 'cockpit-saas',
   brandLabel: 'cvtech2',
   portalTitle: 'Partner Portal',
   primaryColor: '#27c2c6',
@@ -60,6 +67,9 @@ const DEFAULT_PROPS: ICvTech2PartnerPortalWebPartProps = {
   dataSiteUrl: 'https://braineesysms365.sharepoint.com/sites/CVTech2',
   cvListTitle: 'PartnerCVs',
   auditListTitle: 'PartnerSearchLogs',
+  missionListTitle: 'PartnerMissions',
+  adminListTitle: 'PartnerPortalAdmins',
+  cvDocumentLibraryTitle: 'Documents',
   partnerName: 'Default Partner',
   partnerMonthlyQuota: 100,
   cvRowLimit: 500,
@@ -73,6 +83,7 @@ const DEFAULT_PROPS: ICvTech2PartnerPortalWebPartProps = {
 export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<ICvTech2PartnerPortalWebPartProps> {
   protected async onInit(): Promise<void> {
     this.properties.brandLabel = this.properties.brandLabel || DEFAULT_PROPS.brandLabel;
+    this.properties.portalTemplate = this.properties.portalTemplate || DEFAULT_PROPS.portalTemplate;
     this.properties.portalTitle = this.properties.portalTitle || DEFAULT_PROPS.portalTitle;
     this.properties.primaryColor = this.properties.primaryColor || DEFAULT_PROPS.primaryColor;
     this.properties.secondaryColor = this.properties.secondaryColor || DEFAULT_PROPS.secondaryColor;
@@ -92,6 +103,9 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
     this.properties.dataSiteUrl = this.properties.dataSiteUrl || DEFAULT_PROPS.dataSiteUrl;
     this.properties.cvListTitle = this.properties.cvListTitle || DEFAULT_PROPS.cvListTitle;
     this.properties.auditListTitle = this.properties.auditListTitle || DEFAULT_PROPS.auditListTitle;
+    this.properties.missionListTitle = this.properties.missionListTitle || DEFAULT_PROPS.missionListTitle;
+    this.properties.adminListTitle = this.properties.adminListTitle || DEFAULT_PROPS.adminListTitle;
+    this.properties.cvDocumentLibraryTitle = this.properties.cvDocumentLibraryTitle || DEFAULT_PROPS.cvDocumentLibraryTitle;
     this.properties.partnerName = this.properties.partnerName || DEFAULT_PROPS.partnerName;
     this.properties.partnerMonthlyQuota = this.properties.partnerMonthlyQuota || DEFAULT_PROPS.partnerMonthlyQuota;
     this.properties.cvRowLimit = this.properties.cvRowLimit || DEFAULT_PROPS.cvRowLimit;
@@ -105,12 +119,14 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
   }
 
   public render(): void {
+    const loginName = this.context.pageContext.user.loginName || '';
+    const normalizedUserEmail = this.context.pageContext.user.email || loginName.split('|').pop() || loginName;
     const element = React.createElement(CvTech2PartnerPortal, {
       webPartProps: this.properties,
       spHttpClient: this.context.spHttpClient as SPHttpClient,
       siteUrl: this.properties.dataSiteUrl || this.context.pageContext.web.absoluteUrl,
       userDisplayName: this.context.pageContext.user.displayName,
-      userEmail: this.context.pageContext.user.email || this.context.pageContext.user.loginName
+      userEmail: normalizedUserEmail
     });
 
     ReactDom.render(element, this.domElement);
@@ -129,6 +145,15 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
             {
               groupName: 'Content',
               groupFields: [
+                PropertyPaneDropdown('portalTemplate', {
+                  label: 'Portal template',
+                  options: [
+                    { key: 'cockpit-saas', text: 'Cockpit SaaS' },
+                    { key: 'executive-partner', text: 'Executive Partner' },
+                    { key: 'marketplace-talent', text: 'Marketplace Talent' },
+                    { key: 'mission-match-studio', text: 'Mission Match Studio' }
+                  ]
+                }),
                 PropertyPaneTextField('brandLabel', { label: 'Brand label' }),
                 PropertyPaneTextField('portalTitle', { label: 'Portal title' })
               ]
@@ -139,6 +164,9 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
                 PropertyPaneTextField('dataSiteUrl', { label: 'Data site URL' }),
                 PropertyPaneTextField('cvListTitle', { label: 'CV list title' }),
                 PropertyPaneTextField('auditListTitle', { label: 'Search audit list title' }),
+                PropertyPaneTextField('missionListTitle', { label: 'Partner mission list title' }),
+                PropertyPaneTextField('adminListTitle', { label: 'Portal admin list title' }),
+                PropertyPaneTextField('cvDocumentLibraryTitle', { label: 'CV document library title' }),
                 PropertyPaneTextField('partnerName', { label: 'Partner name' }),
                 PropertyPaneSlider('partnerMonthlyQuota', { label: 'Monthly search quota', min: 1, max: 1000, step: 1 }),
                 PropertyPaneSlider('cvRowLimit', { label: 'Maximum CV rows to load', min: 20, max: 5000, step: 20 })

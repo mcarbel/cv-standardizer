@@ -532,9 +532,12 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
   return (
     <div ref={rootRef} style={styles.shell}>
       <aside style={styles.sidebar}>
-        <div>
-          <div style={styles.brand}>{brandLabel}</div>
-          <p style={styles.brandCopy}>Partner access for anonymized CV discovery and mission matching.</p>
+        <div style={styles.brandBlock}>
+          <span style={styles.logoMark}>S</span>
+          <div>
+            <div style={styles.brand}>{activeSection === 'overview' ? 'SaaS Partner Cockpit' : brandLabel}</div>
+            <p style={styles.brandCopy}>Partner access for anonymized CV discovery and mission matching.</p>
+          </div>
         </div>
         <nav style={styles.nav}>
           {orderedNavItems.map((item) => (
@@ -544,11 +547,17 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
               style={activeSection === item.id ? { ...styles.navItem, ...styles.navItemActive } : styles.navItem}
               onClick={() => navigateToSection(item.id)}
             >
+              <span style={styles.navGlyph}>{getSectionGlyph(item.id)}</span>
               {item.label}
             </button>
           ))}
         </nav>
-        <div style={styles.sidePanel}>
+        <div style={styles.headerActions}>
+          <span style={styles.headerIcon}>!</span>
+          <span style={styles.avatarBadge}>P</span>
+          <span style={styles.chevron}>v</span>
+        </div>
+        <div style={activeSection === 'overview' ? styles.sidePanelHidden : styles.sidePanel}>
           <strong>Partner status</strong>
           <span>{webPartProps.partnerName}</span>
           <span>{searchesRemaining} / {partnerMonthlyQuota} searches remaining this month.</span>
@@ -557,28 +566,84 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
 
       <main style={styles.content}>
         {activeSection === 'overview' ? (
-        <section id="overview" style={{ ...styles.hero, order: sectionPositions.overview }}>
-          <div>
-            <span style={styles.eyebrow}>SaaS partner cockpit</span>
-            <h1 style={styles.title}>{portalTitle}</h1>
-            <p style={styles.lead}>
-              Search anonymized candidate profiles by skills or mission brief, shortlist the best matches,
-              and request controlled identity reveal only when the fit is validated.
-            </p>
-            <div style={styles.heroActions}>
-              <button type="button" style={styles.primaryButton} onClick={extractSkillsFromBrief}>
-                Analyze mission
-              </button>
-              <button type="button" style={styles.secondaryButton} onClick={() => navigateToSection('plans')}>
-                Request partner access
-              </button>
+        <section id="overview" style={{ ...styles.overview, order: sectionPositions.overview }}>
+          <div style={styles.overviewBackdrop}>
+            <div style={styles.overviewHeroCopy}>
+              <span style={styles.overviewKicker}>Partner access for anonymized<br />CV discovery and mission matching</span>
+              <h1 style={styles.overviewHeadline}>Smarter matches.<br />Stronger missions.</h1>
+              <p style={styles.overviewLead}>
+                Discover anonymized talent, find the perfect fit,<br />and reveal identity only when you're ready.
+              </p>
+            </div>
+            <div style={styles.overviewStatusCard}>
+              <div style={styles.statusHeader}>
+                <span style={styles.statusIcon}>P</span>
+                <div>
+                  <strong>Partner status</strong>
+                  <span>{webPartProps.partnerName}</span>
+                </div>
+              </div>
+              <div style={styles.quotaRow}>
+                <span style={styles.quotaRing} />
+                <div>
+                  <strong>{searchesRemaining} / {partnerMonthlyQuota}</strong>
+                  <span>searches remaining this month.</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div style={styles.statsGrid}>
-            <Metric value={`${availableProfiles.length}`} label="available SharePoint CVs" styles={styles} />
-            <Metric value={isLoadingCvs ? '...' : `${rankedProfiles.length}`} label="matching current search" styles={styles} />
-            <Metric value="94%" label="curated match relevance" styles={styles} />
-            <Metric value={`${searchesRemaining}`} label="searches remaining" styles={styles} />
+
+          <div style={styles.overviewCard}>
+            <div style={styles.overviewCardTop}>
+              <div style={styles.overviewCardCopy}>
+                <span style={styles.eyebrow}>SaaS partner cockpit</span>
+                <h2 style={styles.overviewTitle}>{portalTitle}</h2>
+                <p style={styles.overviewBody}>
+                  Search anonymized candidate profiles by skills or mission brief,
+                  shortlist the best matches, and request controlled identity reveal
+                  only when the fit is validated.
+                </p>
+                <div style={styles.heroActions}>
+                  <button type="button" style={styles.primaryButton} onClick={extractSkillsFromBrief}>
+                    <span style={styles.buttonIcon}>o</span>
+                    Analyze mission
+                    <span style={styles.buttonArrow}>-&gt;</span>
+                  </button>
+                  <button type="button" style={styles.secondaryButton} onClick={() => navigateToSection('plans')}>
+                    <span style={styles.buttonIcon}>[]</span>
+                    Request partner access
+                  </button>
+                </div>
+              </div>
+              <div style={styles.matchIllustration}>
+                <span style={styles.radarCircleOuter} />
+                <span style={styles.radarCircleInner} />
+                <span style={styles.radarCrossHorizontal} />
+                <span style={styles.radarCrossVertical} />
+                <span style={styles.matchCheck}>OK</span>
+                <span style={{ ...styles.profileChip, ...styles.profileChipLeft }}>
+                  <span style={styles.chipAvatar}>P</span>
+                  <span style={styles.chipLines}>
+                    <span style={styles.chipLineLong} />
+                    <span style={styles.chipLineShort} />
+                  </span>
+                </span>
+                <span style={{ ...styles.profileChip, ...styles.profileChipRight }}>
+                  <span style={styles.chipAvatar}>P</span>
+                  <span style={styles.chipLines}>
+                    <span style={styles.chipLineLong} />
+                    <span style={styles.chipLineShort} />
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            <div style={styles.overviewDivider} />
+            <div style={styles.overviewMetrics}>
+              <Metric value={`${availableProfiles.length}`} label="Missions analyzed" detail="This month" icon="P" styles={styles} />
+              <Metric value={isLoadingCvs ? '...' : `${rankedProfiles.length}`} label="Matches found" detail="This month" icon="D" styles={styles} />
+              <Metric value="94%" label="Match success rate" detail="Validated fit" icon="/\\" styles={styles} />
+            </div>
           </div>
         </section>
         ) : null}
@@ -816,11 +881,46 @@ function FieldLabel({ label }: { label: string }): JSX.Element {
   return <label style={{ display: 'block', fontSize: 12, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>{label}</label>;
 }
 
-function Metric({ value, label, styles }: { value: string; label: string; styles: Record<string, React.CSSProperties> }): JSX.Element {
+function getSectionGlyph(sectionId: SectionId): string {
+  switch (sectionId) {
+    case 'overview':
+      return 'O';
+    case 'mission-match':
+      return 'M';
+    case 'cv-library':
+      return 'CV';
+    case 'plans':
+      return 'P';
+    case 'compliance':
+      return 'C';
+    case 'administration':
+      return 'A';
+    default:
+      return '';
+  }
+}
+
+function Metric({
+  value,
+  label,
+  detail,
+  icon,
+  styles
+}: {
+  value: string;
+  label: string;
+  detail?: string;
+  icon?: string;
+  styles: Record<string, React.CSSProperties>;
+}): JSX.Element {
   return (
     <div style={styles.metric}>
-      <strong>{value}</strong>
-      <span>{label}</span>
+      {icon ? <span style={styles.metricIcon}>{icon}</span> : null}
+      <span style={styles.metricCopy}>
+        <strong>{value}</strong>
+        <span>{label}</span>
+        {detail ? <small>{detail}</small> : null}
+      </span>
     </div>
   );
 }
@@ -937,17 +1037,17 @@ function buildTemplateTokens(
     case 'cockpit-saas':
     default:
       return {
-        navigation: 'side',
+        navigation: 'top',
         shellBackground: surfaceColor,
-        sidebarBackground: `linear-gradient(180deg, ${primaryColor}, ${secondaryColor})`,
-        sidebarTextColor: '#ffffff',
-        sidebarMutedColor: 'rgba(255,255,255,0.82)',
+        sidebarBackground: '#ffffff',
+        sidebarTextColor: accentTextColor,
+        sidebarMutedColor: '#5f7680',
         sidebarRadius: 0,
-        sidebarShadow: 'none',
-        navTextColor: '#ffffff',
-        navActiveBackground: 'rgba(255,255,255,0.18)',
-        navActiveTextColor: '#ffffff',
-        sidePanelBackground: 'rgba(255,255,255,0.14)',
+        sidebarShadow: '0 1px 0 rgba(16,36,46,0.08)',
+        navTextColor: accentTextColor,
+        navActiveBackground: 'rgba(39,194,198,0.12)',
+        navActiveTextColor: secondaryColor,
+        sidePanelBackground: '#eef9fa',
         cardBackground: '#ffffff',
         panelBackground: '#f5fbfc',
         cardBorder: '1px solid rgba(16,36,46,0.08)',
@@ -989,6 +1089,8 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
 
   const template = buildTemplateTokens(portalTemplate, primaryColor, secondaryColor, accentTextColor, surfaceColor);
   const usesTopNavigation = template.navigation === 'top';
+  const isCockpitSaas = portalTemplate === 'cockpit-saas';
+  const headerPadding = isMobile ? `${compactPadding}px` : `${Math.max(18, compactPadding - 4)}px ${Math.max(28, compactPadding + 18)}px`;
 
   return {
     shell: {
@@ -1004,47 +1106,389 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       color: accentTextColor,
       background: template.shellBackground,
       fontFamily: template.fontFamily,
-      fontSize: effectiveBodySize
+      fontSize: effectiveBodySize,
+      borderRadius: isCockpitSaas ? (isMobile ? 0 : 18) : undefined,
+      border: isCockpitSaas ? '1px solid rgba(16,36,46,0.08)' : undefined,
+      boxShadow: isCockpitSaas ? '0 18px 64px rgba(15,23,42,0.08)' : undefined
     },
     sidebar: {
       background: template.sidebarBackground,
       color: template.sidebarTextColor,
-      padding: isDesktop ? `${compactPadding + 2}px ${Math.max(16, compactPadding - 8)}px` : `${compactPadding}px`,
+      padding: isCockpitSaas ? headerPadding : isDesktop ? `${compactPadding + 2}px ${Math.max(16, compactPadding - 8)}px` : `${compactPadding}px`,
       display: 'flex',
       flexDirection: isDesktop && !usesTopNavigation ? 'column' : 'row',
       flexWrap: 'wrap',
-      gap: isMobile ? 14 : sectionGap,
+      gap: isCockpitSaas ? (isMobile ? 12 : 20) : isMobile ? 14 : sectionGap,
       alignItems: isDesktop && !usesTopNavigation ? 'stretch' : 'center',
       borderRadius: template.sidebarRadius,
-      boxShadow: template.sidebarShadow
+      boxShadow: template.sidebarShadow,
+      justifyContent: isCockpitSaas ? 'space-between' : undefined
     },
-    brand: { fontSize: isMobile ? 30 : 38, fontWeight: 800, textTransform: 'lowercase' },
-    brandCopy: { margin: '8px 0 0', lineHeight: 1.45, color: template.sidebarMutedColor, maxWidth: isDesktop && !usesTopNavigation ? 'none' : 460 },
-    nav: { display: 'flex', flexDirection: isDesktop && !usesTopNavigation ? 'column' : 'row', flexWrap: 'wrap', gap: 8, flex: isDesktop && !usesTopNavigation ? '0 0 auto' : '1 1 420px' },
+    brandBlock: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: isMobile ? 10 : 14,
+      minWidth: 0,
+      flex: isCockpitSaas ? '0 0 auto' : undefined
+    },
+    logoMark: {
+      width: isMobile ? 34 : 42,
+      height: isMobile ? 34 : 42,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: '0 0 auto',
+      borderRadius: 12,
+      color: '#ffffff',
+      background: `linear-gradient(145deg, ${primaryColor}, ${secondaryColor})`,
+      fontWeight: 900,
+      fontSize: isMobile ? 18 : 22,
+      transform: 'skew(-8deg)'
+    },
+    brand: {
+      fontSize: isCockpitSaas ? (isMobile ? 17 : 18) : isMobile ? 30 : 38,
+      fontWeight: 800,
+      textTransform: isCockpitSaas ? 'none' : 'lowercase',
+      whiteSpace: isCockpitSaas ? 'nowrap' : undefined
+    },
+    brandCopy: { display: isCockpitSaas ? 'none' : undefined, margin: '8px 0 0', lineHeight: 1.45, color: template.sidebarMutedColor, maxWidth: isDesktop && !usesTopNavigation ? 'none' : 460 },
+    nav: {
+      display: 'flex',
+      flexDirection: isDesktop && !usesTopNavigation ? 'column' : 'row',
+      flexWrap: 'wrap',
+      gap: isCockpitSaas ? 10 : 8,
+      flex: isCockpitSaas ? '1 1 auto' : isDesktop && !usesTopNavigation ? '0 0 auto' : '1 1 420px',
+      justifyContent: isCockpitSaas ? 'center' : undefined,
+      alignItems: 'center'
+    },
     navItem: {
-      padding: isMobile ? '10px 12px' : '13px 14px',
+      padding: isCockpitSaas ? (isMobile ? '10px 12px' : '13px 18px') : isMobile ? '10px 12px' : '13px 14px',
       border: 'none',
-      borderRadius,
+      borderRadius: isCockpitSaas ? 11 : borderRadius,
       background: 'transparent',
       color: template.navTextColor,
       cursor: 'pointer',
       font: 'inherit',
       fontWeight: 700,
-      textAlign: 'left'
+      textAlign: 'left',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 8,
+      whiteSpace: 'nowrap'
     },
     navItemActive: { background: template.navActiveBackground, color: template.navActiveTextColor },
+    navGlyph: {
+      width: 22,
+      height: 22,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 6,
+      border: '1px solid currentColor',
+      fontSize: 10,
+      fontWeight: 900,
+      lineHeight: 1
+    },
+    headerActions: {
+      display: isCockpitSaas ? 'inline-flex' : 'none',
+      alignItems: 'center',
+      gap: 13,
+      flex: '0 0 auto',
+      color: accentTextColor
+    },
+    headerIcon: {
+      width: 28,
+      height: 28,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 999,
+      border: '1px solid rgba(16,36,46,0.12)',
+      color: secondaryColor,
+      fontWeight: 900
+    },
+    avatarBadge: {
+      width: 36,
+      height: 36,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 999,
+      background: `linear-gradient(145deg, ${primaryColor}, ${secondaryColor})`,
+      color: '#ffffff',
+      fontWeight: 800
+    },
+    chevron: { fontSize: 14, color: '#49646e', fontWeight: 800 },
     sidePanel: { marginTop: isDesktop && !usesTopNavigation ? 'auto' : 0, padding: compactCardPadding, borderRadius, background: template.sidePanelBackground, display: 'grid', gap: 8, flex: isDesktop && !usesTopNavigation ? '0 0 auto' : '1 1 280px' },
-    content: { padding: compactPadding, display: 'grid', gap: sectionGap, minWidth: 0 },
+    sidePanelHidden: { display: 'none' },
+    content: { padding: isCockpitSaas ? 0 : compactPadding, display: 'grid', gap: sectionGap, minWidth: 0 },
+    overview: {
+      position: 'relative',
+      display: 'grid',
+      minWidth: 0,
+      overflow: 'hidden',
+      background: '#eef7fb',
+      scrollMarginTop: sectionGap
+    },
+    overviewBackdrop: {
+      position: 'relative',
+      display: 'grid',
+      gridTemplateColumns: isDesktop ? 'minmax(0,1fr) minmax(330px,0.78fr)' : 'minmax(0,1fr)',
+      gap: isMobile ? 26 : 42,
+      alignItems: 'center',
+      padding: isMobile ? '44px 24px 86px' : '58px 72px 112px',
+      minHeight: isMobile ? 420 : 390,
+      background: `radial-gradient(circle at 88% 42%, rgba(72,255,238,0.78), transparent 28%), radial-gradient(circle at 54% 88%, rgba(39,194,198,0.35), transparent 30%), linear-gradient(118deg, #063641 0%, #006d77 48%, ${primaryColor} 100%)`,
+      color: '#ffffff',
+      overflow: 'hidden'
+    },
+    overviewHeroCopy: { position: 'relative', zIndex: 1, maxWidth: 650 },
+    overviewKicker: {
+      display: 'inline-block',
+      color: '#5df7f0',
+      fontSize: isMobile ? 12 : 15,
+      lineHeight: 1.5,
+      letterSpacing: 3.2,
+      textTransform: 'uppercase',
+      fontWeight: 800
+    },
+    overviewHeadline: {
+      margin: isMobile ? '24px 0 18px' : '28px 0 20px',
+      fontSize: isMobile ? 44 : 58,
+      lineHeight: 1.08,
+      fontWeight: 900,
+      letterSpacing: -1.5,
+      textShadow: '0 8px 22px rgba(0,0,0,0.28)'
+    },
+    overviewLead: {
+      margin: 0,
+      fontSize: isMobile ? 18 : 20,
+      lineHeight: 1.52,
+      color: 'rgba(255,255,255,0.9)'
+    },
+    overviewStatusCard: {
+      position: 'relative',
+      zIndex: 1,
+      justifySelf: isDesktop ? 'end' : 'stretch',
+      width: isDesktop ? 480 : 'auto',
+      maxWidth: '100%',
+      padding: isMobile ? 26 : 34,
+      borderRadius: 16,
+      background: 'linear-gradient(135deg, rgba(255,255,255,0.24), rgba(255,255,255,0.08))',
+      border: '1px solid rgba(255,255,255,0.36)',
+      boxShadow: '0 24px 56px rgba(0,62,73,0.24)',
+      backdropFilter: 'blur(12px)',
+      display: 'grid',
+      gap: 26
+    },
+    statusHeader: { display: 'grid', gridTemplateColumns: '58px minmax(0,1fr)', gap: 18, alignItems: 'center' },
+    statusIcon: {
+      width: 58,
+      height: 58,
+      borderRadius: 999,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: `linear-gradient(145deg, ${primaryColor}, #57efe7)`,
+      fontWeight: 900,
+      color: '#ffffff',
+      boxShadow: '0 12px 26px rgba(0,0,0,0.18)'
+    },
+    quotaRow: {
+      display: 'grid',
+      gridTemplateColumns: '68px minmax(0,1fr)',
+      gap: 18,
+      alignItems: 'center',
+      paddingTop: 22,
+      borderTop: '1px solid rgba(255,255,255,0.18)'
+    },
+    quotaRing: {
+      width: 56,
+      height: 56,
+      borderRadius: 999,
+      border: '10px solid rgba(255,255,255,0.35)',
+      borderLeftColor: '#61fff0',
+      borderBottomColor: '#61fff0',
+      display: 'inline-block'
+    },
+    overviewCard: {
+      position: 'relative',
+      zIndex: 2,
+      margin: isMobile ? '-56px 18px 24px' : '-66px 50px 34px',
+      padding: isMobile ? 24 : 40,
+      borderRadius: 14,
+      background: '#ffffff',
+      boxShadow: '0 26px 70px rgba(15,23,42,0.14)',
+      minWidth: 0
+    },
+    overviewCardTop: {
+      display: 'grid',
+      gridTemplateColumns: isDesktop ? 'minmax(0,0.82fr) minmax(320px,0.72fr)' : 'minmax(0,1fr)',
+      gap: isMobile ? 28 : 38,
+      alignItems: 'center'
+    },
+    overviewCardCopy: { minWidth: 0, maxWidth: 650 },
+    overviewTitle: {
+      margin: '12px 0 18px',
+      fontSize: isMobile ? 46 : 68,
+      lineHeight: 0.98,
+      fontWeight: 900,
+      letterSpacing: -2.4,
+      color: '#062838',
+      textShadow: '0 8px 18px rgba(4,38,52,0.12)'
+    },
+    overviewBody: {
+      margin: 0,
+      color: '#39556b',
+      lineHeight: 1.48,
+      fontSize: isMobile ? 17 : 18,
+      maxWidth: 560
+    },
+    buttonIcon: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 22,
+      height: 22,
+      borderRadius: 999,
+      border: '1px solid currentColor',
+      fontSize: 12,
+      lineHeight: 1,
+      fontWeight: 900
+    },
+    buttonArrow: { marginLeft: 8, fontWeight: 900 },
+    matchIllustration: {
+      position: 'relative',
+      minHeight: isMobile ? 230 : 300,
+      display: isMobile ? 'none' : 'block'
+    },
+    radarCircleOuter: {
+      position: 'absolute',
+      top: 10,
+      left: '50%',
+      width: 260,
+      height: 260,
+      marginLeft: -130,
+      borderRadius: 999,
+      border: '1px solid rgba(39,194,198,0.22)',
+      background: 'radial-gradient(circle, rgba(39,194,198,0.16), rgba(39,194,198,0.03) 58%, transparent 60%)'
+    },
+    radarCircleInner: {
+      position: 'absolute',
+      top: 62,
+      left: '50%',
+      width: 156,
+      height: 156,
+      marginLeft: -78,
+      borderRadius: 999,
+      border: '1px dashed rgba(39,194,198,0.35)'
+    },
+    radarCrossHorizontal: {
+      position: 'absolute',
+      top: 140,
+      left: '50%',
+      width: 270,
+      height: 1,
+      marginLeft: -135,
+      background: 'rgba(39,194,198,0.16)'
+    },
+    radarCrossVertical: {
+      position: 'absolute',
+      top: 10,
+      left: '50%',
+      width: 1,
+      height: 260,
+      background: 'rgba(39,194,198,0.16)'
+    },
+    matchCheck: {
+      position: 'absolute',
+      top: 112,
+      left: '50%',
+      width: 54,
+      height: 54,
+      marginLeft: -27,
+      borderRadius: 999,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: `linear-gradient(145deg, ${primaryColor}, ${secondaryColor})`,
+      color: '#ffffff',
+      fontWeight: 900,
+      boxShadow: '0 18px 30px rgba(0,116,124,0.24)'
+    },
+    profileChip: {
+      position: 'absolute',
+      width: 190,
+      minHeight: 54,
+      display: 'grid',
+      gridTemplateColumns: '36px minmax(0,1fr)',
+      gap: 12,
+      alignItems: 'center',
+      padding: 12,
+      borderRadius: 8,
+      background: '#ffffff',
+      border: '1px solid rgba(16,36,46,0.09)',
+      boxShadow: '0 16px 38px rgba(15,23,42,0.12)'
+    },
+    profileChipLeft: { left: 0, top: 128 },
+    profileChipRight: { right: 0, top: 58 },
+    chipAvatar: {
+      width: 34,
+      height: 34,
+      borderRadius: 999,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: `linear-gradient(145deg, ${primaryColor}, ${secondaryColor})`,
+      color: '#ffffff',
+      fontWeight: 900
+    },
+    chipLines: { display: 'grid', gap: 8 },
+    chipLineLong: { display: 'block', height: 7, borderRadius: 999, background: 'rgba(16,36,46,0.14)' },
+    chipLineShort: { display: 'block', width: '72%', height: 7, borderRadius: 999, background: 'rgba(16,36,46,0.1)' },
+    overviewDivider: { height: 1, background: 'rgba(16,36,46,0.12)', margin: isMobile ? '24px 0' : '30px 0 24px' },
+    overviewMetrics: {
+      display: 'grid',
+      gridTemplateColumns: isDesktop ? 'repeat(3,minmax(0,1fr))' : 'minmax(0,1fr)',
+      gap: 24
+    },
     hero: { display: 'grid', gridTemplateColumns: isDesktop ? template.heroColumns(metricMinWidth, sectionGap) : 'minmax(0,1fr)', gap: sectionGap, padding: compactCardPadding, background: template.cardBackground, borderRadius: template.cardRadius(borderRadius), boxShadow: template.cardShadow, border: template.cardBorder, scrollMarginTop: sectionGap, minWidth: 0 },
     eyebrow: { display: 'inline-block', color: secondaryColor, fontWeight: 800, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' },
     title: { margin: '14px 0 12px', fontSize: effectiveTitleSize, lineHeight: 1.05, fontWeight: 800, overflowWrap: 'anywhere' },
     lead: { margin: 0, color: '#55727b', fontSize: effectiveBodySize, lineHeight: 1.55 },
     heroActions: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 20 },
-    primaryButton: { border: 'none', background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: '#fff', padding: '12px 16px', borderRadius, fontWeight: 800, cursor: 'pointer' },
-    secondaryButton: { border: '1px solid rgba(16,36,46,0.14)', background: '#fff', color: accentTextColor, padding: '12px 16px', borderRadius, fontWeight: 800, cursor: 'pointer' },
+    primaryButton: { border: 'none', background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: '#fff', padding: '12px 18px', borderRadius, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    secondaryButton: { border: '1px solid rgba(16,36,46,0.14)', background: '#fff', color: accentTextColor, padding: '12px 18px', borderRadius, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 },
     compactButton: { border: 'none', background: secondaryColor, color: '#fff', padding: '12px 14px', borderRadius, fontWeight: 800, cursor: 'pointer' },
     statsGrid: { display: 'grid', gridTemplateColumns: `repeat(auto-fit,minmax(${metricMinWidth}px,1fr))`, gap: 10, minWidth: 0 },
-    metric: { background: '#f5fbfc', border: '1px solid rgba(16,36,46,0.08)', borderRadius, padding: compactCardPadding, minHeight: metricMinHeight, display: 'grid', alignContent: 'space-between', gap: 8, minWidth: 0, overflowWrap: 'anywhere' },
+    metric: {
+      background: '#f8fdff',
+      border: '1px solid rgba(39,194,198,0.18)',
+      borderRadius,
+      padding: compactCardPadding,
+      minHeight: metricMinHeight,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 22,
+      minWidth: 0,
+      overflowWrap: 'anywhere',
+      boxShadow: '0 14px 30px rgba(15,23,42,0.04)'
+    },
+    metricIcon: {
+      width: 76,
+      height: 76,
+      borderRadius: 999,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: '0 0 auto',
+      background: `linear-gradient(145deg, ${primaryColor}, ${secondaryColor})`,
+      color: '#ffffff',
+      fontWeight: 900,
+      fontSize: 24,
+      boxShadow: '0 14px 26px rgba(0,116,124,0.18)'
+    },
+    metricCopy: { display: 'grid', gap: 4, minWidth: 0 },
     searchBand: { background: '#fff', borderRadius, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: sectionGap, minWidth: 0 },
     searchHeader: { padding: `${compactCardPadding}px ${compactCardPadding}px 0` },
     searchGrid: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr)', gap: sectionGap, padding: compactCardPadding, minWidth: 0 },

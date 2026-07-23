@@ -649,33 +649,90 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
         ) : null}
 
         {activeSection === 'mission-match' ? (
-        <section id="mission-match" style={{ ...styles.pageFrame, order: sectionPositions['mission-match'] }}>
-          <div style={styles.pageHero}>
-            <div>
-              <span style={styles.pageKicker}>Mission intelligence</span>
-              <h2 style={styles.pageTitle}>Mission Match</h2>
-              <p style={styles.pageLead}>Capture a mission brief, extract explicit skills, and turn every search into a reusable partner mission record.</p>
+        <section id="mission-match" style={{ ...styles.missionFrame, order: sectionPositions['mission-match'] }}>
+          <div style={styles.missionHero}>
+            <div style={styles.missionHeroCopy}>
+              <span style={styles.missionKicker}>+ Mission intelligence</span>
+              <h2 style={styles.missionTitle}>Mission Match</h2>
+              <p style={styles.missionLead}>Capture a mission brief, extract explicit skills, and turn every search into a reusable partner mission record.</p>
             </div>
-            <div style={styles.pageStats}>
-              <PageStat value={`${partnerMissions.length}`} label="saved missions" styles={styles} />
-              <PageStat value={`${selectedSkills.length}`} label="active skills" styles={styles} />
-              <PageStat value={`${searchesRemaining}`} label="searches left" styles={styles} />
+            <div style={styles.missionHeroActions}>
+              <button type="button" style={styles.missionGhostButton} onClick={() => setMissionBrief('')}>
+                <span>+</span>
+                New mission
+              </button>
+              <button type="button" style={styles.missionGhostButton}>
+                <span>^</span>
+                Import brief
+              </button>
+            </div>
+            <div style={styles.missionStats}>
+              <MissionStat icon="B" value={`${partnerMissions.length}`} label="Saved missions" progress={70} styles={styles} />
+              <MissionStat icon="U" value={`${selectedSkills.length}`} label="Active skills" progress={selectedSkills.length > 0 ? 28 : 12} styles={styles} />
+              <MissionStat icon="Q" value={`${searchesRemaining}`} label="Searches left" progress={58} styles={styles} />
             </div>
           </div>
-          <div style={styles.pageBody}>
-          <div style={styles.searchGrid}>
-            <div style={styles.panel}>
-              <FieldLabel label="Mission / offer brief" />
-              <textarea
-                style={styles.textarea}
-                value={missionBrief}
-                onChange={(event) => setMissionBrief(event.currentTarget.value)}
-                placeholder="Looking for a Cloud Security Architect with Azure landing zone, IAM, Terraform, and compliance exposure."
-              />
-              <FieldLabel label="Add explicit skills" />
-              <div style={styles.inputRow}>
+
+          <div style={styles.missionWorkbench}>
+            <div style={styles.missionComposer}>
+              <div style={styles.missionPanelHeader}>
+                <span style={styles.missionPanelIcon}>D</span>
+                <div>
+                  <h3 style={styles.missionPanelTitle}>Mission Composer</h3>
+                  <span style={styles.missionPanelKicker}>Mission / offer brief</span>
+                </div>
+                <button type="button" style={styles.aiPill} onClick={extractSkillsFromBrief}>+ AI-powered extraction</button>
+              </div>
+
+              <div style={styles.missionTextareaWrap}>
+                <textarea
+                  style={styles.missionTextarea}
+                  value={missionBrief}
+                  onChange={(event) => setMissionBrief(event.currentTarget.value)}
+                  placeholder="Paste mission brief or job description..."
+                />
+                <span style={styles.textareaHint}>?</span>
+                <span style={styles.grammarBadge}>G</span>
+              </div>
+
+              <div style={styles.dropZone}>
+                <span style={styles.dropIcon}>^</span>
+                <div>
+                  <strong>Drag & drop a file here, or click to upload</strong>
+                  <span>PDF, DOCX, or TXT - Max 10MB</span>
+                </div>
+              </div>
+
+              <div>
+                <FieldLabel label="Sample extracted skills" />
+                <div style={styles.extractedSkills}>
+                  {(selectedSkills.length > 0 ? selectedSkills : ['Java', 'Kafka', 'French', 'Banking', '6+ years']).map((skill) => (
+                    <button
+                      key={skill}
+                      type="button"
+                      style={styles.extractedSkill}
+                      onClick={() => toggleSkill(skill)}
+                    >
+                      <span>#</span>
+                      {skill}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={styles.missionActionRow}>
+                <button type="button" style={styles.extractButton} onClick={extractSkillsFromBrief}>
+                  <span>+</span>
+                  Extract skills
+                </button>
+                <button type="button" style={styles.launchButton} onClick={() => logSearch()}>
+                  <span>Q</span>
+                  Launch search
+                </button>
+              </div>
+              <div style={styles.missionFilters}>
                 <input
-                  style={styles.input}
+                  style={styles.missionSkillInput}
                   value={skillInput}
                   onChange={(event) => setSkillInput(event.currentTarget.value)}
                   onKeyDown={(event) => {
@@ -684,94 +741,71 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                       addSkill();
                     }
                   }}
-                  placeholder="Azure, Kubernetes, IAM..."
+                  placeholder="Add a skill manually..."
                 />
                 <button type="button" style={styles.compactButton} onClick={addSkill}>Add</button>
+                <select style={styles.missionSelect} value={seniority} onChange={(event) => setSeniority(event.currentTarget.value)}>
+                  <option value="">Any seniority</option>
+                  <option>Senior</option>
+                  <option>Lead</option>
+                  <option>Architect</option>
+                </select>
+                <select style={styles.missionSelect} value={availability} onChange={(event) => setAvailability(event.currentTarget.value)}>
+                  <option value="">Any availability</option>
+                  <option>Immediate</option>
+                  <option>Under 2 weeks</option>
+                  <option>Under 1 month</option>
+                </select>
               </div>
-              <button type="button" style={styles.primaryButton} onClick={() => logSearch()}>
-                Search SharePoint CVs
-              </button>
               {searchStatus ? <p style={styles.statusText}>{searchStatus}</p> : null}
               {dataError ? <p style={styles.errorText}>{dataError}</p> : null}
-              <FieldLabel label="Suggested skills" />
-              <div style={styles.chipRow}>
-                {suggestedSkills.map((skill) => (
-                  <button
-                    key={skill}
-                    type="button"
-                    style={selectedSkills.includes(skill) ? { ...styles.chip, ...styles.chipActive } : styles.chip}
-                    onClick={() => toggleSkill(skill)}
-                  >
-                    {skill}
-                  </button>
-                ))}
-              </div>
             </div>
 
-            <div style={styles.panel}>
-              <FieldLabel label="Partner mission history" />
+            <div style={styles.missionHistoryPanel}>
+              <div style={styles.missionPanelHeader}>
+                <span style={styles.missionPanelIcon}>H</span>
+                <div>
+                  <h3 style={styles.missionPanelTitle}>Partner Mission History</h3>
+                  <span style={styles.missionPanelKicker}>Recent searches & reused criteria</span>
+                </div>
+                <button type="button" style={styles.viewAllButton}>View all</button>
+              </div>
               {isLoadingMissions ? <p style={styles.muted}>Loading partner missions...</p> : null}
               {missionError ? <p style={styles.errorText}>{missionError}</p> : null}
               {!isLoadingMissions && !missionError && partnerMissions.length === 0 ? (
                 <p style={styles.muted}>No mission saved yet for {webPartProps.partnerName}.</p>
               ) : null}
-              <div style={styles.missionList}>
-                {partnerMissions.map((mission) => (
-                  <article key={mission.Id} style={styles.missionCard}>
-                    <div style={styles.missionHeader}>
-                      <div>
-                        <strong>{mission.Title || `Mission #${mission.Id}`}</strong>
-                        <p style={styles.muted}>{formatMissionDate(mission.Created)} · {mission.UserEmail || 'Partner user'}</p>
+              <div style={styles.missionHistoryList}>
+                {partnerMissions.slice(0, 3).map((mission, index) => (
+                  <article key={mission.Id} style={index === 0 ? { ...styles.historyCard, ...styles.historyCardFeatured } : styles.historyCard}>
+                    <span style={styles.historyIcon}>{index === 0 ? 'Q' : index === 1 ? 'D' : 'B'}</span>
+                    <div style={styles.historyContent}>
+                      <div style={styles.historyTop}>
+                        <div>
+                          <h4 style={styles.historyTitle}>{mission.Title || (index === 0 ? 'Skills search' : `Mission #${mission.Id}`)}</h4>
+                          <p style={styles.historyMeta}>{formatMissionDate(mission.Created)} - {mission.UserEmail || 'Partner user'}</p>
+                        </div>
+                        <span style={styles.historyMenu}>:</span>
                       </div>
-                      <span style={styles.resultBadge}>{mission.ResultsCount || 0} CVs</span>
+                      {index === 0 ? <p style={styles.profileSummary}>{mission.MissionBrief || 'No mission brief captured.'}</p> : null}
+                      <div style={styles.historyBottom}>
+                        <p style={styles.historyCriteria}>
+                          <strong>Criteria:</strong> {mission.Seniority || 'Any seniority'} - {mission.Availability || 'Any availability'}
+                          {mission.MissionSkills ? ` - ${mission.MissionSkills}` : ''}
+                        </p>
+                        <span style={styles.resultBadge}>{mission.ResultsCount || 0} CVs</span>
+                      </div>
+                      {index === 0 ? (
+                        <button type="button" style={styles.reuseButton} onClick={() => reuseMission(mission)}>
+                          <span>R</span>
+                          Reuse criteria
+                        </button>
+                      ) : null}
                     </div>
-                    <p style={styles.profileSummary}>{mission.MissionBrief || 'No mission brief captured.'}</p>
-                    <div style={styles.skillPills}>
-                      {splitSkills(mission.MissionSkills || '').map((skill) => <span key={skill} style={styles.skillPill}>{skill}</span>)}
-                    </div>
-                    <p style={styles.muted}>
-                      Criteria: {mission.Seniority || 'Any seniority'} · {mission.Availability || 'Any availability'}
-                    </p>
-                    <button type="button" style={styles.secondaryButton} onClick={() => reuseMission(mission)}>
-                      Reuse criteria
-                    </button>
                   </article>
                 ))}
               </div>
-
-              <FieldLabel label="Selected search" />
-              <div style={styles.chipRow}>
-                {selectedSkills.map((skill) => (
-                  <span key={skill} style={{ ...styles.chip, ...styles.chipActive }}>{skill}</span>
-                ))}
-              </div>
-              <div style={styles.twoColumn}>
-                <div>
-                  <FieldLabel label="Seniority" />
-                  <select style={styles.input} value={seniority} onChange={(event) => setSeniority(event.currentTarget.value)}>
-                    <option value="">Any</option>
-                    <option>Senior</option>
-                    <option>Lead</option>
-                    <option>Architect</option>
-                  </select>
-                </div>
-                <div>
-                  <FieldLabel label="Availability" />
-                  <select style={styles.input} value={availability} onChange={(event) => setAvailability(event.currentTarget.value)}>
-                    <option value="">Any</option>
-                    <option>Immediate</option>
-                    <option>Under 2 weeks</option>
-                    <option>Under 1 month</option>
-                  </select>
-                </div>
-              </div>
-              <div style={styles.workflow}>
-                <WorkflowStep number="1" title="Discovery" text="Partners only search anonymized metadata." styles={styles} />
-                <WorkflowStep number="2" title="Qualification" text="Shortlist profiles by skills, availability, and fit score." styles={styles} />
-                <WorkflowStep number="3" title="Controlled reveal" text="Identity release requires approval and audit logging." styles={styles} />
-              </div>
             </div>
-          </div>
           </div>
         </section>
         ) : null}
@@ -947,6 +981,29 @@ function PageStat({ value, label, styles }: { value: string; label: string; styl
     <div style={styles.pageStat}>
       <strong>{value}</strong>
       <span>{label}</span>
+    </div>
+  );
+}
+
+function MissionStat({
+  icon,
+  value,
+  label,
+  progress,
+  styles
+}: {
+  icon: string;
+  value: string;
+  label: string;
+  progress: number;
+  styles: Record<string, React.CSSProperties>;
+}): JSX.Element {
+  return (
+    <div style={styles.missionStat}>
+      <span style={styles.missionStatIcon}>{icon}</span>
+      <strong>{value}</strong>
+      <span>{label}</span>
+      <i style={{ ...styles.missionStatProgress, width: `${progress}%` }} />
     </div>
   );
 }
@@ -1561,6 +1618,345 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       boxShadow: '0 14px 26px rgba(0,116,124,0.18)'
     },
     metricCopy: { display: 'grid', gap: 4, minWidth: 0 },
+    missionFrame: {
+      position: 'relative',
+      display: 'grid',
+      minWidth: 0,
+      overflow: 'hidden',
+      background: '#eef7fb',
+      borderRadius: isCockpitSaas ? 0 : template.cardRadius(borderRadius),
+      scrollMarginTop: sectionGap
+    },
+    missionHero: {
+      position: 'relative',
+      display: 'grid',
+      gridTemplateColumns: isDesktop ? 'minmax(0,0.86fr) minmax(520px,1fr)' : 'minmax(0,1fr)',
+      gridTemplateRows: isDesktop ? 'auto 1fr' : undefined,
+      gap: isMobile ? 22 : 26,
+      alignItems: 'center',
+      padding: isMobile ? '42px 24px 88px' : '70px 70px 124px',
+      minHeight: isMobile ? 520 : 390,
+      color: '#ffffff',
+      background: `radial-gradient(circle at 92% 18%, rgba(99,255,235,0.78), transparent 30%), radial-gradient(circle at 70% 100%, rgba(39,194,198,0.38), transparent 34%), linear-gradient(116deg, #073545 0%, #006b7b 48%, ${primaryColor} 100%)`,
+      overflow: 'hidden'
+    },
+    missionHeroCopy: { position: 'relative', zIndex: 1, alignSelf: 'center' },
+    missionKicker: {
+      display: 'inline-block',
+      color: '#63fff4',
+      fontSize: isMobile ? 12 : 15,
+      lineHeight: 1.4,
+      letterSpacing: 4,
+      textTransform: 'uppercase',
+      fontWeight: 900
+    },
+    missionTitle: {
+      margin: isMobile ? '20px 0 14px' : '24px 0 18px',
+      fontSize: isMobile ? 52 : 72,
+      lineHeight: 0.96,
+      fontWeight: 900,
+      letterSpacing: -2.4,
+      textShadow: '0 10px 24px rgba(0,0,0,0.28)'
+    },
+    missionLead: {
+      margin: 0,
+      maxWidth: 680,
+      fontSize: isMobile ? 18 : 21,
+      lineHeight: 1.6,
+      color: 'rgba(255,255,255,0.94)'
+    },
+    missionHeroActions: {
+      position: 'relative',
+      zIndex: 1,
+      alignSelf: 'start',
+      justifySelf: isDesktop ? 'end' : 'start',
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 16
+    },
+    missionGhostButton: {
+      minWidth: 170,
+      minHeight: 50,
+      borderRadius: 10,
+      border: '1px solid rgba(255,255,255,0.56)',
+      background: 'rgba(255,255,255,0.08)',
+      color: '#ffffff',
+      cursor: 'pointer',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+      fontWeight: 900,
+      fontSize: 16,
+      boxShadow: '0 18px 38px rgba(0,70,82,0.18)',
+      backdropFilter: 'blur(10px)'
+    },
+    missionStats: {
+      position: 'relative',
+      zIndex: 1,
+      gridColumn: isDesktop ? '2' : undefined,
+      display: 'grid',
+      gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'repeat(3,minmax(0,1fr))',
+      gap: isMobile ? 14 : 20
+    },
+    missionStat: {
+      minHeight: isMobile ? 150 : 180,
+      padding: isMobile ? 20 : 24,
+      borderRadius: 16,
+      border: '1px solid rgba(255,255,255,0.34)',
+      background: 'linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.07))',
+      boxShadow: '0 20px 46px rgba(0,68,78,0.2)',
+      display: 'grid',
+      alignContent: 'space-between',
+      gap: 10,
+      backdropFilter: 'blur(12px)',
+      minWidth: 0
+    },
+    missionStatIcon: {
+      width: 52,
+      height: 52,
+      borderRadius: 12,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'rgba(255,255,255,0.16)',
+      color: '#ffffff',
+      fontWeight: 900,
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)'
+    },
+    missionStatProgress: {
+      display: 'block',
+      height: 4,
+      borderRadius: 999,
+      background: '#69fff1',
+      boxShadow: '80px 0 0 rgba(255,255,255,0.14)'
+    },
+    missionWorkbench: {
+      position: 'relative',
+      zIndex: 2,
+      margin: isMobile ? '-52px 16px 24px' : '-62px 54px 34px',
+      padding: isMobile ? 16 : 18,
+      borderRadius: 18,
+      background: '#ffffff',
+      display: 'grid',
+      gridTemplateColumns: isDesktop ? 'minmax(0,0.92fr) minmax(0,1fr)' : 'minmax(0,1fr)',
+      gap: isMobile ? 18 : 22,
+      boxShadow: '0 28px 76px rgba(15,23,42,0.16)',
+      minWidth: 0
+    },
+    missionComposer: {
+      borderRadius: 16,
+      padding: isMobile ? 18 : 22,
+      background: '#ffffff',
+      border: '1px solid rgba(16,36,46,0.08)',
+      boxShadow: '0 16px 42px rgba(15,23,42,0.06)',
+      display: 'grid',
+      gap: 16,
+      minWidth: 0
+    },
+    missionHistoryPanel: {
+      borderRadius: 16,
+      padding: isMobile ? 18 : 22,
+      background: '#ffffff',
+      border: '1px solid rgba(16,36,46,0.08)',
+      boxShadow: '0 16px 42px rgba(15,23,42,0.06)',
+      display: 'grid',
+      gap: 14,
+      alignContent: 'start',
+      minWidth: 0
+    },
+    missionPanelHeader: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '44px minmax(0,1fr)' : '44px minmax(0,1fr) auto',
+      gap: 14,
+      alignItems: 'center',
+      minWidth: 0
+    },
+    missionPanelIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 10,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: `linear-gradient(145deg, ${primaryColor}, ${secondaryColor})`,
+      color: '#ffffff',
+      fontWeight: 900,
+      boxShadow: '0 12px 24px rgba(0,116,124,0.2)'
+    },
+    missionPanelTitle: { margin: 0, color: '#10242e', fontSize: isMobile ? 20 : 22, lineHeight: 1.15, fontWeight: 900 },
+    missionPanelKicker: { display: 'block', marginTop: 4, color: '#4b6170', fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 900 },
+    aiPill: {
+      border: '1px solid rgba(39,194,198,0.28)',
+      background: '#ffffff',
+      color: secondaryColor,
+      borderRadius: 999,
+      padding: '10px 18px',
+      fontWeight: 900,
+      cursor: 'pointer'
+    },
+    missionTextareaWrap: { position: 'relative', minWidth: 0 },
+    missionTextarea: {
+      width: '100%',
+      minHeight: isMobile ? 160 : 176,
+      resize: 'vertical',
+      borderRadius: 10,
+      border: '1px solid rgba(16,36,46,0.14)',
+      background: '#ffffff',
+      padding: isMobile ? '18px' : '26px 22px',
+      font: 'inherit',
+      fontSize: isMobile ? 16 : 17,
+      color: accentTextColor,
+      boxSizing: 'border-box',
+      boxShadow: 'inset 0 1px 0 rgba(16,36,46,0.03)'
+    },
+    textareaHint: {
+      position: 'absolute',
+      right: 54,
+      bottom: 22,
+      width: 22,
+      height: 22,
+      borderRadius: 999,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#57707a',
+      border: '1px solid rgba(16,36,46,0.2)',
+      fontWeight: 900
+    },
+    grammarBadge: {
+      position: 'absolute',
+      right: 24,
+      bottom: 18,
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#0b8b77',
+      border: '3px solid rgba(11,139,119,0.28)',
+      fontWeight: 900,
+      background: '#ffffff'
+    },
+    dropZone: {
+      display: 'grid',
+      gridTemplateColumns: '54px minmax(0,1fr)',
+      gap: 14,
+      alignItems: 'center',
+      padding: isMobile ? 18 : 22,
+      borderRadius: 10,
+      border: '1px dashed rgba(39,194,198,0.56)',
+      background: 'linear-gradient(135deg, rgba(39,194,198,0.06), rgba(255,255,255,0.9))',
+      color: accentTextColor
+    },
+    dropIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 999,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: primaryColor,
+      border: '3px solid rgba(39,194,198,0.36)',
+      fontWeight: 900
+    },
+    extractedSkills: { display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 12 },
+    extractedSkill: {
+      border: 'none',
+      borderRadius: 9,
+      background: '#eaf8fb',
+      color: secondaryColor,
+      padding: '10px 16px',
+      cursor: 'pointer',
+      display: 'inline-flex',
+      gap: 9,
+      alignItems: 'center',
+      fontWeight: 900
+    },
+    missionActionRow: { display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'minmax(0,0.84fr) minmax(0,1fr)', gap: 14 },
+    extractButton: {
+      minHeight: 54,
+      borderRadius: 10,
+      border: '1px solid rgba(16,36,46,0.14)',
+      background: '#ffffff',
+      color: '#39556b',
+      cursor: 'pointer',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+      fontSize: 17,
+      fontWeight: 900
+    },
+    launchButton: {
+      minHeight: 54,
+      borderRadius: 10,
+      border: 'none',
+      background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+      color: '#ffffff',
+      cursor: 'pointer',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+      fontSize: 17,
+      fontWeight: 900,
+      boxShadow: '0 16px 28px rgba(0,116,124,0.18)'
+    },
+    missionFilters: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1fr) auto minmax(150px,0.5fr) minmax(160px,0.5fr)' : 'minmax(0,1fr)', gap: 10 },
+    missionSkillInput: { border: '1px solid rgba(16,36,46,0.14)', borderRadius: 10, padding: 12, font: 'inherit', width: '100%', minWidth: 0, boxSizing: 'border-box' },
+    missionSelect: { border: '1px solid rgba(16,36,46,0.14)', borderRadius: 10, padding: 12, font: 'inherit', width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#ffffff' },
+    viewAllButton: { border: 'none', background: 'transparent', color: secondaryColor, cursor: 'pointer', fontWeight: 900 },
+    missionHistoryList: { display: 'grid', gap: 14 },
+    historyCard: {
+      position: 'relative',
+      display: 'grid',
+      gridTemplateColumns: '58px minmax(0,1fr)',
+      gap: 16,
+      padding: isMobile ? 16 : 20,
+      borderRadius: 12,
+      border: '1px solid rgba(16,36,46,0.08)',
+      background: '#ffffff',
+      boxShadow: '0 12px 30px rgba(15,23,42,0.08)',
+      minWidth: 0
+    },
+    historyCardFeatured: {
+      border: '1px solid rgba(39,194,198,0.56)',
+      background: 'linear-gradient(135deg, rgba(39,194,198,0.1), #ffffff 68%)'
+    },
+    historyIcon: {
+      width: 58,
+      height: 58,
+      borderRadius: 999,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#dff8fa',
+      color: secondaryColor,
+      fontWeight: 900,
+      fontSize: 18
+    },
+    historyContent: { display: 'grid', gap: 10, minWidth: 0 },
+    historyTop: { display: 'flex', justifyContent: 'space-between', gap: 12, minWidth: 0 },
+    historyTitle: { margin: 0, color: accentTextColor, fontSize: isMobile ? 17 : 18, lineHeight: 1.2, fontWeight: 900 },
+    historyMeta: { margin: '6px 0 0', color: '#506775', fontSize: 13 },
+    historyMenu: { color: '#4b6170', fontWeight: 900 },
+    historyBottom: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },
+    historyCriteria: { margin: 0, color: '#415867', lineHeight: 1.45, fontSize: 14 },
+    reuseButton: {
+      justifySelf: 'end',
+      border: 'none',
+      borderRadius: 9,
+      background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+      color: '#ffffff',
+      padding: '12px 18px',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 10,
+      cursor: 'pointer',
+      fontWeight: 900
+    },
     pageFrame: {
       position: 'relative',
       display: 'grid',

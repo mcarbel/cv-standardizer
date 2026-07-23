@@ -113,6 +113,11 @@ function scoreProfile(profile: CandidateProfile, selectedSkills: string[]): numb
   return Math.min(99, 62 + matches * 9);
 }
 
+function buildSearchSkills(selectedSkills: string[], missionBrief: string): string[] {
+  return Array.from(new Set([...selectedSkills, ...inferSkillsFromText(missionBrief)]))
+    .filter((skill) => skill !== 'General IT Consulting');
+}
+
 type LayoutMode = 'desktop' | 'tablet' | 'mobile';
 
 interface TemplateTokens {
@@ -221,9 +226,17 @@ function mapDocumentToPartnerCv(siteUrl: string, document: ISharePointCvDocument
 }
 
 function filterProfiles(sourceProfiles: CandidateProfile[], selectedSkills: string[], seniority: string, availability: string): CandidateProfile[] {
+  const normalizedSkills = selectedSkills.map((skill) => skill.toLowerCase());
+
   return sourceProfiles
     .filter((profile) => !seniority || profile.seniority === seniority)
     .filter((profile) => !availability || profile.availability === availability)
+    .filter((profile) => {
+      if (normalizedSkills.length === 0) return true;
+
+      const searchableProfile = `${profile.title} ${profile.meta} ${profile.summary} ${profile.skills.join(' ')}`.toLowerCase();
+      return normalizedSkills.some((skill) => searchableProfile.includes(skill));
+    })
     .map((profile) => ({
       ...profile,
       score: scoreProfile(profile, selectedSkills)
@@ -281,6 +294,10 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
   const [isImportingDocuments, setIsImportingDocuments] = useState(false);
   const [searchStatus, setSearchStatus] = useState('');
   const [searchesRemaining, setSearchesRemaining] = useState(partnerMonthlyQuota);
+  const [showAllMissions, setShowAllMissions] = useState(false);
+  const [activeMissionMenuId, setActiveMissionMenuId] = useState<number | undefined>();
+  const [editingMissionId, setEditingMissionId] = useState<number | undefined>();
+  const [isSavingMission, setIsSavingMission] = useState(false);
 
   useEffect(() => {
     serviceRef.current = new SharePointPartnerPortalService(spHttpClient, siteUrl);
@@ -384,9 +401,22 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     };
   }, [activeSection, userEmail, webPartProps.adminListTitle]);
 
+  const searchSkills = useMemo(() => buildSearchSkills(selectedSkills, missionBrief), [missionBrief, selectedSkills]);
+
+  const searchCriteria = useMemo(() => {
+    return [
+      ...searchSkills.map((skill) => `Skill: ${skill}`),
+      seniority ? `Seniority: ${seniority}` : 'Seniority: Any',
+      availability ? `Availability: ${availability}` : 'Availability: Any',
+      missionBrief.trim() ? 'Mission brief: included' : 'Mission brief: empty'
+    ];
+  }, [availability, missionBrief, searchSkills, seniority]);
+
+  const visibleMissions = useMemo(() => showAllMissions ? partnerMissions : partnerMissions.slice(0, 3), [partnerMissions, showAllMissions]);
+
   const rankedProfiles = useMemo(() => {
-    return filterProfiles(availableProfiles, selectedSkills, seniority, availability);
-  }, [availability, availableProfiles, seniority, selectedSkills]);
+    return filterProfiles(availableProfiles, searchSkills, seniority, availability);
+  }, [availability, availableProfiles, searchSkills, seniority]);
 
   const toggleSkill = (skill: string): void => {
     setSelectedSkills((current) =>
@@ -402,6 +432,17 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     setSkillInput('');
   };
 
+  const startNewMission = (): void => {
+    setMissionBrief('');
+    setSelectedSkills([]);
+    setSkillInput('');
+    setSeniority('');
+    setAvailability('');
+    setEditingMissionId(undefined);
+    setActiveMissionMenuId(undefined);
+    setSearchStatus('New mission ready. Add a brief or criteria to launch a search.');
+  };
+
   const extractSkillsFromBrief = (): void => {
     const lower = missionBrief.toLowerCase();
     const extracted = suggestedSkills.filter((skill) => lower.includes(skill.toLowerCase()));
@@ -413,45 +454,58 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     navigateToSection('mission-match');
   };
 
-  const logSearch = async (skillsForSearch = selectedSkills): Promise<void> => {
-    setSearchStatus('Logging search...');
+  const logSearch = async (skillsForSearch = searchSkills): Promise<void> => {
+    setIsSavingMission(true);
+    setSearchStatus(editingMissionId ? 'Updating mission and logging search...' : 'Logging search...');
     const monthKey = getMonthKey(new Date());
-    const usedSearches = await serviceRef.current.countMonthlySearches(
-      webPartProps.auditListTitle,
-      webPartProps.partnerName,
-      userEmail,
-      monthKey
-    );
-    const results = filterProfiles(availableProfiles, skillsForSearch, seniority, availability);
-    const remaining = Math.max(0, partnerMonthlyQuota - usedSearches - 1);
-    const missionTitle = missionBrief.trim().split(/\n|[.!?]/)[0]?.trim() || `Skills search: ${skillsForSearch.slice(0, 3).join(', ')}`;
 
-    await serviceRef.current.logSearch(webPartProps.auditListTitle, {
-      title: `${webPartProps.partnerName} search ${new Date().toISOString()}`,
-      partnerName: webPartProps.partnerName,
-      userEmail,
-      query: missionBrief,
-      skills: skillsForSearch,
-      resultsCount: results.length,
-      quotaMaximum: partnerMonthlyQuota,
-      searchesRemaining: remaining,
-      monthKey
-    });
+    try {
+      const usedSearches = await serviceRef.current.countMonthlySearches(
+        webPartProps.auditListTitle,
+        webPartProps.partnerName,
+        userEmail,
+        monthKey
+      );
+      const results = filterProfiles(availableProfiles, skillsForSearch, seniority, availability);
+      const remaining = Math.max(0, partnerMonthlyQuota - usedSearches - 1);
+      const missionTitle = missionBrief.trim().split(/\n|[.!?]/)[0]?.trim() || `Skills search: ${skillsForSearch.slice(0, 3).join(', ')}`;
+      const missionPayload = {
+        title: missionTitle,
+        partnerName: webPartProps.partnerName,
+        userEmail,
+        missionBrief,
+        skills: skillsForSearch,
+        seniority,
+        availability,
+        resultsCount: results.length
+      };
 
-    await serviceRef.current.savePartnerMission(webPartProps.missionListTitle, {
-      title: missionTitle,
-      partnerName: webPartProps.partnerName,
-      userEmail,
-      missionBrief,
-      skills: skillsForSearch,
-      seniority,
-      availability,
-      resultsCount: results.length
-    });
+      await serviceRef.current.logSearch(webPartProps.auditListTitle, {
+        title: `${webPartProps.partnerName} search ${new Date().toISOString()}`,
+        partnerName: webPartProps.partnerName,
+        userEmail,
+        query: missionBrief,
+        skills: skillsForSearch,
+        resultsCount: results.length,
+        quotaMaximum: partnerMonthlyQuota,
+        searchesRemaining: remaining,
+        monthKey
+      });
 
-    setSearchesRemaining(remaining);
-    setSearchStatus(`Search logged. ${results.length} CV(s) found. ${remaining} search(es) remaining this month.`);
-    await loadPartnerMissions();
+      if (editingMissionId) {
+        await serviceRef.current.updatePartnerMission(webPartProps.missionListTitle, editingMissionId, missionPayload);
+      } else {
+        await serviceRef.current.savePartnerMission(webPartProps.missionListTitle, missionPayload);
+      }
+
+      setSearchesRemaining(remaining);
+      setEditingMissionId(undefined);
+      setActiveMissionMenuId(undefined);
+      setSearchStatus(`${editingMissionId ? 'Mission updated' : 'Search logged'}. ${results.length} CV(s) found. ${remaining} search(es) remaining this month.`);
+      await loadPartnerMissions();
+    } finally {
+      setIsSavingMission(false);
+    }
   };
 
   const reuseMission = (mission: IPartnerMissionItem): void => {
@@ -459,7 +513,34 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     setSelectedSkills(splitSkills(mission.MissionSkills || ''));
     setSeniority(mission.Seniority || '');
     setAvailability(mission.Availability || '');
+    setEditingMissionId(undefined);
+    setActiveMissionMenuId(undefined);
     setSearchStatus(`Loaded mission "${mission.Title || `#${mission.Id}`}". You can refine and search again.`);
+  };
+
+  const editMission = (mission: IPartnerMissionItem): void => {
+    setMissionBrief(mission.MissionBrief || '');
+    setSelectedSkills(splitSkills(mission.MissionSkills || ''));
+    setSeniority(mission.Seniority || '');
+    setAvailability(mission.Availability || '');
+    setEditingMissionId(mission.Id);
+    setActiveMissionMenuId(undefined);
+    setSearchStatus(`Editing mission "${mission.Title || `#${mission.Id}`}". Launch search to save changes.`);
+  };
+
+  const deleteMission = async (mission: IPartnerMissionItem): Promise<void> => {
+    const label = mission.Title || `Mission #${mission.Id}`;
+    if (!window.confirm(`Delete "${label}" from partner mission history?`)) return;
+
+    setActiveMissionMenuId(undefined);
+    setSearchStatus(`Deleting mission "${label}"...`);
+
+    await serviceRef.current.deletePartnerMission(webPartProps.missionListTitle, mission.Id);
+    if (editingMissionId === mission.Id) {
+      setEditingMissionId(undefined);
+    }
+    setSearchStatus(`Mission "${label}" deleted.`);
+    await loadPartnerMissions();
   };
 
   const importCvDocuments = async (): Promise<void> => {
@@ -657,7 +738,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
               <p style={styles.missionLead}>Capture a mission brief, extract explicit skills, and turn every search into a reusable partner mission record.</p>
             </div>
             <div style={styles.missionHeroActions}>
-              <button type="button" style={styles.missionGhostButton} onClick={() => setMissionBrief('')}>
+              <button type="button" style={styles.missionGhostButton} onClick={startNewMission}>
                 <span>+</span>
                 New mission
               </button>
@@ -681,6 +762,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                   <h3 style={styles.missionPanelTitle}>Mission Composer</h3>
                   <span style={styles.missionPanelKicker}>Mission / offer brief</span>
                 </div>
+                {editingMissionId ? <span style={styles.editingBadge}>Editing mission #{editingMissionId}</span> : null}
                 <button type="button" style={styles.aiPill} onClick={extractSkillsFromBrief}>+ AI-powered extraction</button>
               </div>
 
@@ -725,9 +807,14 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                   <span>+</span>
                   Extract skills
                 </button>
-                <button type="button" style={styles.launchButton} onClick={() => logSearch()}>
+                <button
+                  type="button"
+                  style={isSavingMission ? { ...styles.launchButton, ...styles.disabledButton } : styles.launchButton}
+                  onClick={() => logSearch()}
+                  disabled={isSavingMission}
+                >
                   <span>Q</span>
-                  Launch search
+                  {isSavingMission ? 'Saving...' : editingMissionId ? 'Save mission changes' : 'Launch search'}
                 </button>
               </div>
               <div style={styles.missionFilters}>
@@ -757,6 +844,11 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                   <option>Under 1 month</option>
                 </select>
               </div>
+              <div style={styles.criteriaList} aria-label="Active search criteria">
+                {searchCriteria.map((criteria) => (
+                  <span key={criteria} style={styles.criteriaPill}>{criteria}</span>
+                ))}
+              </div>
               {searchStatus ? <p style={styles.statusText}>{searchStatus}</p> : null}
               {dataError ? <p style={styles.errorText}>{dataError}</p> : null}
             </div>
@@ -768,7 +860,14 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                   <h3 style={styles.missionPanelTitle}>Partner Mission History</h3>
                   <span style={styles.missionPanelKicker}>Recent searches & reused criteria</span>
                 </div>
-                <button type="button" style={styles.viewAllButton}>View all</button>
+                <button
+                  type="button"
+                  style={styles.viewAllButton}
+                  onClick={() => setShowAllMissions((current) => !current)}
+                  disabled={partnerMissions.length <= 3}
+                >
+                  {showAllMissions ? 'Show latest' : `View all (${partnerMissions.length})`}
+                </button>
               </div>
               {isLoadingMissions ? <p style={styles.muted}>Loading partner missions...</p> : null}
               {missionError ? <p style={styles.errorText}>{missionError}</p> : null}
@@ -776,7 +875,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                 <p style={styles.muted}>No mission saved yet for {webPartProps.partnerName}.</p>
               ) : null}
               <div style={styles.missionHistoryList}>
-                {partnerMissions.slice(0, 3).map((mission, index) => (
+                {visibleMissions.map((mission, index) => (
                   <article key={mission.Id} style={index === 0 ? { ...styles.historyCard, ...styles.historyCardFeatured } : styles.historyCard}>
                     <span style={styles.historyIcon}>{index === 0 ? 'Q' : index === 1 ? 'D' : 'B'}</span>
                     <div style={styles.historyContent}>
@@ -785,7 +884,33 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                           <h4 style={styles.historyTitle}>{mission.Title || (index === 0 ? 'Skills search' : `Mission #${mission.Id}`)}</h4>
                           <p style={styles.historyMeta}>{formatMissionDate(mission.Created)} - {mission.UserEmail || 'Partner user'}</p>
                         </div>
-                        <span style={styles.historyMenu}>:</span>
+                        <div style={styles.historyMenuWrap}>
+                          <button
+                            type="button"
+                            style={styles.historyMenuButton}
+                            onClick={() => setActiveMissionMenuId(activeMissionMenuId === mission.Id ? undefined : mission.Id)}
+                            aria-label={`Open actions for ${mission.Title || `mission ${mission.Id}`}`}
+                          >
+                            ...
+                          </button>
+                          {activeMissionMenuId === mission.Id ? (
+                            <div style={styles.historyMenuPanel}>
+                              <button type="button" style={styles.historyMenuAction} onClick={() => editMission(mission)}>Edit mission</button>
+                              <button type="button" style={styles.historyMenuAction} onClick={() => reuseMission(mission)}>Reuse criteria</button>
+                              <button
+                                type="button"
+                                style={{ ...styles.historyMenuAction, ...styles.historyMenuDanger }}
+                                onClick={() => {
+                                  deleteMission(mission).catch((error) => {
+                                    setSearchStatus(error instanceof Error ? error.message : 'Unable to delete mission.');
+                                  });
+                                }}
+                              >
+                                Delete mission
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
                       {index === 0 ? <p style={styles.profileSummary}>{mission.MissionBrief || 'No mission brief captured.'}</p> : null}
                       <div style={styles.historyBottom}>
@@ -1907,6 +2032,29 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     missionFilters: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1fr) auto minmax(150px,0.5fr) minmax(160px,0.5fr)' : 'minmax(0,1fr)', gap: 10 },
     missionSkillInput: { border: '1px solid rgba(16,36,46,0.14)', borderRadius: 10, padding: 12, font: 'inherit', width: '100%', minWidth: 0, boxSizing: 'border-box' },
     missionSelect: { border: '1px solid rgba(16,36,46,0.14)', borderRadius: 10, padding: 12, font: 'inherit', width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#ffffff' },
+    criteriaList: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+    criteriaPill: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      borderRadius: 999,
+      padding: '8px 11px',
+      background: 'rgba(39,194,198,0.12)',
+      color: secondaryColor,
+      fontSize: 12,
+      fontWeight: 900,
+      letterSpacing: '0.03em'
+    },
+    editingBadge: {
+      marginLeft: 'auto',
+      borderRadius: 999,
+      padding: '8px 12px',
+      background: 'rgba(39,194,198,0.12)',
+      color: secondaryColor,
+      fontSize: 12,
+      fontWeight: 900,
+      whiteSpace: 'nowrap'
+    },
+    disabledButton: { opacity: 0.58, cursor: 'not-allowed', boxShadow: 'none' },
     viewAllButton: { border: 'none', background: 'transparent', color: secondaryColor, cursor: 'pointer', fontWeight: 900 },
     missionHistoryList: { display: 'grid', gap: 14 },
     historyCard: {
@@ -1941,7 +2089,44 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     historyTop: { display: 'flex', justifyContent: 'space-between', gap: 12, minWidth: 0 },
     historyTitle: { margin: 0, color: accentTextColor, fontSize: isMobile ? 17 : 18, lineHeight: 1.2, fontWeight: 900 },
     historyMeta: { margin: '6px 0 0', color: '#506775', fontSize: 13 },
-    historyMenu: { color: '#4b6170', fontWeight: 900 },
+    historyMenuWrap: { position: 'relative', flex: '0 0 auto' },
+    historyMenuButton: {
+      border: 'none',
+      borderRadius: 999,
+      background: 'rgba(16,36,46,0.06)',
+      color: '#4b6170',
+      cursor: 'pointer',
+      fontWeight: 900,
+      letterSpacing: 2,
+      width: 34,
+      height: 34,
+      lineHeight: '20px'
+    },
+    historyMenuPanel: {
+      position: 'absolute',
+      right: 0,
+      top: 40,
+      zIndex: 20,
+      width: 178,
+      display: 'grid',
+      gap: 4,
+      padding: 8,
+      borderRadius: 12,
+      border: '1px solid rgba(16,36,46,0.12)',
+      background: '#ffffff',
+      boxShadow: '0 18px 34px rgba(15,23,42,0.16)'
+    },
+    historyMenuAction: {
+      border: 'none',
+      borderRadius: 9,
+      background: 'transparent',
+      color: accentTextColor,
+      padding: '10px 12px',
+      textAlign: 'left',
+      cursor: 'pointer',
+      fontWeight: 800
+    },
+    historyMenuDanger: { color: '#b42318' },
     historyBottom: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },
     historyCriteria: { margin: 0, color: '#415867', lineHeight: 1.45, fontSize: 14 },
     reuseButton: {

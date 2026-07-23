@@ -258,6 +258,43 @@ export class SharePointPartnerPortalService {
     await this.ensureSuccess(response, `Unable to write partner mission item in "${missionListTitle}"`);
   }
 
+  public async updatePartnerMission(missionListTitle: string, itemId: number, input: IPartnerMissionInput): Promise<void> {
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(missionListTitle)}')/items(${itemId})`;
+    const response = await this.spHttpClient.post(endpoint, SPHttpClient.configurations.v1, {
+      headers: {
+        Accept: 'application/json;odata=nometadata',
+        'Content-Type': 'application/json;odata=nometadata',
+        'IF-MATCH': '*',
+        'X-HTTP-Method': 'MERGE'
+      },
+      body: JSON.stringify({
+        Title: input.title,
+        PartnerName: input.partnerName,
+        UserEmail: input.userEmail,
+        MissionBrief: input.missionBrief,
+        MissionSkills: input.skills.join(', '),
+        Seniority: input.seniority,
+        Availability: input.availability,
+        ResultsCount: input.resultsCount
+      })
+    });
+
+    await this.ensureSuccess(response, `Unable to update partner mission item ${itemId} in "${missionListTitle}"`);
+  }
+
+  public async deletePartnerMission(missionListTitle: string, itemId: number): Promise<void> {
+    const endpoint = `${this.siteUrl}/_api/web/lists/getbytitle('${this.escapeODataString(missionListTitle)}')/items(${itemId})`;
+    const response = await this.spHttpClient.post(endpoint, SPHttpClient.configurations.v1, {
+      headers: {
+        Accept: 'application/json;odata=nometadata',
+        'IF-MATCH': '*',
+        'X-HTTP-Method': 'DELETE'
+      }
+    });
+
+    await this.ensureSuccess(response, `Unable to delete partner mission item ${itemId} from "${missionListTitle}"`);
+  }
+
   private async ensureSuccess(response: SPHttpClientResponse, message: string): Promise<void> {
     if (response.ok) return;
 

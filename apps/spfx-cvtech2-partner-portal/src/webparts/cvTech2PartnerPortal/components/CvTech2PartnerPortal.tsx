@@ -578,14 +578,14 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
             <div style={styles.overviewStatusCard}>
               <div style={styles.statusHeader}>
                 <span style={styles.statusIcon}>P</span>
-                <div>
+                <div style={styles.statusCopy}>
                   <strong>Partner status</strong>
                   <span>{webPartProps.partnerName}</span>
                 </div>
               </div>
               <div style={styles.quotaRow}>
                 <span style={styles.quotaRing} />
-                <div>
+                <div style={styles.quotaCopy}>
                   <strong>{searchesRemaining} / {partnerMonthlyQuota}</strong>
                   <span>searches remaining this month.</span>
                 </div>
@@ -1117,7 +1117,7 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       padding: isCockpitSaas ? headerPadding : isDesktop ? `${compactPadding + 2}px ${Math.max(16, compactPadding - 8)}px` : `${compactPadding}px`,
       display: 'flex',
       flexDirection: isDesktop && !usesTopNavigation ? 'column' : 'row',
-      flexWrap: 'wrap',
+      flexWrap: isCockpitSaas && !isMobile ? 'nowrap' : 'wrap',
       gap: isCockpitSaas ? (isMobile ? 12 : 20) : isMobile ? 14 : sectionGap,
       alignItems: isDesktop && !usesTopNavigation ? 'stretch' : 'center',
       borderRadius: template.sidebarRadius,
@@ -1157,7 +1157,7 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       flexDirection: isDesktop && !usesTopNavigation ? 'column' : 'row',
       flexWrap: 'wrap',
       gap: isCockpitSaas ? 10 : 8,
-      flex: isCockpitSaas ? '1 1 auto' : isDesktop && !usesTopNavigation ? '0 0 auto' : '1 1 420px',
+      flex: isCockpitSaas ? '1 1 0' : isDesktop && !usesTopNavigation ? '0 0 auto' : '1 1 420px',
       justifyContent: isCockpitSaas ? 'center' : undefined,
       alignItems: 'center'
     },
@@ -1282,6 +1282,7 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       gap: 26
     },
     statusHeader: { display: 'grid', gridTemplateColumns: '58px minmax(0,1fr)', gap: 18, alignItems: 'center' },
+    statusCopy: { display: 'grid', gap: 24, minWidth: 0 },
     statusIcon: {
       width: 58,
       height: 58,
@@ -1302,6 +1303,7 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       paddingTop: 22,
       borderTop: '1px solid rgba(255,255,255,0.18)'
     },
+    quotaCopy: { display: 'grid', gap: 6, minWidth: 0 },
     quotaRing: {
       width: 56,
       height: 56,

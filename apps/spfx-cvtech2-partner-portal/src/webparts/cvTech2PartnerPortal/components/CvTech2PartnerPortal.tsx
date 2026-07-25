@@ -118,6 +118,48 @@ function buildSearchSkills(selectedSkills: string[], missionBrief: string): stri
     .filter((skill) => skill !== 'General IT Consulting');
 }
 
+async function extractPdfText(file: File): Promise<string> {
+  const pdfjsLib = await import('pdfjs-dist/build/pdf');
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, disableWorker: true }).promise;
+  const pageTexts: string[] = [];
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items
+      .map((item: { str?: string }) => item.str || '')
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (pageText) pageTexts.push(pageText);
+  }
+
+  return pageTexts.join('\n\n');
+}
+
+async function extractDocxText(file: File): Promise<string> {
+  const mammoth = await import('mammoth/mammoth.browser');
+  const arrayBuffer = await file.arrayBuffer();
+  const result = await mammoth.extractRawText({ arrayBuffer });
+  return result.value;
+}
+
+async function extractMissionBriefFromFile(file: File): Promise<string> {
+  const extension = file.name.split('.').pop()?.toLowerCase();
+
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error('File is too large. Please upload a PDF, DOCX, or TXT file under 10MB.');
+  }
+
+  if (extension === 'txt') return file.text();
+  if (extension === 'pdf') return extractPdfText(file);
+  if (extension === 'docx') return extractDocxText(file);
+
+  throw new Error('Unsupported file type. Please upload a PDF, DOCX, or TXT mission brief.');
+}
+
 type LayoutMode = 'desktop' | 'tablet' | 'mobile';
 
 interface TemplateTokens {
@@ -273,6 +315,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
   } = webPartProps;
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const missionBriefInputRef = useRef<HTMLInputElement>(null);
   const serviceRef = useRef(new SharePointPartnerPortalService(spHttpClient, siteUrl));
   const [containerWidth, setContainerWidth] = useState(webPartMaxWidth);
   const [missionBrief, setMissionBrief] = useState('');
@@ -298,6 +341,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
   const [activeMissionMenuId, setActiveMissionMenuId] = useState<number | undefined>();
   const [editingMissionId, setEditingMissionId] = useState<number | undefined>();
   const [isSavingMission, setIsSavingMission] = useState(false);
+  const [isImportingMissionBrief, setIsImportingMissionBrief] = useState(false);
 
   useEffect(() => {
     serviceRef.current = new SharePointPartnerPortalService(spHttpClient, siteUrl);
@@ -441,6 +485,52 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     setEditingMissionId(undefined);
     setActiveMissionMenuId(undefined);
     setSearchStatus('New mission ready. Add a brief or criteria to launch a search.');
+  };
+
+  const importMissionBriefFile = async (file: File): Promise<void> => {
+    setIsImportingMissionBrief(true);
+    setSearchStatus(`Importing mission brief from "${file.name}"...`);
+
+    try {
+      const extractedText = (await extractMissionBriefFromFile(file)).trim();
+      if (!extractedText) {
+        throw new Error(`No readable text was found in "${file.name}".`);
+      }
+
+      const extractedSkills = inferSkillsFromText(extractedText).filter((skill) => skill !== 'General IT Consulting');
+      setMissionBrief(extractedText);
+      setSelectedSkills((current) => Array.from(new Set([...current, ...extractedSkills])));
+      setEditingMissionId(undefined);
+      setActiveMissionMenuId(undefined);
+      setSearchStatus(`Mission brief imported from "${file.name}". ${extractedSkills.length} skill(s) detected.`);
+      navigateToSection('mission-match');
+    } catch (error) {
+      setSearchStatus(error instanceof Error ? error.message : 'Unable to import mission brief file.');
+    } finally {
+      setIsImportingMissionBrief(false);
+      if (missionBriefInputRef.current) {
+        missionBriefInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleMissionBriefInputChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = event.currentTarget.files?.[0];
+    if (!file) return;
+
+    importMissionBriefFile(file).catch((error) => {
+      setSearchStatus(error instanceof Error ? error.message : 'Unable to import mission brief file.');
+    });
+  };
+
+  const handleMissionBriefDrop = (event: React.DragEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    const file = event.dataTransfer.files?.[0];
+    if (!file) return;
+
+    importMissionBriefFile(file).catch((error) => {
+      setSearchStatus(error instanceof Error ? error.message : 'Unable to import mission brief file.');
+    });
   };
 
   const extractSkillsFromBrief = (): void => {
@@ -742,9 +832,14 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                 <span>+</span>
                 New mission
               </button>
-              <button type="button" style={styles.missionGhostButton}>
+              <button
+                type="button"
+                style={isImportingMissionBrief ? { ...styles.missionGhostButton, ...styles.disabledButton } : styles.missionGhostButton}
+                onClick={() => missionBriefInputRef.current?.click()}
+                disabled={isImportingMissionBrief}
+              >
                 <span>^</span>
-                Import brief
+                {isImportingMissionBrief ? 'Importing...' : 'Import brief'}
               </button>
             </div>
             <div style={styles.missionStats}>
@@ -777,10 +872,31 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                 <span style={styles.grammarBadge}>G</span>
               </div>
 
-              <div style={styles.dropZone}>
+              <input
+                ref={missionBriefInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                style={styles.hiddenInput}
+                onChange={handleMissionBriefInputChange}
+              />
+
+              <div
+                style={isImportingMissionBrief ? { ...styles.dropZone, ...styles.dropZoneBusy } : styles.dropZone}
+                role="button"
+                tabIndex={0}
+                onClick={() => missionBriefInputRef.current?.click()}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={handleMissionBriefDrop}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    missionBriefInputRef.current?.click();
+                  }
+                }}
+              >
                 <span style={styles.dropIcon}>^</span>
                 <div>
-                  <strong>Drag & drop a file here, or click to upload</strong>
+                  <strong>{isImportingMissionBrief ? 'Reading mission brief...' : 'Drag & drop a file here, or click to upload'}</strong>
                   <span>PDF, DOCX, or TXT - Max 10MB</span>
                 </div>
               </div>
@@ -1973,8 +2089,11 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       borderRadius: 10,
       border: '1px dashed rgba(39,194,198,0.56)',
       background: 'linear-gradient(135deg, rgba(39,194,198,0.06), rgba(255,255,255,0.9))',
-      color: accentTextColor
+      color: accentTextColor,
+      cursor: 'pointer'
     },
+    dropZoneBusy: { opacity: 0.64, cursor: 'wait' },
+    hiddenInput: { display: 'none' },
     dropIcon: {
       width: 44,
       height: 44,

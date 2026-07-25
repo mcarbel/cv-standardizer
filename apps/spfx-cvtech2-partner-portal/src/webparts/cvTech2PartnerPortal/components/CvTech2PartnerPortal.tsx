@@ -30,6 +30,11 @@ interface CandidateProfile {
   score?: number;
 }
 
+interface CvPreview {
+  title: string;
+  url: string;
+}
+
 const suggestedSkills = [
   'Azure',
   'GCP',
@@ -342,6 +347,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
   const [editingMissionId, setEditingMissionId] = useState<number | undefined>();
   const [isSavingMission, setIsSavingMission] = useState(false);
   const [isImportingMissionBrief, setIsImportingMissionBrief] = useState(false);
+  const [cvPreview, setCvPreview] = useState<CvPreview | undefined>();
 
   useEffect(() => {
     serviceRef.current = new SharePointPartnerPortalService(spHttpClient, siteUrl);
@@ -530,6 +536,15 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
 
     importMissionBriefFile(file).catch((error) => {
       setSearchStatus(error instanceof Error ? error.message : 'Unable to import mission brief file.');
+    });
+  };
+
+  const openCvPreview = (profile: CandidateProfile): void => {
+    if (!profile.cvUrl) return;
+
+    setCvPreview({
+      title: profile.title || `Candidate ${profile.id}`,
+      url: profile.cvUrl
     });
   };
 
@@ -1091,9 +1106,9 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                 <div style={styles.cardActions}>
                   <button type="button" style={styles.primaryButton}>Request identity reveal</button>
                   {profile.cvUrl ? (
-                    <a href={profile.cvUrl} target="_blank" rel="noreferrer" style={styles.secondaryButton}>
+                    <button type="button" style={styles.secondaryButton} onClick={() => openCvPreview(profile)}>
                       Open CV
-                    </a>
+                    </button>
                   ) : (
                     <button type="button" style={styles.secondaryButton}>Save shortlist</button>
                   )}
@@ -1209,6 +1224,41 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
         </section>
         ) : null}
       </main>
+
+      {cvPreview ? (
+        <div
+          style={styles.previewOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`CV preview for ${cvPreview.title}`}
+          onClick={() => setCvPreview(undefined)}
+        >
+          <div style={styles.previewDialog} onClick={(event) => event.stopPropagation()}>
+            <div style={styles.previewHeader}>
+              <div>
+                <span style={styles.pageKicker}>Secure preview</span>
+                <h3 style={styles.previewTitle}>{cvPreview.title}</h3>
+              </div>
+              <div style={styles.previewActions}>
+                <a href={cvPreview.url} target="_blank" rel="noreferrer" style={styles.secondaryButton}>
+                  Open in new tab
+                </a>
+                <button type="button" style={styles.previewCloseButton} onClick={() => setCvPreview(undefined)} aria-label="Close CV preview">
+                  Close
+                </button>
+              </div>
+            </div>
+            <iframe
+              src={cvPreview.url}
+              title={`CV preview - ${cvPreview.title}`}
+              style={styles.previewFrame}
+            />
+            <p style={styles.previewHelp}>
+              If the preview remains blank, use "Open in new tab". Some SharePoint or Office document links can block embedded rendering.
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -2380,6 +2430,75 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     planTitle: { margin: 0, fontSize: 21 },
     planCopy: { margin: '8px 0', lineHeight: 1.45 },
     price: { display: 'block', fontSize: 30, margin: '10px 0' },
-    featureList: { margin: 0, paddingLeft: 18, lineHeight: 1.7 }
+    featureList: { margin: 0, paddingLeft: 18, lineHeight: 1.7 },
+    previewOverlay: {
+      position: 'fixed',
+      inset: 0,
+      zIndex: 9999,
+      padding: isMobile ? 12 : 28,
+      background: 'rgba(7,22,31,0.62)',
+      backdropFilter: 'blur(8px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    previewDialog: {
+      width: isMobile ? '100%' : 'min(1120px, 92vw)',
+      height: isMobile ? '92vh' : '88vh',
+      borderRadius: isMobile ? 16 : 22,
+      background: '#ffffff',
+      boxShadow: '0 34px 90px rgba(0,0,0,0.34)',
+      display: 'grid',
+      gridTemplateRows: 'auto minmax(0,1fr) auto',
+      overflow: 'hidden',
+      minWidth: 0
+    },
+    previewHeader: {
+      display: 'flex',
+      flexDirection: isMobile ? 'column' : 'row',
+      alignItems: isMobile ? 'stretch' : 'center',
+      justifyContent: 'space-between',
+      gap: 14,
+      padding: isMobile ? 16 : 22,
+      borderBottom: '1px solid rgba(16,36,46,0.1)',
+      background: 'linear-gradient(135deg, rgba(39,194,198,0.08), rgba(255,255,255,0.96))'
+    },
+    previewTitle: {
+      margin: '4px 0 0',
+      color: accentTextColor,
+      fontSize: isMobile ? 20 : 26,
+      lineHeight: 1.12,
+      fontWeight: 900,
+      overflowWrap: 'anywhere'
+    },
+    previewActions: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 10,
+      justifyContent: isMobile ? 'stretch' : 'flex-end'
+    },
+    previewCloseButton: {
+      border: 'none',
+      borderRadius,
+      background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+      color: '#ffffff',
+      padding: '12px 18px',
+      fontWeight: 900,
+      cursor: 'pointer'
+    },
+    previewFrame: {
+      width: '100%',
+      height: '100%',
+      border: 'none',
+      background: '#f8fbfc'
+    },
+    previewHelp: {
+      margin: 0,
+      padding: isMobile ? '10px 16px' : '12px 22px',
+      color: '#55727b',
+      fontSize: 13,
+      lineHeight: 1.4,
+      borderTop: '1px solid rgba(16,36,46,0.08)'
+    }
   };
 }

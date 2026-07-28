@@ -35,6 +35,26 @@ interface CvPreview {
   url: string;
 }
 
+type IconName =
+  | 'bank'
+  | 'briefcase'
+  | 'bookmark'
+  | 'clock'
+  | 'cloudUpload'
+  | 'code'
+  | 'database'
+  | 'document'
+  | 'globe'
+  | 'history'
+  | 'lightbulb'
+  | 'moreVertical'
+  | 'plus'
+  | 'refresh'
+  | 'search'
+  | 'share'
+  | 'sparkle'
+  | 'user';
+
 const suggestedSkills = [
   'Azure',
   'GCP',
@@ -121,6 +141,16 @@ function scoreProfile(profile: CandidateProfile, selectedSkills: string[]): numb
 function buildSearchSkills(selectedSkills: string[], missionBrief: string): string[] {
   return Array.from(new Set([...selectedSkills, ...inferSkillsFromText(missionBrief)]))
     .filter((skill) => skill !== 'General IT Consulting');
+}
+
+function getSkillIcon(skill: string): IconName {
+  const normalized = skill.toLowerCase();
+  if (normalized.includes('java') || normalized.includes('terraform') || normalized.includes('kubernetes')) return 'code';
+  if (normalized.includes('kafka') || normalized.includes('devsecops')) return 'share';
+  if (normalized.includes('french') || normalized.includes('aws') || normalized.includes('azure') || normalized.includes('gcp')) return 'globe';
+  if (normalized.includes('bank') || normalized.includes('compliance') || normalized.includes('iam')) return 'bank';
+  if (normalized.includes('year') || normalized.includes('senior') || normalized.includes('lead') || normalized.includes('architect')) return 'clock';
+  return 'sparkle';
 }
 
 async function extractPdfText(file: File): Promise<string> {
@@ -838,13 +868,13 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
         <section id="mission-match" style={{ ...styles.missionFrame, order: sectionPositions['mission-match'] }}>
           <div style={styles.missionHero}>
             <div style={styles.missionHeroCopy}>
-              <span style={styles.missionKicker}>+ Mission intelligence</span>
+              <span style={styles.missionKicker}><InlineIcon name="sparkle" /> Mission intelligence</span>
               <h2 style={styles.missionTitle}>Mission Match</h2>
               <p style={styles.missionLead}>Capture a mission brief, extract explicit skills, and turn every search into a reusable partner mission record.</p>
             </div>
             <div style={styles.missionHeroActions}>
               <button type="button" style={styles.missionGhostButton} onClick={startNewMission}>
-                <span>+</span>
+                <InlineIcon name="plus" />
                 New mission
               </button>
               <button
@@ -853,27 +883,27 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                 onClick={() => missionBriefInputRef.current?.click()}
                 disabled={isImportingMissionBrief}
               >
-                <span>^</span>
+                <InlineIcon name="cloudUpload" />
                 {isImportingMissionBrief ? 'Importing...' : 'Import brief'}
               </button>
             </div>
             <div style={styles.missionStats}>
-              <MissionStat icon="B" value={`${partnerMissions.length}`} label="Saved missions" progress={70} styles={styles} />
-              <MissionStat icon="U" value={`${selectedSkills.length}`} label="Active skills" progress={selectedSkills.length > 0 ? 28 : 12} styles={styles} />
-              <MissionStat icon="Q" value={`${searchesRemaining}`} label="Searches left" progress={58} styles={styles} />
+              <MissionStat icon="bookmark" value={`${partnerMissions.length}`} label="Saved missions" progress={70} styles={styles} />
+              <MissionStat icon="user" value={`${selectedSkills.length}`} label="Active skills" progress={selectedSkills.length > 0 ? 28 : 12} styles={styles} />
+              <MissionStat icon="search" value={`${searchesRemaining}`} label="Searches left" progress={58} styles={styles} />
             </div>
           </div>
 
           <div style={styles.missionWorkbench}>
             <div style={styles.missionComposer}>
               <div style={styles.missionPanelHeader}>
-                <span style={styles.missionPanelIcon}>D</span>
+                <span style={styles.missionPanelIcon}><InlineIcon name="document" /></span>
                 <div>
                   <h3 style={styles.missionPanelTitle}>Mission Composer</h3>
                   <span style={styles.missionPanelKicker}>Mission / offer brief</span>
                 </div>
                 {editingMissionId ? <span style={styles.editingBadge}>Editing mission #{editingMissionId}</span> : null}
-                <button type="button" style={styles.aiPill} onClick={extractSkillsFromBrief}>+ AI-powered extraction</button>
+                <button type="button" style={styles.aiPill} onClick={extractSkillsFromBrief}><InlineIcon name="sparkle" /> AI-powered extraction</button>
               </div>
 
               <div style={styles.missionTextareaWrap}>
@@ -883,7 +913,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                   onChange={(event) => setMissionBrief(event.currentTarget.value)}
                   placeholder="Paste mission brief or job description..."
                 />
-                <span style={styles.textareaHint}>?</span>
+                <span style={styles.textareaHint}><InlineIcon name="lightbulb" /></span>
                 <span style={styles.grammarBadge}>G</span>
               </div>
 
@@ -909,7 +939,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                   }
                 }}
               >
-                <span style={styles.dropIcon}>^</span>
+                <span style={styles.dropIcon}><InlineIcon name="cloudUpload" /></span>
                 <div>
                   <strong>{isImportingMissionBrief ? 'Reading mission brief...' : 'Drag & drop a file here, or click to upload'}</strong>
                   <span>PDF, DOCX, or TXT - Max 10MB</span>
@@ -926,7 +956,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                       style={styles.extractedSkill}
                       onClick={() => toggleSkill(skill)}
                     >
-                      <span>#</span>
+                      <InlineIcon name={getSkillIcon(skill)} />
                       {skill}
                     </button>
                   ))}
@@ -935,7 +965,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
 
               <div style={styles.missionActionRow}>
                 <button type="button" style={styles.extractButton} onClick={extractSkillsFromBrief}>
-                  <span>+</span>
+                  <InlineIcon name="sparkle" />
                   Extract skills
                 </button>
                 <button
@@ -944,7 +974,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                   onClick={() => logSearch()}
                   disabled={isSavingMission}
                 >
-                  <span>Q</span>
+                  <InlineIcon name="search" />
                   {isSavingMission ? 'Saving...' : editingMissionId ? 'Save mission changes' : 'Launch search'}
                 </button>
               </div>
@@ -986,7 +1016,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
 
             <div style={styles.missionHistoryPanel}>
               <div style={styles.missionPanelHeader}>
-                <span style={styles.missionPanelIcon}>H</span>
+                <span style={styles.missionPanelIcon}><InlineIcon name="history" /></span>
                 <div>
                   <h3 style={styles.missionPanelTitle}>Partner Mission History</h3>
                   <span style={styles.missionPanelKicker}>Recent searches & reused criteria</span>
@@ -1008,7 +1038,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
               <div style={styles.missionHistoryList}>
                 {visibleMissions.map((mission, index) => (
                   <article key={mission.Id} style={index === 0 ? { ...styles.historyCard, ...styles.historyCardFeatured } : styles.historyCard}>
-                    <span style={styles.historyIcon}>{index === 0 ? 'Q' : index === 1 ? 'D' : 'B'}</span>
+                    <span style={styles.historyIcon}><InlineIcon name={index === 0 ? 'search' : index === 1 ? 'database' : 'briefcase'} /></span>
                     <div style={styles.historyContent}>
                       <div style={styles.historyTop}>
                         <div>
@@ -1022,7 +1052,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                             onClick={() => setActiveMissionMenuId(activeMissionMenuId === mission.Id ? undefined : mission.Id)}
                             aria-label={`Open actions for ${mission.Title || `mission ${mission.Id}`}`}
                           >
-                            ...
+                            <InlineIcon name="moreVertical" />
                           </button>
                           {activeMissionMenuId === mission.Id ? (
                             <div style={styles.historyMenuPanel}>
@@ -1053,7 +1083,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                       </div>
                       {index === 0 ? (
                         <button type="button" style={styles.reuseButton} onClick={() => reuseMission(mission)}>
-                          <span>R</span>
+                          <InlineIcon name="refresh" />
                           Reuse criteria
                         </button>
                       ) : null}
@@ -1263,6 +1293,62 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
   );
 }
 
+function InlineIcon({ name, size = 20 }: { name: IconName; size?: number }): JSX.Element {
+  const commonProps = {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+    focusable: false
+  };
+
+  switch (name) {
+    case 'bank':
+      return <svg {...commonProps}><path d="M3 10h18" /><path d="M5 10l7-5 7 5" /><path d="M6 10v8" /><path d="M10 10v8" /><path d="M14 10v8" /><path d="M18 10v8" /><path d="M4 18h16" /></svg>;
+    case 'briefcase':
+      return <svg {...commonProps}><path d="M10 6h4a2 2 0 0 1 2 2v2H8V8a2 2 0 0 1 2-2Z" /><path d="M4 10h16v9H4z" /><path d="M4 14h16" /><path d="M10 14v2h4v-2" /></svg>;
+    case 'bookmark':
+      return <svg {...commonProps}><path d="M7 4h10v16l-5-3-5 3Z" /></svg>;
+    case 'clock':
+      return <svg {...commonProps}><circle cx="12" cy="12" r="8" /><path d="M12 8v5l3 2" /></svg>;
+    case 'cloudUpload':
+      return <svg {...commonProps}><path d="M7 18H6a4 4 0 0 1-.5-8A6 6 0 0 1 17 8.5 4.5 4.5 0 0 1 18 18h-1" /><path d="M12 18V10" /><path d="M9 13l3-3 3 3" /></svg>;
+    case 'code':
+      return <svg {...commonProps}><path d="M8 9 4 12l4 3" /><path d="m16 9 4 3-4 3" /><path d="m14 5-4 14" /></svg>;
+    case 'database':
+      return <svg {...commonProps}><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6" /><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" /></svg>;
+    case 'document':
+      return <svg {...commonProps}><path d="M7 3h7l4 4v14H7z" /><path d="M14 3v5h5" /><path d="M9 13h6" /><path d="M9 17h5" /></svg>;
+    case 'globe':
+      return <svg {...commonProps}><circle cx="12" cy="12" r="8" /><path d="M4 12h16" /><path d="M12 4a12 12 0 0 1 0 16" /><path d="M12 4a12 12 0 0 0 0 16" /></svg>;
+    case 'history':
+      return <svg {...commonProps}><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5" /><path d="M4 4v4.5h4.5" /><path d="M12 8v5l3 2" /></svg>;
+    case 'lightbulb':
+      return <svg {...commonProps}><path d="M9 18h6" /><path d="M10 22h4" /><path d="M8 14a6 6 0 1 1 8 0c-.9.7-1.3 1.5-1.4 2.5H9.4C9.3 15.5 8.9 14.7 8 14Z" /></svg>;
+    case 'moreVertical':
+      return <svg {...commonProps}><circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" /></svg>;
+    case 'plus':
+      return <svg {...commonProps}><path d="M12 5v14" /><path d="M5 12h14" /></svg>;
+    case 'refresh':
+      return <svg {...commonProps}><path d="M20 12a8 8 0 0 1-13.7 5.7" /><path d="M4 12A8 8 0 0 1 17.7 6.3" /><path d="M17 3v4h4" /><path d="M7 21v-4H3" /></svg>;
+    case 'search':
+      return <svg {...commonProps}><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></svg>;
+    case 'share':
+      return <svg {...commonProps}><circle cx="6" cy="12" r="2" /><circle cx="18" cy="6" r="2" /><circle cx="18" cy="18" r="2" /><path d="m8 11 8-4" /><path d="m8 13 8 4" /></svg>;
+    case 'sparkle':
+      return <svg {...commonProps}><path d="M12 3l1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z" /><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8Z" /></svg>;
+    case 'user':
+      return <svg {...commonProps}><circle cx="12" cy="8" r="3.2" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>;
+    default:
+      return <svg {...commonProps}><circle cx="12" cy="12" r="8" /></svg>;
+  }
+}
+
 function FieldLabel({ label }: { label: string }): JSX.Element {
   return <label style={{ display: 'block', fontSize: 12, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>{label}</label>;
 }
@@ -1283,7 +1369,7 @@ function MissionStat({
   progress,
   styles
 }: {
-  icon: string;
+  icon: IconName;
   value: string;
   label: string;
   progress: number;
@@ -1291,7 +1377,7 @@ function MissionStat({
 }): JSX.Element {
   return (
     <div style={styles.missionStat}>
-      <span style={styles.missionStatIcon}>{icon}</span>
+      <span style={styles.missionStatIcon}><InlineIcon name={icon} /></span>
       <strong>{value}</strong>
       <span>{label}</span>
       <i style={{ ...styles.missionStatProgress, width: `${progress}%` }} />
@@ -1933,7 +2019,9 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     },
     missionHeroCopy: { position: 'relative', zIndex: 1, alignSelf: 'center' },
     missionKicker: {
-      display: 'inline-block',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 10,
       color: '#63fff4',
       fontSize: isMobile ? 12 : 15,
       lineHeight: 1.4,
@@ -2084,7 +2172,11 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       borderRadius: 999,
       padding: '10px 18px',
       fontWeight: 900,
-      cursor: 'pointer'
+      cursor: 'pointer',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8
     },
     missionTextareaWrap: { position: 'relative', minWidth: 0 },
     missionTextarea: {
@@ -2269,7 +2361,10 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       letterSpacing: 2,
       width: 34,
       height: 34,
-      lineHeight: '20px'
+      lineHeight: '20px',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center'
     },
     historyMenuPanel: {
       position: 'absolute',

@@ -36,23 +36,36 @@ interface CvPreview {
 }
 
 type IconName =
+  | 'arrowRight'
   | 'bank'
+  | 'bell'
+  | 'brandMark'
   | 'briefcase'
   | 'bookmark'
+  | 'box'
+  | 'card'
+  | 'check'
+  | 'chevronDown'
   | 'clock'
   | 'cloudUpload'
   | 'code'
   | 'database'
   | 'document'
+  | 'documentImage'
+  | 'gear'
   | 'globe'
   | 'history'
   | 'lightbulb'
+  | 'lock'
   | 'moreVertical'
   | 'plus'
   | 'refresh'
+  | 'shield'
   | 'search'
   | 'share'
+  | 'signal'
   | 'sparkle'
+  | 'trend'
   | 'user';
 
 const suggestedSkills = [
@@ -151,6 +164,25 @@ function getSkillIcon(skill: string): IconName {
   if (normalized.includes('bank') || normalized.includes('compliance') || normalized.includes('iam')) return 'bank';
   if (normalized.includes('year') || normalized.includes('senior') || normalized.includes('lead') || normalized.includes('architect')) return 'clock';
   return 'sparkle';
+}
+
+function getSectionIcon(sectionId: SectionId): IconName {
+  switch (sectionId) {
+    case 'overview':
+      return 'documentImage';
+    case 'mission-match':
+      return 'search';
+    case 'cv-library':
+      return 'document';
+    case 'plans':
+      return 'card';
+    case 'compliance':
+      return 'shield';
+    case 'administration':
+      return 'gear';
+    default:
+      return 'box';
+  }
 }
 
 async function extractPdfText(file: File): Promise<string> {
@@ -749,7 +781,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     <div ref={rootRef} style={styles.shell}>
       <aside style={styles.sidebar}>
         <div style={styles.brandBlock}>
-          <span style={styles.logoMark}>S</span>
+          <span style={styles.logoMark}><InlineIcon name="brandMark" size={34} /></span>
           <div>
             <div style={styles.brand}>{activeSection === 'overview' ? 'SaaS Partner Cockpit' : brandLabel}</div>
             <p style={styles.brandCopy}>Partner access for anonymized CV discovery and mission matching.</p>
@@ -763,15 +795,15 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
               style={activeSection === item.id ? { ...styles.navItem, ...styles.navItemActive } : styles.navItem}
               onClick={() => navigateToSection(item.id)}
             >
-              <span style={styles.navGlyph}>{getSectionGlyph(item.id)}</span>
+              <span style={styles.navGlyph}><InlineIcon name={getSectionIcon(item.id)} size={18} /></span>
               {item.label}
             </button>
           ))}
         </nav>
         <div style={styles.headerActions}>
-          <span style={styles.headerIcon}>!</span>
+          <span style={styles.headerIcon}><InlineIcon name="bell" size={20} /></span>
           <span style={styles.avatarBadge}>P</span>
-          <span style={styles.chevron}>v</span>
+          <span style={styles.chevron}><InlineIcon name="chevronDown" size={18} /></span>
         </div>
         <div style={activeSection === 'overview' ? styles.sidePanelHidden : styles.sidePanel}>
           <strong>Partner status</strong>
@@ -793,7 +825,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
             </div>
             <div style={styles.overviewStatusCard}>
               <div style={styles.statusHeader}>
-                <span style={styles.statusIcon}>P</span>
+                <span style={styles.statusIcon}><InlineIcon name="user" size={28} /></span>
                 <div style={styles.statusCopy}>
                   <strong>Partner status</strong>
                   <span>{webPartProps.partnerName}</span>
@@ -821,12 +853,12 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                 </p>
                 <div style={styles.heroActions}>
                   <button type="button" style={styles.primaryButton} onClick={extractSkillsFromBrief}>
-                    <span style={styles.buttonIcon}>o</span>
+                    <span style={styles.buttonIcon}><InlineIcon name="search" size={18} /></span>
                     Analyze mission
-                    <span style={styles.buttonArrow}>-&gt;</span>
+                    <span style={styles.buttonArrow}><InlineIcon name="arrowRight" size={18} /></span>
                   </button>
                   <button type="button" style={styles.secondaryButton} onClick={() => navigateToSection('plans')}>
-                    <span style={styles.buttonIcon}>[]</span>
+                    <span style={styles.buttonIcon}><InlineIcon name="lock" size={18} /></span>
                     Request partner access
                   </button>
                 </div>
@@ -836,16 +868,16 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                 <span style={styles.radarCircleInner} />
                 <span style={styles.radarCrossHorizontal} />
                 <span style={styles.radarCrossVertical} />
-                <span style={styles.matchCheck}>OK</span>
+                <span style={styles.matchCheck}><InlineIcon name="check" size={28} /></span>
                 <span style={{ ...styles.profileChip, ...styles.profileChipLeft }}>
-                  <span style={styles.chipAvatar}>P</span>
+                  <span style={styles.chipAvatar}><InlineIcon name="user" size={20} /></span>
                   <span style={styles.chipLines}>
                     <span style={styles.chipLineLong} />
                     <span style={styles.chipLineShort} />
                   </span>
                 </span>
                 <span style={{ ...styles.profileChip, ...styles.profileChipRight }}>
-                  <span style={styles.chipAvatar}>P</span>
+                  <span style={styles.chipAvatar}><InlineIcon name="user" size={20} /></span>
                   <span style={styles.chipLines}>
                     <span style={styles.chipLineLong} />
                     <span style={styles.chipLineShort} />
@@ -856,9 +888,9 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
 
             <div style={styles.overviewDivider} />
             <div style={styles.overviewMetrics}>
-              <Metric value={`${availableProfiles.length}`} label="Missions analyzed" detail="This month" icon="P" styles={styles} />
-              <Metric value={isLoadingCvs ? '...' : `${rankedProfiles.length}`} label="Matches found" detail="This month" icon="D" styles={styles} />
-              <Metric value="94%" label="Match success rate" detail="Validated fit" icon="/\\" styles={styles} />
+              <Metric value={`${availableProfiles.length}`} label="Missions analyzed" detail="This month" icon="user" styles={styles} />
+              <Metric value={isLoadingCvs ? '...' : `${rankedProfiles.length}`} label="Matches found" detail="This month" icon="document" styles={styles} />
+              <Metric value="94%" label="Match success rate" detail="Validated fit" icon="trend" styles={styles} />
             </div>
           </div>
         </section>
@@ -1310,10 +1342,24 @@ function InlineIcon({ name, size = 20 }: { name: IconName; size?: number }): JSX
   switch (name) {
     case 'bank':
       return <svg {...commonProps}><path d="M3 10h18" /><path d="M5 10l7-5 7 5" /><path d="M6 10v8" /><path d="M10 10v8" /><path d="M14 10v8" /><path d="M18 10v8" /><path d="M4 18h16" /></svg>;
+    case 'arrowRight':
+      return <svg {...commonProps}><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></svg>;
+    case 'bell':
+      return <svg {...commonProps}><path d="M18 9a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21a2 2 0 0 0 4 0" /><path d="M19 4l1-1" /></svg>;
     case 'briefcase':
       return <svg {...commonProps}><path d="M10 6h4a2 2 0 0 1 2 2v2H8V8a2 2 0 0 1 2-2Z" /><path d="M4 10h16v9H4z" /><path d="M4 14h16" /><path d="M10 14v2h4v-2" /></svg>;
     case 'bookmark':
       return <svg {...commonProps}><path d="M7 4h10v16l-5-3-5 3Z" /></svg>;
+    case 'brandMark':
+      return <svg {...commonProps} viewBox="0 0 36 44" strokeWidth={0} fill="currentColor"><path d="M20 1 34 9 17 27 9 22 23 8 18 5 5 18 1 15Z" /><path d="M16 17 30 25 13 43 5 38 19 24 14 21Z" /><path d="M23 30 35 23 35 30 24 37Z" /></svg>;
+    case 'box':
+      return <svg {...commonProps}><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9Z" /><path d="M12 12 4 7.5" /><path d="m12 12 8-4.5" /><path d="M12 12v9" /></svg>;
+    case 'card':
+      return <svg {...commonProps}><rect x="4" y="6" width="16" height="12" rx="2" /><path d="M4 10h16" /><path d="M7 15h4" /></svg>;
+    case 'check':
+      return <svg {...commonProps}><path d="m6 12 4 4 8-8" /></svg>;
+    case 'chevronDown':
+      return <svg {...commonProps}><path d="m7 10 5 5 5-5" /></svg>;
     case 'clock':
       return <svg {...commonProps}><circle cx="12" cy="12" r="8" /><path d="M12 8v5l3 2" /></svg>;
     case 'cloudUpload':
@@ -1324,24 +1370,36 @@ function InlineIcon({ name, size = 20 }: { name: IconName; size?: number }): JSX
       return <svg {...commonProps}><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6" /><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" /></svg>;
     case 'document':
       return <svg {...commonProps}><path d="M7 3h7l4 4v14H7z" /><path d="M14 3v5h5" /><path d="M9 13h6" /><path d="M9 17h5" /></svg>;
+    case 'documentImage':
+      return <svg {...commonProps}><path d="M7 3h7l4 4v14H7z" /><path d="M14 3v5h5" /><path d="M9 17l2.2-2.2 1.8 1.8 2.2-3 2.8 3.4" /><path d="M9 11h2" /></svg>;
+    case 'gear':
+      return <svg {...commonProps}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2 3.4-.2-.1a1.7 1.7 0 0 0-2 .1 1.7 1.7 0 0 0-.8 1.7v.2H10v-.2a1.7 1.7 0 0 0-.8-1.7 1.7 1.7 0 0 0-2-.1l-.2.1-2-3.4.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.4-1.1H3.8v-3.8H4a1.7 1.7 0 0 0 1.4-1.1 1.7 1.7 0 0 0-.3-1.9L5 7l2-3.4.2.1a1.7 1.7 0 0 0 2-.1A1.7 1.7 0 0 0 10 1.9v-.2h4v.2a1.7 1.7 0 0 0 .8 1.7 1.7 1.7 0 0 0 2 .1l.2-.1L19 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.4 1.1h.2v3.8H20a1.7 1.7 0 0 0-1.4 1.1Z" /></svg>;
     case 'globe':
       return <svg {...commonProps}><circle cx="12" cy="12" r="8" /><path d="M4 12h16" /><path d="M12 4a12 12 0 0 1 0 16" /><path d="M12 4a12 12 0 0 0 0 16" /></svg>;
     case 'history':
       return <svg {...commonProps}><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5" /><path d="M4 4v4.5h4.5" /><path d="M12 8v5l3 2" /></svg>;
     case 'lightbulb':
       return <svg {...commonProps}><path d="M9 18h6" /><path d="M10 22h4" /><path d="M8 14a6 6 0 1 1 8 0c-.9.7-1.3 1.5-1.4 2.5H9.4C9.3 15.5 8.9 14.7 8 14Z" /></svg>;
+    case 'lock':
+      return <svg {...commonProps}><rect x="6" y="10" width="12" height="10" rx="2" /><path d="M9 10V7a3 3 0 0 1 6 0v3" /><path d="M12 14v2" /></svg>;
     case 'moreVertical':
       return <svg {...commonProps}><circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" /></svg>;
     case 'plus':
       return <svg {...commonProps}><path d="M12 5v14" /><path d="M5 12h14" /></svg>;
     case 'refresh':
       return <svg {...commonProps}><path d="M20 12a8 8 0 0 1-13.7 5.7" /><path d="M4 12A8 8 0 0 1 17.7 6.3" /><path d="M17 3v4h4" /><path d="M7 21v-4H3" /></svg>;
+    case 'shield':
+      return <svg {...commonProps}><path d="M12 3 19 6v5c0 5-3 8-7 10-4-2-7-5-7-10V6Z" /><path d="m9 12 2 2 4-4" /></svg>;
     case 'search':
       return <svg {...commonProps}><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></svg>;
     case 'share':
       return <svg {...commonProps}><circle cx="6" cy="12" r="2" /><circle cx="18" cy="6" r="2" /><circle cx="18" cy="18" r="2" /><path d="m8 11 8-4" /><path d="m8 13 8 4" /></svg>;
+    case 'signal':
+      return <svg {...commonProps}><path d="M4 18h3v-5H4z" /><path d="M10.5 18h3V9h-3z" /><path d="M17 18h3V5h-3z" /></svg>;
     case 'sparkle':
       return <svg {...commonProps}><path d="M12 3l1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z" /><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8Z" /></svg>;
+    case 'trend':
+      return <svg {...commonProps}><path d="M4 17 10 11l4 4 6-8" /><path d="M15 7h5v5" /></svg>;
     case 'user':
       return <svg {...commonProps}><circle cx="12" cy="8" r="3.2" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>;
     default:
@@ -1385,25 +1443,6 @@ function MissionStat({
   );
 }
 
-function getSectionGlyph(sectionId: SectionId): string {
-  switch (sectionId) {
-    case 'overview':
-      return 'O';
-    case 'mission-match':
-      return 'M';
-    case 'cv-library':
-      return 'CV';
-    case 'plans':
-      return 'P';
-    case 'compliance':
-      return 'C';
-    case 'administration':
-      return 'A';
-    default:
-      return '';
-  }
-}
-
 function Metric({
   value,
   label,
@@ -1414,12 +1453,12 @@ function Metric({
   value: string;
   label: string;
   detail?: string;
-  icon?: string;
+  icon?: IconName;
   styles: Record<string, React.CSSProperties>;
 }): JSX.Element {
   return (
     <div style={styles.metric}>
-      {icon ? <span style={styles.metricIcon}>{icon}</span> : null}
+      {icon ? <span style={styles.metricIcon}><InlineIcon name={icon} size={32} /></span> : null}
       <span style={styles.metricCopy}>
         <strong>{value}</strong>
         <span>{label}</span>
@@ -1642,12 +1681,9 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       alignItems: 'center',
       justifyContent: 'center',
       flex: '0 0 auto',
-      borderRadius: 12,
-      color: '#ffffff',
-      background: `linear-gradient(145deg, ${primaryColor}, ${secondaryColor})`,
+      color: primaryColor,
       fontWeight: 900,
-      fontSize: isMobile ? 18 : 22,
-      transform: 'skew(-8deg)'
+      fontSize: isMobile ? 18 : 22
     },
     brand: {
       fontSize: isCockpitSaas ? (isMobile ? 17 : 18) : isMobile ? 30 : 38,

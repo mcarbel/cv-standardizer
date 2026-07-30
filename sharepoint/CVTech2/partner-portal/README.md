@@ -29,9 +29,11 @@ Ce prototype est volontairement orienté `SaaS Partner Portal`.
 
 ### Backend recommandé
 
+- liste SharePoint `PartnerAccounts` pour associer un login partenaire, un nom partenaire et un quota mensuel
 - liste SharePoint `PartnerCVs` pour les CV anonymisés disponibles
 - filtrage/matching côté SPFx sur les métadonnées anonymisées
 - liste SharePoint `PartnerSearchLogs` pour journaliser les recherches
+- liste SharePoint `PartnerMissions` pour stocker les offres/missions saisies par partenaire
 - workflow d'accès et d'approbation pour la levée d'anonymat
 
 ### Gouvernance recommandée
@@ -43,11 +45,25 @@ Ce prototype est volontairement orienté `SaaS Partner Portal`.
 
 ## Listes SharePoint
 
-La webpart `CVTech2 Partner Portal` lit les CVs dans la liste configurée par la propriété `CV list title`, par défaut `PartnerCVs`.
+La webpart `CVTech2 Partner Portal` identifie d'abord le partenaire connecté dans la liste configurée par `Partner account list title`, par défaut `PartnerAccounts`.
+
+Colonnes attendues dans `PartnerAccounts` :
+
+- `Title`
+- `PartnerName`
+- `PartnerKey`
+- `UserEmail`
+- `MonthlySearchQuota`
+- `IsActive`
+
+Si aucun compte actif n'est trouvé pour le `UserEmail` courant, la webpart utilise les propriétés `Partner name` et `Monthly search quota` comme fallback.
+
+La webpart lit ensuite les CVs dans la liste configurée par la propriété `CV list title`, par défaut `PartnerCVs`.
 
 Colonnes attendues dans `PartnerCVs` :
 
 - `Title`
+- `PartnerName`
 - `CandidateId`
 - `ProfileTitle`
 - `Seniority`
@@ -61,6 +77,7 @@ Chaque recherche est loguée dans la liste configurée par `Search audit list ti
 
 Colonnes créées dans `PartnerSearchLogs` :
 
+- `PartnerAccountId`
 - `PartnerName`
 - `UserEmail`
 - `SearchQuery`
@@ -69,6 +86,23 @@ Colonnes créées dans `PartnerSearchLogs` :
 - `PartnerQuotaMaximum`
 - `SearchesRemaining`
 - `MonthKey`
+- `MatchedCandidateIds`
+- `MatchedCvUrls`
+- `MatchedProfileTitles`
+
+Les offres et critères saisis par les partenaires sont stockés dans la liste configurée par `Partner mission list title`, par défaut `PartnerMissions`.
+
+Colonnes attendues dans `PartnerMissions` :
+
+- `PartnerAccountId`
+- `PartnerName`
+- `UserEmail`
+- `MissionBrief`
+- `MissionSkills`
+- `Seniority`
+- `Availability`
+- `ResultsCount`
+- `MatchedCandidateIds`
 
 ## Provisioning
 
@@ -77,9 +111,8 @@ Colonnes créées dans `PartnerSearchLogs` :
   -SiteUrl "https://braineesysms365.sharepoint.com/sites/CVTech2" `
   -Tenant "braineesysms365.onmicrosoft.com" `
   -ClientId "9fb46f90-4038-4225-9241-0ced8ad3318b" `
-  -DeviceLogin
+  -DeviceLogin `
+  -InitialPartnerEmail "partner@contoso.com" `
+  -InitialPartnerName "Default Partner" `
+  -InitialPartnerMonthlyQuota 100
 ```
-
-## Étape suivante recommandée
-
-Ajouter une liste `PartnerAccounts` pour gérer les quotas par partenaire au lieu de les stocker uniquement dans les propriétés de webpart.

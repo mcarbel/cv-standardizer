@@ -15,7 +15,28 @@ param(
   [string]$CvListTitle = "PartnerCVs",
 
   [Parameter(Mandatory = $false)]
-  [string]$AuditListTitle = "PartnerSearchLogs"
+  [string]$AuditListTitle = "PartnerSearchLogs",
+
+  [Parameter(Mandatory = $false)]
+  [string]$PartnerAccountListTitle = "PartnerAccounts",
+
+  [Parameter(Mandatory = $false)]
+  [string]$MissionListTitle = "PartnerMissions",
+
+  [Parameter(Mandatory = $false)]
+  [string]$AdminListTitle = "PartnerPortalAdmins",
+
+  [Parameter(Mandatory = $false)]
+  [string]$InitialAdminEmail,
+
+  [Parameter(Mandatory = $false)]
+  [string]$InitialPartnerEmail,
+
+  [Parameter(Mandatory = $false)]
+  [string]$InitialPartnerName = "Default Partner",
+
+  [Parameter(Mandatory = $false)]
+  [int]$InitialPartnerMonthlyQuota = 100
 )
 
 $ErrorActionPreference = "Stop"
@@ -108,8 +129,17 @@ Ensure-Field -List $CvListTitle -InternalName "Skills" -DisplayName "Skills" -Ty
 Ensure-Field -List $CvListTitle -InternalName "Summary" -DisplayName "Summary" -Type Note
 Ensure-Field -List $CvListTitle -InternalName "IsAvailable" -DisplayName "Is Available" -Type Boolean
 Ensure-Field -List $CvListTitle -InternalName "CvUrl" -DisplayName "CV URL" -Type URL
+Ensure-Field -List $CvListTitle -InternalName "PartnerName" -DisplayName "Partner Name" -Type Text
+
+Ensure-List -Title $PartnerAccountListTitle -Description "Partner identities and monthly search quotas used by the Partner Portal."
+Ensure-Field -List $PartnerAccountListTitle -InternalName "PartnerName" -DisplayName "Partner Name" -Type Text
+Ensure-Field -List $PartnerAccountListTitle -InternalName "PartnerKey" -DisplayName "Partner Key" -Type Text
+Ensure-Field -List $PartnerAccountListTitle -InternalName "UserEmail" -DisplayName "User Email" -Type Text
+Ensure-Field -List $PartnerAccountListTitle -InternalName "MonthlySearchQuota" -DisplayName "Monthly Search Quota" -Type Number
+Ensure-Field -List $PartnerAccountListTitle -InternalName "IsActive" -DisplayName "Is Active" -Type Boolean
 
 Ensure-List -Title $AuditListTitle -Description "Partner Portal search audit trail with query, result count, and quota usage."
+Ensure-Field -List $AuditListTitle -InternalName "PartnerAccountId" -DisplayName "Partner Account ID" -Type Number
 Ensure-Field -List $AuditListTitle -InternalName "PartnerName" -DisplayName "Partner Name" -Type Text
 Ensure-Field -List $AuditListTitle -InternalName "UserEmail" -DisplayName "User Email" -Type Text
 Ensure-Field -List $AuditListTitle -InternalName "SearchQuery" -DisplayName "Search Query" -Type Note
@@ -118,5 +148,66 @@ Ensure-Field -List $AuditListTitle -InternalName "ResultsCount" -DisplayName "Re
 Ensure-Field -List $AuditListTitle -InternalName "PartnerQuotaMaximum" -DisplayName "Partner Quota Maximum" -Type Number
 Ensure-Field -List $AuditListTitle -InternalName "SearchesRemaining" -DisplayName "Searches Remaining" -Type Number
 Ensure-Field -List $AuditListTitle -InternalName "MonthKey" -DisplayName "Month Key" -Type Text
+Ensure-Field -List $AuditListTitle -InternalName "MatchedCandidateIds" -DisplayName "Matched Candidate IDs" -Type Note
+Ensure-Field -List $AuditListTitle -InternalName "MatchedCvUrls" -DisplayName "Matched CV URLs" -Type Note
+Ensure-Field -List $AuditListTitle -InternalName "MatchedProfileTitles" -DisplayName "Matched Profile Titles" -Type Note
+
+Ensure-List -Title $MissionListTitle -Description "Partner mission briefs and criteria saved from Partner Portal searches."
+Ensure-Field -List $MissionListTitle -InternalName "PartnerAccountId" -DisplayName "Partner Account ID" -Type Number
+Ensure-Field -List $MissionListTitle -InternalName "PartnerName" -DisplayName "Partner Name" -Type Text
+Ensure-Field -List $MissionListTitle -InternalName "UserEmail" -DisplayName "User Email" -Type Text
+Ensure-Field -List $MissionListTitle -InternalName "MissionBrief" -DisplayName "Mission Brief" -Type Note
+Ensure-Field -List $MissionListTitle -InternalName "MissionSkills" -DisplayName "Mission Skills" -Type Note
+Ensure-Field -List $MissionListTitle -InternalName "Seniority" -DisplayName "Seniority" -Type Text
+Ensure-Field -List $MissionListTitle -InternalName "Availability" -DisplayName "Availability" -Type Text
+Ensure-Field -List $MissionListTitle -InternalName "ResultsCount" -DisplayName "Results Count" -Type Number
+Ensure-Field -List $MissionListTitle -InternalName "MatchedCandidateIds" -DisplayName "Matched Candidate IDs" -Type Note
+
+Ensure-List -Title $AdminListTitle -Description "Users allowed to access Partner Portal administration features."
+Ensure-Field -List $AdminListTitle -InternalName "UserEmail" -DisplayName "User Email" -Type Text
+Ensure-Field -List $AdminListTitle -InternalName "IsActive" -DisplayName "Is Active" -Type Boolean
+
+if ($InitialAdminEmail) {
+  $normalizedEmail = $InitialAdminEmail.Trim().ToLowerInvariant()
+  $existingAdmin = Get-PnPListItem -List $AdminListTitle -PageSize 500 | Where-Object {
+    $_["UserEmail"] -and $_["UserEmail"].ToString().ToLowerInvariant() -eq $normalizedEmail
+  } | Select-Object -First 1
+
+  if ($existingAdmin) {
+    Write-Host "Initial admin already exists: $normalizedEmail"
+  }
+  else {
+    Write-Host "Adding initial Partner Portal admin: $normalizedEmail"
+    Add-PnPListItem -List $AdminListTitle -Values @{
+      Title = $normalizedEmail
+      UserEmail = $normalizedEmail
+      IsActive = $true
+    } | Out-Null
+  }
+}
+
+if ($InitialPartnerEmail) {
+  $normalizedPartnerEmail = $InitialPartnerEmail.Trim().ToLowerInvariant()
+  $existingPartner = Get-PnPListItem -List $PartnerAccountListTitle -PageSize 500 | Where-Object {
+    $_["UserEmail"] -and $_["UserEmail"].ToString().ToLowerInvariant() -eq $normalizedPartnerEmail
+  } | Select-Object -First 1
+
+  if ($existingPartner) {
+    Write-Host "Initial partner account already exists: $normalizedPartnerEmail"
+  }
+  else {
+    $partnerKey = $InitialPartnerName.ToLowerInvariant() -replace "[^a-z0-9]+", "-"
+    $partnerKey = $partnerKey.Trim("-")
+    Write-Host "Adding initial partner account: $InitialPartnerName / $normalizedPartnerEmail"
+    Add-PnPListItem -List $PartnerAccountListTitle -Values @{
+      Title = $InitialPartnerName
+      PartnerName = $InitialPartnerName
+      PartnerKey = $partnerKey
+      UserEmail = $normalizedPartnerEmail
+      MonthlySearchQuota = $InitialPartnerMonthlyQuota
+      IsActive = $true
+    } | Out-Null
+  }
+}
 
 Write-Host "Partner Portal lists are ready."

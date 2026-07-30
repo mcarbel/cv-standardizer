@@ -45,6 +45,7 @@
         "dataSiteUrl": "https://braineesysms365.sharepoint.com/sites/CVTech2",
         "cvListTitle": "PartnerCVs",
         "auditListTitle": "PartnerSearchLogs",
+        "partnerAccountListTitle": "PartnerAccounts",
         "missionListTitle": "PartnerMissions",
         "adminListTitle": "PartnerPortalAdmins",
         "cvDocumentLibraryTitle": "Documents",
@@ -67,7 +68,7 @@
     "scriptResources": {
       "cvtech2-partner-portal-web-part": {
         "type": "path",
-        "path": "cvtech2-partner-portal-web-part_c69d16f1631f2f2ff522.js"
+        "path": "cvtech2-partner-portal-web-part_b9e4114620a643bf15c3.js"
       },
       "react": {
         "type": "component",

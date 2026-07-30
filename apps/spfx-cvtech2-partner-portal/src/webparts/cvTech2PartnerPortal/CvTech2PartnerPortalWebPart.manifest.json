@@ -46,6 +46,7 @@
         "dataSiteUrl": "https://braineesysms365.sharepoint.com/sites/CVTech2",
         "cvListTitle": "PartnerCVs",
         "auditListTitle": "PartnerSearchLogs",
+        "partnerAccountListTitle": "PartnerAccounts",
         "missionListTitle": "PartnerMissions",
         "adminListTitle": "PartnerPortalAdmins",
         "cvDocumentLibraryTitle": "Documents",

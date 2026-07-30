@@ -13,47 +13,66 @@
   },
   "sharepointLists": [
     {
-      "title": "AnonymizedProfiles",
-      "purpose": "Public partner-facing searchable metadata for anonymized CVs",
+      "title": "PartnerAccounts",
+      "purpose": "Partner identity, login mapping, active status, and monthly search quotas",
       "fields": [
-        "CandidateAlias",
-        "RoleTitle",
-        "Summary",
-        "Skills",
-        "CloudStack",
-        "Seniority",
-        "Languages",
-        "AvailabilityWindow",
-        "SectorExposure",
-        "MissionFitTags",
-        "Status",
-        "SearchVisibility"
-      ]
-    },
-    {
-      "title": "PartnerOrganizations",
-      "purpose": "SaaS partner tenant/accounts and commercial access settings",
-      "fields": [
+        "Title",
         "PartnerName",
-        "PlanTier",
+        "PartnerKey",
+        "UserEmail",
         "MonthlySearchQuota",
-        "MonthlyRevealQuota",
-        "AccessStatus",
-        "PrimaryContact",
-        "AllowedDomains"
+        "IsActive"
       ]
     },
     {
-      "title": "PartnerSearchRequests",
-      "purpose": "Log of mission brief searches and skill-based searches",
+      "title": "PartnerCVs",
+      "purpose": "Partner-facing searchable metadata for anonymized CVs",
       "fields": [
+        "Title",
         "PartnerName",
-        "SubmittedBy",
-        "SearchMode",
+        "CandidateId",
+        "ProfileTitle",
+        "Seniority",
+        "Availability",
+        "Skills",
+        "Summary",
+        "IsAvailable",
+        "CvUrl"
+      ]
+    },
+    {
+      "title": "PartnerSearchLogs",
+      "purpose": "Audit trail for partner searches, quotas, and matched CV results",
+      "fields": [
+        "Title",
+        "PartnerAccountId",
+        "PartnerName",
+        "UserEmail",
+        "SearchQuery",
+        "SearchSkills",
+        "ResultsCount",
+        "PartnerQuotaMaximum",
+        "SearchesRemaining",
+        "MonthKey",
+        "MatchedCandidateIds",
+        "MatchedCvUrls",
+        "MatchedProfileTitles"
+      ]
+    },
+    {
+      "title": "PartnerMissions",
+      "purpose": "Mission briefs and reusable criteria entered by each partner",
+      "fields": [
+        "Title",
+        "PartnerAccountId",
+        "PartnerName",
+        "UserEmail",
         "MissionBrief",
-        "RequestedSkills",
-        "ReturnedProfiles",
-        "CreatedOn"
+        "MissionSkills",
+        "Seniority",
+        "Availability",
+        "ResultsCount",
+        "MatchedCandidateIds"
       ]
     },
     {

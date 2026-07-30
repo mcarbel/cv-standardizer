@@ -32,6 +32,7 @@ export interface ICvTech2PartnerPortalWebPartProps {
   dataSiteUrl: string;
   cvListTitle: string;
   auditListTitle: string;
+  partnerAccountListTitle: string;
   missionListTitle: string;
   adminListTitle: string;
   cvDocumentLibraryTitle: string;
@@ -67,6 +68,7 @@ const DEFAULT_PROPS: ICvTech2PartnerPortalWebPartProps = {
   dataSiteUrl: 'https://braineesysms365.sharepoint.com/sites/CVTech2',
   cvListTitle: 'PartnerCVs',
   auditListTitle: 'PartnerSearchLogs',
+  partnerAccountListTitle: 'PartnerAccounts',
   missionListTitle: 'PartnerMissions',
   adminListTitle: 'PartnerPortalAdmins',
   cvDocumentLibraryTitle: 'Documents',
@@ -103,6 +105,7 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
     this.properties.dataSiteUrl = this.properties.dataSiteUrl || DEFAULT_PROPS.dataSiteUrl;
     this.properties.cvListTitle = this.properties.cvListTitle || DEFAULT_PROPS.cvListTitle;
     this.properties.auditListTitle = this.properties.auditListTitle || DEFAULT_PROPS.auditListTitle;
+    this.properties.partnerAccountListTitle = this.properties.partnerAccountListTitle || DEFAULT_PROPS.partnerAccountListTitle;
     this.properties.missionListTitle = this.properties.missionListTitle || DEFAULT_PROPS.missionListTitle;
     this.properties.adminListTitle = this.properties.adminListTitle || DEFAULT_PROPS.adminListTitle;
     this.properties.cvDocumentLibraryTitle = this.properties.cvDocumentLibraryTitle || DEFAULT_PROPS.cvDocumentLibraryTitle;
@@ -164,6 +167,7 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
                 PropertyPaneTextField('dataSiteUrl', { label: 'Data site URL' }),
                 PropertyPaneTextField('cvListTitle', { label: 'CV list title' }),
                 PropertyPaneTextField('auditListTitle', { label: 'Search audit list title' }),
+                PropertyPaneTextField('partnerAccountListTitle', { label: 'Partner account list title' }),
                 PropertyPaneTextField('missionListTitle', { label: 'Partner mission list title' }),
                 PropertyPaneTextField('adminListTitle', { label: 'Portal admin list title' }),
                 PropertyPaneTextField('cvDocumentLibraryTitle', { label: 'CV document library title' }),

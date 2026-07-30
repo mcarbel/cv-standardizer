@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SPHttpClient } from '@microsoft/sp-http';
 import type { ICvTech2PartnerPortalWebPartProps, PartnerPortalTemplate } from '../CvTech2PartnerPortalWebPart';
 import {
+  IPartnerAccountItem,
   IPartnerCvInput,
   IPartnerCvListItem,
   IPartnerMissionItem,
@@ -315,7 +316,7 @@ function buildAbsoluteSharePointUrl(siteUrl: string, document: ISharePointCvDocu
   return `${new URL(siteUrl).origin}${serverRelativeUrl}`;
 }
 
-function mapDocumentToPartnerCv(siteUrl: string, document: ISharePointCvDocumentItem): IPartnerCvInput {
+function mapDocumentToPartnerCv(siteUrl: string, document: ISharePointCvDocumentItem, partnerName: string): IPartnerCvInput {
   const fileName = document.File?.Name || document.Title || `CV document ${document.Id}`;
   const profileTitle = cleanProfileTitle(document.Title || fileName);
   const skills = inferSkillsFromText(`${profileTitle} ${fileName}`);
@@ -323,6 +324,7 @@ function mapDocumentToPartnerCv(siteUrl: string, document: ISharePointCvDocument
 
   return {
     title: profileTitle,
+    partnerName,
     candidateId: `DOC-${document.Id}`,
     profileTitle,
     seniority: inferSeniority(`${profileTitle} ${fileName}`),
@@ -410,10 +412,46 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
   const [isSavingMission, setIsSavingMission] = useState(false);
   const [isImportingMissionBrief, setIsImportingMissionBrief] = useState(false);
   const [cvPreview, setCvPreview] = useState<CvPreview | undefined>();
+  const [partnerAccount, setPartnerAccount] = useState<IPartnerAccountItem | undefined>();
+  const [partnerAccountError, setPartnerAccountError] = useState('');
+
+  const effectivePartnerName = partnerAccount?.PartnerName || webPartProps.partnerName;
+  const effectivePartnerAccountId = partnerAccount?.Id;
+  const effectiveMonthlyQuota = typeof partnerAccount?.MonthlySearchQuota === 'number' && partnerAccount.MonthlySearchQuota > 0
+    ? partnerAccount.MonthlySearchQuota
+    : partnerMonthlyQuota;
 
   useEffect(() => {
     serviceRef.current = new SharePointPartnerPortalService(spHttpClient, siteUrl);
   }, [siteUrl, spHttpClient]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPartnerAccount(): Promise<void> {
+      setPartnerAccountError('');
+
+      try {
+        const account = await serviceRef.current.getPartnerAccount(webPartProps.partnerAccountListTitle, userEmail);
+        if (!isMounted) return;
+        setPartnerAccount(account);
+      } catch (error) {
+        if (!isMounted) return;
+        setPartnerAccount(undefined);
+        setPartnerAccountError(error instanceof Error ? error.message : 'Unable to load PartnerAccounts. Using web part fallback settings.');
+      }
+    }
+
+    loadPartnerAccount().catch(() => undefined);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userEmail, webPartProps.partnerAccountListTitle]);
+
+  useEffect(() => {
+    setSearchesRemaining(effectiveMonthlyQuota);
+  }, [effectiveMonthlyQuota]);
 
   useEffect(() => {
     const measure = (): void => {
@@ -441,7 +479,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
       setDataError('');
 
       try {
-        const items = await serviceRef.current.getAvailableCvs(webPartProps.cvListTitle, webPartProps.cvRowLimit);
+        const items = await serviceRef.current.getAvailableCvs(webPartProps.cvListTitle, webPartProps.cvRowLimit, effectivePartnerName);
         if (!isMounted) return;
         setAvailableProfiles(items.map(mapSharePointCv));
       } catch (error) {
@@ -458,7 +496,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     return () => {
       isMounted = false;
     };
-  }, [webPartProps.cvListTitle, webPartProps.cvRowLimit]);
+  }, [effectivePartnerName, webPartProps.cvListTitle, webPartProps.cvRowLimit]);
 
   const loadPartnerMissions = async (): Promise<void> => {
     setIsLoadingMissions(true);
@@ -467,7 +505,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     try {
       const missions = await serviceRef.current.getPartnerMissions(
         webPartProps.missionListTitle,
-        webPartProps.partnerName,
+        effectivePartnerName,
         100
       );
       setPartnerMissions(missions);
@@ -481,7 +519,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
 
   useEffect(() => {
     loadPartnerMissions().catch(() => undefined);
-  }, [webPartProps.missionListTitle, webPartProps.partnerName]);
+  }, [effectivePartnerName, webPartProps.missionListTitle]);
 
   useEffect(() => {
     let isMounted = true;
@@ -629,34 +667,43 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
     try {
       const usedSearches = await serviceRef.current.countMonthlySearches(
         webPartProps.auditListTitle,
-        webPartProps.partnerName,
+        effectivePartnerName,
         userEmail,
         monthKey
       );
       const results = filterProfiles(availableProfiles, skillsForSearch, seniority, availability);
-      const remaining = Math.max(0, partnerMonthlyQuota - usedSearches - 1);
+      const remaining = Math.max(0, effectiveMonthlyQuota - usedSearches - 1);
       const missionTitle = missionBrief.trim().split(/\n|[.!?]/)[0]?.trim() || `Skills search: ${skillsForSearch.slice(0, 3).join(', ')}`;
+      const matchedCandidateIds = results.map((profile) => profile.id);
+      const matchedCvUrls = results.map((profile) => profile.cvUrl || '').filter(Boolean);
+      const matchedProfileTitles = results.map((profile) => profile.title);
       const missionPayload = {
         title: missionTitle,
-        partnerName: webPartProps.partnerName,
+        partnerAccountId: effectivePartnerAccountId,
+        partnerName: effectivePartnerName,
         userEmail,
         missionBrief,
         skills: skillsForSearch,
         seniority,
         availability,
-        resultsCount: results.length
+        resultsCount: results.length,
+        matchedCandidateIds
       };
 
       await serviceRef.current.logSearch(webPartProps.auditListTitle, {
-        title: `${webPartProps.partnerName} search ${new Date().toISOString()}`,
-        partnerName: webPartProps.partnerName,
+        title: `${effectivePartnerName} search ${new Date().toISOString()}`,
+        partnerAccountId: effectivePartnerAccountId,
+        partnerName: effectivePartnerName,
         userEmail,
         query: missionBrief,
         skills: skillsForSearch,
         resultsCount: results.length,
-        quotaMaximum: partnerMonthlyQuota,
+        quotaMaximum: effectiveMonthlyQuota,
         searchesRemaining: remaining,
-        monthKey
+        monthKey,
+        matchedCandidateIds,
+        matchedCvUrls,
+        matchedProfileTitles
       });
 
       if (editingMissionId) {
@@ -723,7 +770,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
       const existingCandidateIds = new Set(existingCvs.map((item) => item.CandidateId).filter(Boolean));
       const existingUrls = new Set(existingCvs.map((item) => item.CvUrl?.Url).filter(Boolean));
       const candidates = documents
-        .map((document) => mapDocumentToPartnerCv(siteUrl, document))
+        .map((document) => mapDocumentToPartnerCv(siteUrl, document, effectivePartnerName))
         .filter((candidate) => !existingCandidateIds.has(candidate.candidateId) && !existingUrls.has(candidate.cvUrl));
 
       for (const candidate of candidates) {
@@ -731,7 +778,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
       }
 
       setAdminStatus(`Import complete. ${documents.length} document(s) scanned, ${candidates.length} new PartnerCV item(s) created.`);
-      const items = await serviceRef.current.getAvailableCvs(webPartProps.cvListTitle, webPartProps.cvRowLimit);
+      const items = await serviceRef.current.getAvailableCvs(webPartProps.cvListTitle, webPartProps.cvRowLimit, effectivePartnerName);
       setAvailableProfiles(items.map(mapSharePointCv));
     } catch (error) {
       setAdminError(error instanceof Error ? error.message : 'Unable to import CV documents.');
@@ -807,8 +854,9 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
         </div>
         <div style={activeSection === 'overview' ? styles.sidePanelHidden : styles.sidePanel}>
           <strong>Partner status</strong>
-          <span>{webPartProps.partnerName}</span>
-          <span>{searchesRemaining} / {partnerMonthlyQuota} searches remaining this month.</span>
+          <span>{effectivePartnerName}</span>
+          <span>{searchesRemaining} / {effectiveMonthlyQuota} searches remaining this month.</span>
+          {partnerAccountError ? <span>{partnerAccountError}</span> : null}
         </div>
       </aside>
 
@@ -828,13 +876,13 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
                 <span style={styles.statusIcon}><InlineIcon name="user" size={28} /></span>
                 <div style={styles.statusCopy}>
                   <strong>Partner status</strong>
-                  <span>{webPartProps.partnerName}</span>
+                  <span>{effectivePartnerName}</span>
                 </div>
               </div>
               <div style={styles.quotaRow}>
                 <span style={styles.quotaRing} />
                 <div style={styles.quotaCopy}>
-                  <strong>{searchesRemaining} / {partnerMonthlyQuota}</strong>
+                  <strong>{searchesRemaining} / {effectiveMonthlyQuota}</strong>
                   <span>searches remaining this month.</span>
                 </div>
               </div>
@@ -1065,7 +1113,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
               {isLoadingMissions ? <p style={styles.muted}>Loading partner missions...</p> : null}
               {missionError ? <p style={styles.errorText}>{missionError}</p> : null}
               {!isLoadingMissions && !missionError && partnerMissions.length === 0 ? (
-                <p style={styles.muted}>No mission saved yet for {webPartProps.partnerName}.</p>
+                <p style={styles.muted}>No mission saved yet for {effectivePartnerName}.</p>
               ) : null}
               <div style={styles.missionHistoryList}>
                 {visibleMissions.map((mission, index) => (
@@ -1192,7 +1240,7 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
             </div>
             <div style={styles.pageStats}>
               <PageStat value="3" label="subscription tiers" styles={styles} />
-              <PageStat value={`${partnerMonthlyQuota}`} label="default quota" styles={styles} />
+              <PageStat value={`${effectiveMonthlyQuota}`} label="monthly quota" styles={styles} />
               <PageStat value="SSO" label="enterprise ready" styles={styles} />
             </div>
           </div>
@@ -1275,6 +1323,9 @@ export default function CvTech2PartnerPortal({ webPartProps, spHttpClient, siteU
               <FieldLabel label="Current configuration" />
               <div style={styles.configList}>
                 <span>Admin list: <strong>{webPartProps.adminListTitle}</strong></span>
+                <span>Partner account list: <strong>{webPartProps.partnerAccountListTitle}</strong></span>
+                <span>Resolved partner: <strong>{effectivePartnerName}</strong></span>
+                <span>Partner account ID: <strong>{effectivePartnerAccountId || 'fallback properties'}</strong></span>
                 <span>Document library: <strong>{webPartProps.cvDocumentLibraryTitle}</strong></span>
                 <span>Target CV list: <strong>{webPartProps.cvListTitle}</strong></span>
                 <span>Current user: <strong>{userEmail}</strong></span>

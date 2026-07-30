@@ -8,7 +8,7 @@ import { PropertyPaneDropdown, PropertyPaneSlider, PropertyPaneTextField } from 
 import { SPHttpClient } from '@microsoft/sp-http';
 import CvTech2PartnerPortal from './components/CvTech2PartnerPortal';
 
-export type PartnerPortalTemplate = 'cockpit-saas' | 'executive-partner' | 'marketplace-talent' | 'mission-match-studio';
+export type PartnerPortalTemplate = 'cockpit-saas' | 'executive-partner' | 'marketplace-talent' | 'mission-match-studio' | 'ios-liquid-glass';
 
 export interface ICvTech2PartnerPortalWebPartProps {
   portalTemplate: PartnerPortalTemplate;
@@ -154,7 +154,8 @@ export default class CvTech2PartnerPortalWebPart extends BaseClientSideWebPart<I
                     { key: 'cockpit-saas', text: 'Cockpit SaaS' },
                     { key: 'executive-partner', text: 'Executive Partner' },
                     { key: 'marketplace-talent', text: 'Marketplace Talent' },
-                    { key: 'mission-match-studio', text: 'Mission Match Studio' }
+                    { key: 'mission-match-studio', text: 'Mission Match Studio' },
+                    { key: 'ios-liquid-glass', text: 'iOS 26 Liquid Glass' }
                   ]
                 }),
                 PropertyPaneTextField('brandLabel', { label: 'Brand label' }),

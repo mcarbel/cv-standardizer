@@ -1562,6 +1562,28 @@ function buildTemplateTokens(
     `minmax(0,1.3fr) minmax(${metricMinWidth * 2 + sectionGap}px,0.9fr)`;
 
   switch (portalTemplate) {
+    case 'ios-liquid-glass':
+      return {
+        navigation: 'top',
+        shellBackground: 'radial-gradient(circle at 10% 0%, rgba(255,255,255,0.95), rgba(232,248,255,0.72) 28%, transparent 45%), radial-gradient(circle at 92% 12%, rgba(76,234,255,0.62), transparent 34%), linear-gradient(145deg, #eaf7ff 0%, #f8fbff 48%, #d9f9f7 100%)',
+        sidebarBackground: 'linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.28))',
+        sidebarTextColor: '#092f3c',
+        sidebarMutedColor: 'rgba(9,47,60,0.68)',
+        sidebarRadius: 34,
+        sidebarShadow: '0 24px 80px rgba(10,82,110,0.16)',
+        navTextColor: '#153f4d',
+        navActiveBackground: 'linear-gradient(145deg, rgba(255,255,255,0.72), rgba(101,235,255,0.28))',
+        navActiveTextColor: '#006b76',
+        sidePanelBackground: 'linear-gradient(145deg, rgba(255,255,255,0.58), rgba(255,255,255,0.22))',
+        cardBackground: 'linear-gradient(145deg, rgba(255,255,255,0.68), rgba(255,255,255,0.28))',
+        panelBackground: 'linear-gradient(145deg, rgba(255,255,255,0.56), rgba(245,254,255,0.24))',
+        cardBorder: '1px solid rgba(255,255,255,0.58)',
+        cardShadow: '0 28px 80px rgba(8,82,112,0.15), inset 0 1px 0 rgba(255,255,255,0.7)',
+        mutedTextColor: 'rgba(21,63,77,0.72)',
+        fontFamily: 'SF Pro Display, SF Pro Text, Avenir Next, Aptos, Segoe UI, sans-serif',
+        heroColumns: (_metricMinWidth, _sectionGap) => 'minmax(0,1fr) minmax(280px,0.72fr)',
+        cardRadius: (borderRadius) => Math.max(28, borderRadius)
+      };
     case 'executive-partner':
       return {
         navigation: 'top',
@@ -1684,7 +1706,9 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
   const template = buildTemplateTokens(portalTemplate, primaryColor, secondaryColor, accentTextColor, surfaceColor);
   const usesTopNavigation = template.navigation === 'top';
   const isCockpitSaas = portalTemplate === 'cockpit-saas';
+  const isLiquidGlass = portalTemplate === 'ios-liquid-glass';
   const headerPadding = isMobile ? `${compactPadding}px` : `${Math.max(18, compactPadding - 4)}px ${Math.max(28, compactPadding + 18)}px`;
+  const glassBlur = 'blur(26px) saturate(1.35)';
 
   return {
     shell: {
@@ -1701,61 +1725,73 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       background: template.shellBackground,
       fontFamily: template.fontFamily,
       fontSize: effectiveBodySize,
-      borderRadius: isCockpitSaas ? (isMobile ? 0 : 18) : undefined,
-      border: isCockpitSaas ? '1px solid rgba(16,36,46,0.08)' : undefined,
-      boxShadow: isCockpitSaas ? '0 18px 64px rgba(15,23,42,0.08)' : undefined
+      borderRadius: isLiquidGlass ? (isMobile ? 28 : 38) : isCockpitSaas ? (isMobile ? 0 : 18) : undefined,
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.72)' : isCockpitSaas ? '1px solid rgba(16,36,46,0.08)' : undefined,
+      boxShadow: isLiquidGlass ? '0 34px 110px rgba(5,54,78,0.18)' : isCockpitSaas ? '0 18px 64px rgba(15,23,42,0.08)' : undefined
     },
     sidebar: {
       background: template.sidebarBackground,
       color: template.sidebarTextColor,
-      padding: isCockpitSaas ? headerPadding : isDesktop ? `${compactPadding + 2}px ${Math.max(16, compactPadding - 8)}px` : `${compactPadding}px`,
+      padding: isLiquidGlass ? (isMobile ? '14px' : '16px 22px') : isCockpitSaas ? headerPadding : isDesktop ? `${compactPadding + 2}px ${Math.max(16, compactPadding - 8)}px` : `${compactPadding}px`,
       display: 'flex',
       flexDirection: isDesktop && !usesTopNavigation ? 'column' : 'row',
       flexWrap: isCockpitSaas && !isMobile ? 'nowrap' : 'wrap',
-      gap: isCockpitSaas ? (isMobile ? 12 : 20) : isMobile ? 14 : sectionGap,
+      gap: isLiquidGlass ? (isMobile ? 10 : 14) : isCockpitSaas ? (isMobile ? 12 : 20) : isMobile ? 14 : sectionGap,
       alignItems: isDesktop && !usesTopNavigation ? 'stretch' : 'center',
       borderRadius: template.sidebarRadius,
       boxShadow: template.sidebarShadow,
-      justifyContent: isCockpitSaas ? 'space-between' : undefined
+      justifyContent: isCockpitSaas || isLiquidGlass ? 'space-between' : undefined,
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.58)' : undefined,
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined,
+      margin: isLiquidGlass ? (isMobile ? 10 : 16) : undefined
     },
     brandBlock: {
       display: 'inline-flex',
       alignItems: 'center',
       gap: isMobile ? 10 : 14,
       minWidth: 0,
-      flex: isCockpitSaas ? '0 0 auto' : undefined
+      flex: isCockpitSaas || isLiquidGlass ? '0 0 auto' : undefined
     },
     logoMark: {
-      width: isMobile ? 34 : 42,
-      height: isMobile ? 34 : 42,
+      width: isLiquidGlass ? (isMobile ? 38 : 46) : isMobile ? 34 : 42,
+      height: isLiquidGlass ? (isMobile ? 38 : 46) : isMobile ? 34 : 42,
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
       flex: '0 0 auto',
       color: primaryColor,
       fontWeight: 900,
-      fontSize: isMobile ? 18 : 22
+      fontSize: isMobile ? 18 : 22,
+      borderRadius: isLiquidGlass ? 16 : undefined,
+      background: isLiquidGlass ? 'linear-gradient(145deg, rgba(255,255,255,0.72), rgba(255,255,255,0.18))' : undefined,
+      boxShadow: isLiquidGlass ? 'inset 0 1px 0 rgba(255,255,255,0.82), 0 10px 26px rgba(13,121,150,0.14)' : undefined
     },
     brand: {
-      fontSize: isCockpitSaas ? (isMobile ? 17 : 18) : isMobile ? 30 : 38,
+      fontSize: isLiquidGlass ? (isMobile ? 18 : 20) : isCockpitSaas ? (isMobile ? 17 : 18) : isMobile ? 30 : 38,
       fontWeight: 800,
-      textTransform: isCockpitSaas ? 'none' : 'lowercase',
-      whiteSpace: isCockpitSaas ? 'nowrap' : undefined
+      textTransform: isCockpitSaas || isLiquidGlass ? 'none' : 'lowercase',
+      whiteSpace: isCockpitSaas || isLiquidGlass ? 'nowrap' : undefined
     },
-    brandCopy: { display: isCockpitSaas ? 'none' : undefined, margin: '8px 0 0', lineHeight: 1.45, color: template.sidebarMutedColor, maxWidth: isDesktop && !usesTopNavigation ? 'none' : 460 },
+    brandCopy: { display: isCockpitSaas || isLiquidGlass ? 'none' : undefined, margin: '8px 0 0', lineHeight: 1.45, color: template.sidebarMutedColor, maxWidth: isDesktop && !usesTopNavigation ? 'none' : 460 },
     nav: {
       display: 'flex',
       flexDirection: isDesktop && !usesTopNavigation ? 'column' : 'row',
-      flexWrap: 'wrap',
-      gap: isCockpitSaas ? 10 : 8,
-      flex: isCockpitSaas ? '1 1 0' : isDesktop && !usesTopNavigation ? '0 0 auto' : '1 1 420px',
-      justifyContent: isCockpitSaas ? 'center' : undefined,
-      alignItems: 'center'
+      flexWrap: isLiquidGlass ? 'nowrap' : 'wrap',
+      gap: isLiquidGlass ? 6 : isCockpitSaas ? 10 : 8,
+      flex: isLiquidGlass ? '1 1 auto' : isCockpitSaas ? '1 1 0' : isDesktop && !usesTopNavigation ? '0 0 auto' : '1 1 420px',
+      justifyContent: isCockpitSaas || isLiquidGlass ? 'center' : undefined,
+      alignItems: 'center',
+      overflowX: isLiquidGlass ? 'auto' : undefined,
+      WebkitOverflowScrolling: isLiquidGlass ? 'touch' : undefined,
+      padding: isLiquidGlass ? '3px' : undefined,
+      borderRadius: isLiquidGlass ? 999 : undefined,
+      background: isLiquidGlass ? 'rgba(255,255,255,0.2)' : undefined
     },
     navItem: {
-      padding: isCockpitSaas ? (isMobile ? '10px 12px' : '13px 18px') : isMobile ? '10px 12px' : '13px 14px',
+      padding: isLiquidGlass ? (isMobile ? '10px 13px' : '11px 16px') : isCockpitSaas ? (isMobile ? '10px 12px' : '13px 18px') : isMobile ? '10px 12px' : '13px 14px',
       border: 'none',
-      borderRadius: isCockpitSaas ? 11 : borderRadius,
+      borderRadius: isLiquidGlass ? 999 : isCockpitSaas ? 11 : borderRadius,
       background: 'transparent',
       color: template.navTextColor,
       cursor: 'pointer',
@@ -1765,9 +1801,10 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       display: 'inline-flex',
       alignItems: 'center',
       gap: 8,
-      whiteSpace: 'nowrap'
+      whiteSpace: 'nowrap',
+      boxShadow: isLiquidGlass ? 'inset 0 1px 0 rgba(255,255,255,0.36)' : undefined
     },
-    navItemActive: { background: template.navActiveBackground, color: template.navActiveTextColor },
+    navItemActive: { background: template.navActiveBackground, color: template.navActiveTextColor, boxShadow: isLiquidGlass ? '0 10px 28px rgba(0,125,150,0.14), inset 0 1px 0 rgba(255,255,255,0.8)' : undefined },
     navGlyph: {
       width: 22,
       height: 22,
@@ -1781,11 +1818,11 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       lineHeight: 1
     },
     headerActions: {
-      display: isCockpitSaas ? 'inline-flex' : 'none',
+      display: isCockpitSaas || isLiquidGlass ? 'inline-flex' : 'none',
       alignItems: 'center',
       gap: 13,
       flex: '0 0 auto',
-      color: accentTextColor
+      color: isLiquidGlass ? '#143947' : accentTextColor
     },
     headerIcon: {
       width: 28,
@@ -1794,7 +1831,8 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: 999,
-      border: '1px solid rgba(16,36,46,0.12)',
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.58)' : '1px solid rgba(16,36,46,0.12)',
+      background: isLiquidGlass ? 'rgba(255,255,255,0.42)' : undefined,
       color: secondaryColor,
       fontWeight: 900
     },
@@ -1810,16 +1848,17 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       fontWeight: 800
     },
     chevron: { fontSize: 14, color: '#49646e', fontWeight: 800 },
-    sidePanel: { marginTop: isDesktop && !usesTopNavigation ? 'auto' : 0, padding: compactCardPadding, borderRadius, background: template.sidePanelBackground, display: 'grid', gap: 8, flex: isDesktop && !usesTopNavigation ? '0 0 auto' : '1 1 280px' },
+    sidePanel: { marginTop: isDesktop && !usesTopNavigation ? 'auto' : 0, padding: compactCardPadding, borderRadius: isLiquidGlass ? 24 : borderRadius, background: template.sidePanelBackground, display: 'grid', gap: 8, flex: isDesktop && !usesTopNavigation ? '0 0 auto' : '1 1 280px', border: isLiquidGlass ? template.cardBorder : undefined, backdropFilter: isLiquidGlass ? glassBlur : undefined, WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined },
     sidePanelHidden: { display: 'none' },
-    content: { padding: isCockpitSaas ? 0 : compactPadding, display: 'grid', gap: sectionGap, minWidth: 0 },
+    content: { padding: isLiquidGlass ? (isMobile ? '0 10px 14px' : '0 16px 18px') : isCockpitSaas ? 0 : compactPadding, display: 'grid', gap: sectionGap, minWidth: 0 },
     overview: {
       position: 'relative',
       display: 'grid',
       minWidth: 0,
       overflow: 'hidden',
-      background: '#eef7fb',
-      scrollMarginTop: sectionGap
+      background: isLiquidGlass ? 'transparent' : '#eef7fb',
+      scrollMarginTop: sectionGap,
+      borderRadius: isLiquidGlass ? template.cardRadius(borderRadius) : undefined
     },
     overviewBackdrop: {
       position: 'relative',
@@ -1827,11 +1866,15 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       gridTemplateColumns: isDesktop ? 'minmax(0,1fr) minmax(330px,0.78fr)' : 'minmax(0,1fr)',
       gap: isMobile ? 26 : 42,
       alignItems: 'center',
-      padding: isMobile ? '44px 24px 86px' : '58px 72px 112px',
+      padding: isLiquidGlass ? (isMobile ? '54px 24px 92px' : '70px 72px 118px') : isMobile ? '44px 24px 86px' : '58px 72px 112px',
       minHeight: isMobile ? 420 : 390,
-      background: `radial-gradient(circle at 88% 42%, rgba(72,255,238,0.78), transparent 28%), radial-gradient(circle at 54% 88%, rgba(39,194,198,0.35), transparent 30%), linear-gradient(118deg, #063641 0%, #006d77 48%, ${primaryColor} 100%)`,
+      background: isLiquidGlass
+        ? `radial-gradient(circle at 82% 18%, rgba(255,255,255,0.72), transparent 22%), radial-gradient(circle at 78% 54%, rgba(87,239,231,0.5), transparent 34%), linear-gradient(135deg, rgba(4,56,74,0.92), rgba(0,130,146,0.72) 54%, rgba(155,249,255,0.62))`
+        : `radial-gradient(circle at 88% 42%, rgba(72,255,238,0.78), transparent 28%), radial-gradient(circle at 54% 88%, rgba(39,194,198,0.35), transparent 30%), linear-gradient(118deg, #063641 0%, #006d77 48%, ${primaryColor} 100%)`,
       color: '#ffffff',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      borderRadius: isLiquidGlass ? template.cardRadius(borderRadius) : undefined,
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.42)' : undefined
     },
     overviewHeroCopy: { position: 'relative', zIndex: 1, maxWidth: 650 },
     overviewKicker: {
@@ -1864,11 +1907,12 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       width: isDesktop ? 480 : 'auto',
       maxWidth: '100%',
       padding: isMobile ? 26 : 34,
-      borderRadius: 16,
+      borderRadius: isLiquidGlass ? 30 : 16,
       background: 'linear-gradient(135deg, rgba(255,255,255,0.24), rgba(255,255,255,0.08))',
-      border: '1px solid rgba(255,255,255,0.36)',
-      boxShadow: '0 24px 56px rgba(0,62,73,0.24)',
-      backdropFilter: 'blur(12px)',
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.5)' : '1px solid rgba(255,255,255,0.36)',
+      boxShadow: isLiquidGlass ? '0 24px 70px rgba(0,62,73,0.18), inset 0 1px 0 rgba(255,255,255,0.56)' : '0 24px 56px rgba(0,62,73,0.24)',
+      backdropFilter: isLiquidGlass ? glassBlur : 'blur(12px)',
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined,
       display: 'grid',
       gap: 26
     },
@@ -1907,11 +1951,14 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     overviewCard: {
       position: 'relative',
       zIndex: 2,
-      margin: isMobile ? '-56px 18px 24px' : '-66px 50px 34px',
+      margin: isLiquidGlass ? (isMobile ? '-56px 14px 20px' : '-66px 34px 28px') : isMobile ? '-56px 18px 24px' : '-66px 50px 34px',
       padding: isMobile ? 24 : 40,
-      borderRadius: 14,
-      background: '#ffffff',
-      boxShadow: '0 26px 70px rgba(15,23,42,0.14)',
+      borderRadius: isLiquidGlass ? 34 : 14,
+      background: isLiquidGlass ? template.cardBackground : '#ffffff',
+      boxShadow: isLiquidGlass ? template.cardShadow : '0 26px 70px rgba(15,23,42,0.14)',
+      border: isLiquidGlass ? template.cardBorder : undefined,
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined,
       minWidth: 0
     },
     overviewCardTop: {
@@ -2045,19 +2092,19 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       gridTemplateColumns: isDesktop ? 'repeat(3,minmax(0,1fr))' : 'minmax(0,1fr)',
       gap: 24
     },
-    hero: { display: 'grid', gridTemplateColumns: isDesktop ? template.heroColumns(metricMinWidth, sectionGap) : 'minmax(0,1fr)', gap: sectionGap, padding: compactCardPadding, background: template.cardBackground, borderRadius: template.cardRadius(borderRadius), boxShadow: template.cardShadow, border: template.cardBorder, scrollMarginTop: sectionGap, minWidth: 0 },
+    hero: { display: 'grid', gridTemplateColumns: isDesktop ? template.heroColumns(metricMinWidth, sectionGap) : 'minmax(0,1fr)', gap: sectionGap, padding: compactCardPadding, background: template.cardBackground, borderRadius: template.cardRadius(borderRadius), boxShadow: template.cardShadow, border: template.cardBorder, scrollMarginTop: sectionGap, minWidth: 0, backdropFilter: isLiquidGlass ? glassBlur : undefined, WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined },
     eyebrow: { display: 'inline-block', color: secondaryColor, fontWeight: 800, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' },
     title: { margin: '14px 0 12px', fontSize: effectiveTitleSize, lineHeight: 1.05, fontWeight: 800, overflowWrap: 'anywhere' },
     lead: { margin: 0, color: '#55727b', fontSize: effectiveBodySize, lineHeight: 1.55 },
     heroActions: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 20 },
-    primaryButton: { border: 'none', background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: '#fff', padding: '12px 18px', borderRadius, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 },
-    secondaryButton: { border: '1px solid rgba(16,36,46,0.14)', background: '#fff', color: accentTextColor, padding: '12px 18px', borderRadius, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 },
-    compactButton: { border: 'none', background: secondaryColor, color: '#fff', padding: '12px 14px', borderRadius, fontWeight: 800, cursor: 'pointer' },
+    primaryButton: { border: isLiquidGlass ? '1px solid rgba(255,255,255,0.42)' : 'none', background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: '#fff', padding: '12px 18px', borderRadius: isLiquidGlass ? 999 : borderRadius, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: isLiquidGlass ? '0 16px 34px rgba(0,113,133,0.22), inset 0 1px 0 rgba(255,255,255,0.34)' : undefined },
+    secondaryButton: { border: isLiquidGlass ? '1px solid rgba(255,255,255,0.58)' : '1px solid rgba(16,36,46,0.14)', background: isLiquidGlass ? 'rgba(255,255,255,0.45)' : '#fff', color: accentTextColor, padding: '12px 18px', borderRadius: isLiquidGlass ? 999 : borderRadius, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: isLiquidGlass ? glassBlur : undefined, WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined },
+    compactButton: { border: 'none', background: secondaryColor, color: '#fff', padding: '12px 14px', borderRadius: isLiquidGlass ? 999 : borderRadius, fontWeight: 800, cursor: 'pointer' },
     statsGrid: { display: 'grid', gridTemplateColumns: `repeat(auto-fit,minmax(${metricMinWidth}px,1fr))`, gap: 10, minWidth: 0 },
     metric: {
-      background: '#f8fdff',
-      border: '1px solid rgba(39,194,198,0.18)',
-      borderRadius,
+      background: isLiquidGlass ? 'linear-gradient(145deg, rgba(255,255,255,0.62), rgba(255,255,255,0.22))' : '#f8fdff',
+      border: isLiquidGlass ? template.cardBorder : '1px solid rgba(39,194,198,0.18)',
+      borderRadius: isLiquidGlass ? 26 : borderRadius,
       padding: compactCardPadding,
       minHeight: metricMinHeight,
       display: 'flex',
@@ -2065,7 +2112,9 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       gap: 22,
       minWidth: 0,
       overflowWrap: 'anywhere',
-      boxShadow: '0 14px 30px rgba(15,23,42,0.04)'
+      boxShadow: isLiquidGlass ? '0 18px 44px rgba(8,82,112,0.1), inset 0 1px 0 rgba(255,255,255,0.62)' : '0 14px 30px rgba(15,23,42,0.04)',
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined
     },
     metricIcon: {
       width: 76,
@@ -2087,8 +2136,8 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       display: 'grid',
       minWidth: 0,
       overflow: 'hidden',
-      background: '#eef7fb',
-      borderRadius: isCockpitSaas ? 0 : template.cardRadius(borderRadius),
+      background: isLiquidGlass ? 'transparent' : '#eef7fb',
+      borderRadius: isLiquidGlass ? template.cardRadius(borderRadius) : isCockpitSaas ? 0 : template.cardRadius(borderRadius),
       scrollMarginTop: sectionGap
     },
     missionHero: {
@@ -2098,11 +2147,15 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       gridTemplateRows: isDesktop ? 'auto 1fr' : undefined,
       gap: isMobile ? 22 : 26,
       alignItems: 'center',
-      padding: isMobile ? '42px 24px 88px' : '70px 70px 124px',
+      padding: isLiquidGlass ? (isMobile ? '50px 24px 94px' : '76px 70px 128px') : isMobile ? '42px 24px 88px' : '70px 70px 124px',
       minHeight: isMobile ? 520 : 390,
       color: '#ffffff',
-      background: `radial-gradient(circle at 92% 18%, rgba(99,255,235,0.78), transparent 30%), radial-gradient(circle at 70% 100%, rgba(39,194,198,0.38), transparent 34%), linear-gradient(116deg, #073545 0%, #006b7b 48%, ${primaryColor} 100%)`,
-      overflow: 'hidden'
+      background: isLiquidGlass
+        ? `radial-gradient(circle at 86% 16%, rgba(255,255,255,0.68), transparent 20%), radial-gradient(circle at 76% 60%, rgba(99,255,235,0.58), transparent 34%), linear-gradient(118deg, rgba(6,44,67,0.96), rgba(0,106,132,0.78) 48%, rgba(92,244,234,0.7))`
+        : `radial-gradient(circle at 92% 18%, rgba(99,255,235,0.78), transparent 30%), radial-gradient(circle at 70% 100%, rgba(39,194,198,0.38), transparent 34%), linear-gradient(116deg, #073545 0%, #006b7b 48%, ${primaryColor} 100%)`,
+      overflow: 'hidden',
+      borderRadius: isLiquidGlass ? template.cardRadius(borderRadius) : undefined,
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.42)' : undefined
     },
     missionHeroCopy: { position: 'relative', zIndex: 1, alignSelf: 'center' },
     missionKicker: {
@@ -2143,9 +2196,9 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     missionGhostButton: {
       minWidth: 170,
       minHeight: 50,
-      borderRadius: 10,
+      borderRadius: isLiquidGlass ? 999 : 10,
       border: '1px solid rgba(255,255,255,0.56)',
-      background: 'rgba(255,255,255,0.08)',
+      background: isLiquidGlass ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
       color: '#ffffff',
       cursor: 'pointer',
       display: 'inline-flex',
@@ -2154,8 +2207,9 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       gap: 12,
       fontWeight: 900,
       fontSize: 16,
-      boxShadow: '0 18px 38px rgba(0,70,82,0.18)',
-      backdropFilter: 'blur(10px)'
+      boxShadow: isLiquidGlass ? '0 18px 48px rgba(0,70,82,0.16), inset 0 1px 0 rgba(255,255,255,0.42)' : '0 18px 38px rgba(0,70,82,0.18)',
+      backdropFilter: isLiquidGlass ? glassBlur : 'blur(10px)',
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined
     },
     missionStats: {
       position: 'relative',
@@ -2168,14 +2222,15 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     missionStat: {
       minHeight: isMobile ? 150 : 180,
       padding: isMobile ? 20 : 24,
-      borderRadius: 16,
-      border: '1px solid rgba(255,255,255,0.34)',
-      background: 'linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.07))',
-      boxShadow: '0 20px 46px rgba(0,68,78,0.2)',
+      borderRadius: isLiquidGlass ? 28 : 16,
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.52)' : '1px solid rgba(255,255,255,0.34)',
+      background: isLiquidGlass ? 'linear-gradient(145deg, rgba(255,255,255,0.34), rgba(255,255,255,0.12))' : 'linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.07))',
+      boxShadow: isLiquidGlass ? '0 24px 58px rgba(0,68,78,0.16), inset 0 1px 0 rgba(255,255,255,0.5)' : '0 20px 46px rgba(0,68,78,0.2)',
       display: 'grid',
       alignContent: 'space-between',
       gap: 10,
-      backdropFilter: 'blur(12px)',
+      backdropFilter: isLiquidGlass ? glassBlur : 'blur(12px)',
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined,
       minWidth: 0
     },
     missionStatIcon: {
@@ -2200,35 +2255,42 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     missionWorkbench: {
       position: 'relative',
       zIndex: 2,
-      margin: isMobile ? '-52px 16px 24px' : '-62px 54px 34px',
+      margin: isLiquidGlass ? (isMobile ? '-52px 12px 22px' : '-62px 34px 30px') : isMobile ? '-52px 16px 24px' : '-62px 54px 34px',
       padding: isMobile ? 16 : 18,
-      borderRadius: 18,
-      background: '#ffffff',
+      borderRadius: isLiquidGlass ? 34 : 18,
+      background: isLiquidGlass ? 'linear-gradient(145deg, rgba(255,255,255,0.58), rgba(255,255,255,0.22))' : '#ffffff',
       display: 'grid',
       gridTemplateColumns: isDesktop ? 'minmax(0,0.92fr) minmax(0,1fr)' : 'minmax(0,1fr)',
       gap: isMobile ? 18 : 22,
-      boxShadow: '0 28px 76px rgba(15,23,42,0.16)',
+      boxShadow: isLiquidGlass ? '0 32px 92px rgba(7,75,104,0.18), inset 0 1px 0 rgba(255,255,255,0.62)' : '0 28px 76px rgba(15,23,42,0.16)',
+      border: isLiquidGlass ? template.cardBorder : undefined,
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined,
       minWidth: 0
     },
     missionComposer: {
-      borderRadius: 16,
+      borderRadius: isLiquidGlass ? 28 : 16,
       padding: isMobile ? 18 : 22,
-      background: '#ffffff',
-      border: '1px solid rgba(16,36,46,0.08)',
-      boxShadow: '0 16px 42px rgba(15,23,42,0.06)',
+      background: isLiquidGlass ? 'linear-gradient(145deg, rgba(255,255,255,0.56), rgba(255,255,255,0.22))' : '#ffffff',
+      border: isLiquidGlass ? template.cardBorder : '1px solid rgba(16,36,46,0.08)',
+      boxShadow: isLiquidGlass ? '0 20px 54px rgba(8,82,112,0.11), inset 0 1px 0 rgba(255,255,255,0.58)' : '0 16px 42px rgba(15,23,42,0.06)',
       display: 'grid',
       gap: 16,
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined,
       minWidth: 0
     },
     missionHistoryPanel: {
-      borderRadius: 16,
+      borderRadius: isLiquidGlass ? 28 : 16,
       padding: isMobile ? 18 : 22,
-      background: '#ffffff',
-      border: '1px solid rgba(16,36,46,0.08)',
-      boxShadow: '0 16px 42px rgba(15,23,42,0.06)',
+      background: isLiquidGlass ? 'linear-gradient(145deg, rgba(255,255,255,0.56), rgba(255,255,255,0.22))' : '#ffffff',
+      border: isLiquidGlass ? template.cardBorder : '1px solid rgba(16,36,46,0.08)',
+      boxShadow: isLiquidGlass ? '0 20px 54px rgba(8,82,112,0.11), inset 0 1px 0 rgba(255,255,255,0.58)' : '0 16px 42px rgba(15,23,42,0.06)',
       display: 'grid',
       gap: 14,
       alignContent: 'start',
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined,
       minWidth: 0
     },
     missionPanelHeader: {
@@ -2254,7 +2316,7 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     missionPanelKicker: { display: 'block', marginTop: 4, color: '#4b6170', fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 900 },
     aiPill: {
       border: '1px solid rgba(39,194,198,0.28)',
-      background: '#ffffff',
+      background: isLiquidGlass ? 'rgba(255,255,255,0.48)' : '#ffffff',
       color: secondaryColor,
       borderRadius: 999,
       padding: '10px 18px',
@@ -2263,22 +2325,26 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8
+      gap: 8,
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined
     },
     missionTextareaWrap: { position: 'relative', minWidth: 0 },
     missionTextarea: {
       width: '100%',
       minHeight: isMobile ? 160 : 176,
       resize: 'vertical',
-      borderRadius: 10,
-      border: '1px solid rgba(16,36,46,0.14)',
-      background: '#ffffff',
+      borderRadius: isLiquidGlass ? 22 : 10,
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.58)' : '1px solid rgba(16,36,46,0.14)',
+      background: isLiquidGlass ? 'rgba(255,255,255,0.46)' : '#ffffff',
       padding: isMobile ? '18px' : '26px 22px',
       font: 'inherit',
       fontSize: isMobile ? 16 : 17,
       color: accentTextColor,
       boxSizing: 'border-box',
-      boxShadow: 'inset 0 1px 0 rgba(16,36,46,0.03)'
+      boxShadow: isLiquidGlass ? 'inset 0 1px 0 rgba(255,255,255,0.64), 0 12px 30px rgba(8,82,112,0.08)' : 'inset 0 1px 0 rgba(16,36,46,0.03)',
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined
     },
     textareaHint: {
       position: 'absolute',
@@ -2300,14 +2366,16 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       bottom: 18,
       width: 34,
       height: 34,
-      borderRadius: 10,
+      borderRadius: isLiquidGlass ? 20 : 10,
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
       color: '#0b8b77',
       border: '3px solid rgba(11,139,119,0.28)',
       fontWeight: 900,
-      background: '#ffffff'
+      background: isLiquidGlass ? 'rgba(255,255,255,0.56)' : '#ffffff',
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined
     },
     dropZone: {
       display: 'grid',
@@ -2315,11 +2383,14 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       gap: 14,
       alignItems: 'center',
       padding: isMobile ? 18 : 22,
-      borderRadius: 10,
-      border: '1px dashed rgba(39,194,198,0.56)',
-      background: 'linear-gradient(135deg, rgba(39,194,198,0.06), rgba(255,255,255,0.9))',
+      borderRadius: isLiquidGlass ? 24 : 10,
+      border: isLiquidGlass ? '1px dashed rgba(255,255,255,0.74)' : '1px dashed rgba(39,194,198,0.56)',
+      background: isLiquidGlass ? 'linear-gradient(145deg, rgba(255,255,255,0.42), rgba(236,253,255,0.18))' : 'linear-gradient(135deg, rgba(39,194,198,0.06), rgba(255,255,255,0.9))',
       color: accentTextColor,
-      cursor: 'pointer'
+      cursor: 'pointer',
+      boxShadow: isLiquidGlass ? 'inset 0 1px 0 rgba(255,255,255,0.58)' : undefined,
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined
     },
     dropZoneBusy: { opacity: 0.64, cursor: 'wait' },
     hiddenInput: { display: 'none' },
@@ -2336,23 +2407,25 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     },
     extractedSkills: { display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 12 },
     extractedSkill: {
-      border: 'none',
-      borderRadius: 9,
-      background: '#eaf8fb',
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.58)' : 'none',
+      borderRadius: isLiquidGlass ? 999 : 9,
+      background: isLiquidGlass ? 'rgba(255,255,255,0.46)' : '#eaf8fb',
       color: secondaryColor,
       padding: '10px 16px',
       cursor: 'pointer',
       display: 'inline-flex',
       gap: 9,
       alignItems: 'center',
-      fontWeight: 900
+      fontWeight: 900,
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined
     },
     missionActionRow: { display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'minmax(0,0.84fr) minmax(0,1fr)', gap: 14 },
     extractButton: {
       minHeight: 54,
-      borderRadius: 10,
-      border: '1px solid rgba(16,36,46,0.14)',
-      background: '#ffffff',
+      borderRadius: isLiquidGlass ? 999 : 10,
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.58)' : '1px solid rgba(16,36,46,0.14)',
+      background: isLiquidGlass ? 'rgba(255,255,255,0.48)' : '#ffffff',
       color: '#39556b',
       cursor: 'pointer',
       display: 'inline-flex',
@@ -2360,12 +2433,14 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       justifyContent: 'center',
       gap: 12,
       fontSize: 17,
-      fontWeight: 900
+      fontWeight: 900,
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined
     },
     launchButton: {
       minHeight: 54,
-      borderRadius: 10,
-      border: 'none',
+      borderRadius: isLiquidGlass ? 999 : 10,
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.42)' : 'none',
       background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
       color: '#ffffff',
       cursor: 'pointer',
@@ -2375,11 +2450,11 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       gap: 12,
       fontSize: 17,
       fontWeight: 900,
-      boxShadow: '0 16px 28px rgba(0,116,124,0.18)'
+      boxShadow: isLiquidGlass ? '0 18px 44px rgba(0,116,124,0.2), inset 0 1px 0 rgba(255,255,255,0.34)' : '0 16px 28px rgba(0,116,124,0.18)'
     },
     missionFilters: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1fr) auto minmax(150px,0.5fr) minmax(160px,0.5fr)' : 'minmax(0,1fr)', gap: 10 },
-    missionSkillInput: { border: '1px solid rgba(16,36,46,0.14)', borderRadius: 10, padding: 12, font: 'inherit', width: '100%', minWidth: 0, boxSizing: 'border-box' },
-    missionSelect: { border: '1px solid rgba(16,36,46,0.14)', borderRadius: 10, padding: 12, font: 'inherit', width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#ffffff' },
+    missionSkillInput: { border: isLiquidGlass ? '1px solid rgba(255,255,255,0.58)' : '1px solid rgba(16,36,46,0.14)', borderRadius: isLiquidGlass ? 18 : 10, padding: 12, font: 'inherit', width: '100%', minWidth: 0, boxSizing: 'border-box', background: isLiquidGlass ? 'rgba(255,255,255,0.48)' : undefined, backdropFilter: isLiquidGlass ? glassBlur : undefined, WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined },
+    missionSelect: { border: isLiquidGlass ? '1px solid rgba(255,255,255,0.58)' : '1px solid rgba(16,36,46,0.14)', borderRadius: isLiquidGlass ? 18 : 10, padding: 12, font: 'inherit', width: '100%', minWidth: 0, boxSizing: 'border-box', background: isLiquidGlass ? 'rgba(255,255,255,0.52)' : '#ffffff', backdropFilter: isLiquidGlass ? glassBlur : undefined, WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined },
     criteriaList: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 },
     criteriaPill: {
       display: 'inline-flex',
@@ -2411,15 +2486,17 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       gridTemplateColumns: '58px minmax(0,1fr)',
       gap: 16,
       padding: isMobile ? 16 : 20,
-      borderRadius: 12,
-      border: '1px solid rgba(16,36,46,0.08)',
-      background: '#ffffff',
-      boxShadow: '0 12px 30px rgba(15,23,42,0.08)',
+      borderRadius: isLiquidGlass ? 24 : 12,
+      border: isLiquidGlass ? template.cardBorder : '1px solid rgba(16,36,46,0.08)',
+      background: isLiquidGlass ? 'linear-gradient(145deg, rgba(255,255,255,0.6), rgba(255,255,255,0.26))' : '#ffffff',
+      boxShadow: isLiquidGlass ? '0 18px 44px rgba(8,82,112,0.1), inset 0 1px 0 rgba(255,255,255,0.58)' : '0 12px 30px rgba(15,23,42,0.08)',
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined,
       minWidth: 0
     },
     historyCardFeatured: {
-      border: '1px solid rgba(39,194,198,0.56)',
-      background: 'linear-gradient(135deg, rgba(39,194,198,0.1), #ffffff 68%)'
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.72)' : '1px solid rgba(39,194,198,0.56)',
+      background: isLiquidGlass ? 'linear-gradient(145deg, rgba(224,255,255,0.72), rgba(255,255,255,0.3))' : 'linear-gradient(135deg, rgba(39,194,198,0.1), #ffffff 68%)'
     },
     historyIcon: {
       width: 58,
@@ -2428,7 +2505,7 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#dff8fa',
+      background: isLiquidGlass ? 'linear-gradient(145deg, rgba(255,255,255,0.72), rgba(101,235,255,0.28))' : '#dff8fa',
       color: secondaryColor,
       fontWeight: 900,
       fontSize: 18
@@ -2464,8 +2541,10 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       padding: 8,
       borderRadius: 12,
       border: '1px solid rgba(16,36,46,0.12)',
-      background: '#ffffff',
-      boxShadow: '0 18px 34px rgba(15,23,42,0.16)'
+      background: isLiquidGlass ? 'rgba(255,255,255,0.72)' : '#ffffff',
+      boxShadow: '0 18px 34px rgba(15,23,42,0.16)',
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined
     },
     historyMenuAction: {
       border: 'none',
@@ -2498,8 +2577,8 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       display: 'grid',
       minWidth: 0,
       overflow: 'hidden',
-      background: '#eef7fb',
-      borderRadius: isCockpitSaas ? 0 : template.cardRadius(borderRadius),
+      background: isLiquidGlass ? 'transparent' : '#eef7fb',
+      borderRadius: isLiquidGlass ? template.cardRadius(borderRadius) : isCockpitSaas ? 0 : template.cardRadius(borderRadius),
       scrollMarginTop: sectionGap
     },
     pageHero: {
@@ -2507,9 +2586,13 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       gridTemplateColumns: isDesktop ? 'minmax(0,0.95fr) minmax(360px,0.72fr)' : 'minmax(0,1fr)',
       gap: isMobile ? 22 : 34,
       alignItems: 'center',
-      padding: isMobile ? '34px 22px 70px' : '46px 60px 86px',
-      background: `radial-gradient(circle at 86% 36%, rgba(72,255,238,0.62), transparent 28%), linear-gradient(118deg, #073541 0%, #0b6970 54%, ${primaryColor} 100%)`,
-      color: '#ffffff'
+      padding: isLiquidGlass ? (isMobile ? '42px 22px 72px' : '56px 60px 92px') : isMobile ? '34px 22px 70px' : '46px 60px 86px',
+      background: isLiquidGlass
+        ? `radial-gradient(circle at 88% 20%, rgba(255,255,255,0.68), transparent 22%), radial-gradient(circle at 78% 48%, rgba(72,255,238,0.52), transparent 30%), linear-gradient(118deg, rgba(7,53,65,0.94), rgba(11,105,112,0.78) 54%, rgba(39,194,198,0.68))`
+        : `radial-gradient(circle at 86% 36%, rgba(72,255,238,0.62), transparent 28%), linear-gradient(118deg, #073541 0%, #0b6970 54%, ${primaryColor} 100%)`,
+      color: '#ffffff',
+      borderRadius: isLiquidGlass ? template.cardRadius(borderRadius) : undefined,
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.42)' : undefined
     },
     pageKicker: {
       display: 'inline-block',
@@ -2544,25 +2627,29 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     pageStat: {
       minHeight: isMobile ? 92 : 122,
       padding: isMobile ? 16 : 20,
-      borderRadius: 14,
-      background: 'linear-gradient(135deg, rgba(255,255,255,0.24), rgba(255,255,255,0.08))',
-      border: '1px solid rgba(255,255,255,0.34)',
-      boxShadow: '0 18px 42px rgba(0,62,73,0.18)',
+      borderRadius: isLiquidGlass ? 26 : 14,
+      background: isLiquidGlass ? 'linear-gradient(145deg, rgba(255,255,255,0.34), rgba(255,255,255,0.12))' : 'linear-gradient(135deg, rgba(255,255,255,0.24), rgba(255,255,255,0.08))',
+      border: isLiquidGlass ? '1px solid rgba(255,255,255,0.52)' : '1px solid rgba(255,255,255,0.34)',
+      boxShadow: isLiquidGlass ? '0 20px 48px rgba(0,62,73,0.14), inset 0 1px 0 rgba(255,255,255,0.5)' : '0 18px 42px rgba(0,62,73,0.18)',
       display: 'grid',
       alignContent: 'space-between',
       gap: 16,
       minWidth: 0,
       overflowWrap: 'anywhere',
-      backdropFilter: 'blur(10px)'
+      backdropFilter: isLiquidGlass ? glassBlur : 'blur(10px)',
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined
     },
     pageBody: {
       position: 'relative',
       zIndex: 1,
-      margin: isMobile ? '-44px 16px 24px' : '-52px 42px 34px',
+      margin: isLiquidGlass ? (isMobile ? '-44px 12px 22px' : '-52px 34px 30px') : isMobile ? '-44px 16px 24px' : '-52px 42px 34px',
       padding: isMobile ? 18 : 28,
-      borderRadius: 16,
-      background: '#ffffff',
-      boxShadow: '0 26px 70px rgba(15,23,42,0.13)',
+      borderRadius: isLiquidGlass ? 32 : 16,
+      background: isLiquidGlass ? template.cardBackground : '#ffffff',
+      boxShadow: isLiquidGlass ? template.cardShadow : '0 26px 70px rgba(15,23,42,0.13)',
+      border: isLiquidGlass ? template.cardBorder : undefined,
+      backdropFilter: isLiquidGlass ? glassBlur : undefined,
+      WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined,
       minWidth: 0
     },
     complianceGrid: {
@@ -2570,14 +2657,14 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
       gridTemplateColumns: isDesktop ? 'repeat(3,minmax(0,1fr))' : 'minmax(0,1fr)',
       gap: 14
     },
-    searchBand: { background: '#fff', borderRadius, boxShadow: '0 16px 34px rgba(15,23,42,0.07)', scrollMarginTop: sectionGap, minWidth: 0 },
+    searchBand: { background: isLiquidGlass ? template.cardBackground : '#fff', borderRadius: isLiquidGlass ? template.cardRadius(borderRadius) : borderRadius, boxShadow: isLiquidGlass ? template.cardShadow : '0 16px 34px rgba(15,23,42,0.07)', border: isLiquidGlass ? template.cardBorder : undefined, backdropFilter: isLiquidGlass ? glassBlur : undefined, WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined, scrollMarginTop: sectionGap, minWidth: 0 },
     searchHeader: { padding: `${compactCardPadding}px ${compactCardPadding}px 0` },
     searchGrid: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr)', gap: sectionGap, padding: compactCardPadding, minWidth: 0 },
     sectionTitle: { margin: 0, fontSize: isMobile ? 24 : 28, lineHeight: 1.15, fontWeight: 800 },
     muted: { margin: '8px 0 0', color: template.mutedTextColor, lineHeight: 1.5 },
     statusText: { margin: '0', color: secondaryColor, fontWeight: 700, lineHeight: 1.45 },
     errorText: { margin: '0', color: '#b42318', fontWeight: 700, lineHeight: 1.45 },
-    panel: { background: template.panelBackground, border: template.cardBorder, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, display: 'grid', gap: 14, minWidth: 0, boxShadow: '0 14px 30px rgba(15,23,42,0.04)' },
+    panel: { background: template.panelBackground, border: template.cardBorder, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, display: 'grid', gap: 14, minWidth: 0, boxShadow: isLiquidGlass ? '0 18px 44px rgba(8,82,112,0.1), inset 0 1px 0 rgba(255,255,255,0.58)' : '0 14px 30px rgba(15,23,42,0.04)', backdropFilter: isLiquidGlass ? glassBlur : undefined, WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined },
     textarea: { minHeight: isMobile ? 112 : 132, border: '1px solid rgba(16,36,46,0.14)', borderRadius, padding: 12, font: 'inherit', boxSizing: 'border-box', width: '100%', minWidth: 0 },
     inputRow: { display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'minmax(0,1fr) auto', gap: 10, minWidth: 0 },
     input: { border: '1px solid rgba(16,36,46,0.14)', borderRadius, padding: 12, font: 'inherit', width: '100%', minWidth: 0, boxSizing: 'border-box' },
@@ -2586,17 +2673,17 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     chipActive: { borderColor: 'transparent', background: secondaryColor, color: '#fff' },
     twoColumn: { display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : 'repeat(2,minmax(0,1fr))', gap: 12 },
     workflow: { display: 'grid', gap: 10 },
-    workflowStep: { display: 'grid', gridTemplateColumns: '42px minmax(0,1fr)', gap: 12, alignItems: 'start', padding: 16, background: '#fff', borderRadius, border: '1px solid rgba(39,194,198,0.16)', boxShadow: '0 12px 28px rgba(15,23,42,0.04)', minWidth: 0 },
+    workflowStep: { display: 'grid', gridTemplateColumns: '42px minmax(0,1fr)', gap: 12, alignItems: 'start', padding: 16, background: isLiquidGlass ? 'linear-gradient(145deg, rgba(255,255,255,0.58), rgba(255,255,255,0.22))' : '#fff', borderRadius: isLiquidGlass ? 24 : borderRadius, border: isLiquidGlass ? template.cardBorder : '1px solid rgba(39,194,198,0.16)', boxShadow: isLiquidGlass ? '0 18px 44px rgba(8,82,112,0.1), inset 0 1px 0 rgba(255,255,255,0.58)' : '0 12px 28px rgba(15,23,42,0.04)', backdropFilter: isLiquidGlass ? glassBlur : undefined, WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined, minWidth: 0 },
     adminGrid: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1.2fr) minmax(280px,0.8fr)' : 'minmax(0,1fr)', gap: sectionGap, marginTop: 18, minWidth: 0 },
     configList: { display: 'grid', gap: 10, lineHeight: 1.45, overflowWrap: 'anywhere' },
     missionList: { display: 'grid', gap: 12 },
-    missionCard: { background: '#fff', border: '1px solid rgba(39,194,198,0.16)', borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, display: 'grid', gap: 10, minWidth: 0, boxShadow: '0 12px 28px rgba(15,23,42,0.04)' },
+    missionCard: { background: isLiquidGlass ? template.cardBackground : '#fff', border: template.cardBorder, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, display: 'grid', gap: 10, minWidth: 0, boxShadow: isLiquidGlass ? template.cardShadow : '0 12px 28px rgba(15,23,42,0.04)', backdropFilter: isLiquidGlass ? glassBlur : undefined, WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined },
     missionHeader: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: 10, alignItems: isMobile ? 'stretch' : 'flex-start', minWidth: 0 },
     resultBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 72, padding: '8px 10px', borderRadius: 999, background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: '#fff', fontWeight: 800 },
     resultsLayout: { display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0,1.4fr) minmax(280px,360px)' : 'minmax(0,1fr)', gap: sectionGap, scrollMarginTop: sectionGap, minWidth: 0 },
-    resultsPanel: { background: template.cardBackground, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, boxShadow: template.cardShadow, border: template.cardBorder, scrollMarginTop: sectionGap, minWidth: 0 },
+    resultsPanel: { background: template.cardBackground, borderRadius: template.cardRadius(borderRadius), padding: compactCardPadding, boxShadow: template.cardShadow, border: template.cardBorder, backdropFilter: isLiquidGlass ? glassBlur : undefined, WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined, scrollMarginTop: sectionGap, minWidth: 0 },
     resultList: { display: 'grid', gap: 14, marginTop: 18 },
-    cvCard: { border: '1px solid rgba(39,194,198,0.16)', borderRadius, padding: compactCardPadding, background: '#fdfefe', minWidth: 0, boxShadow: '0 16px 34px rgba(15,23,42,0.05)' },
+    cvCard: { border: isLiquidGlass ? template.cardBorder : '1px solid rgba(39,194,198,0.16)', borderRadius: isLiquidGlass ? 26 : borderRadius, padding: compactCardPadding, background: isLiquidGlass ? 'linear-gradient(145deg, rgba(255,255,255,0.58), rgba(255,255,255,0.22))' : '#fdfefe', minWidth: 0, boxShadow: isLiquidGlass ? '0 18px 44px rgba(8,82,112,0.1), inset 0 1px 0 rgba(255,255,255,0.58)' : '0 16px 34px rgba(15,23,42,0.05)', backdropFilter: isLiquidGlass ? glassBlur : undefined, WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined },
     cvTop: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: 16, alignItems: isMobile ? 'stretch' : 'flex-start', minWidth: 0 },
     candidateId: { display: 'inline-block', background: 'rgba(39,194,198,0.12)', color: secondaryColor, borderRadius: 999, padding: '7px 10px', fontWeight: 800, fontSize: 12 },
     cardTitle: { margin: '10px 0 0', fontSize: isMobile ? 21 : 24, lineHeight: 1.15, overflowWrap: 'anywhere' },
@@ -2607,7 +2694,7 @@ function buildStyles(options: StyleOptions): Record<string, React.CSSProperties>
     cardActions: { display: 'flex', flexWrap: 'wrap', gap: 9, marginTop: 14 },
     asideStack: { display: 'grid', gap: 18, alignContent: 'start' },
     planList: { display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3,minmax(0,1fr))' : 'minmax(0,1fr)', gap: 16 },
-    plan: { border: '1px solid rgba(39,194,198,0.16)', borderRadius, padding: compactCardPadding, background: '#fdfefe', boxShadow: '0 16px 34px rgba(15,23,42,0.05)' },
+    plan: { border: isLiquidGlass ? template.cardBorder : '1px solid rgba(39,194,198,0.16)', borderRadius: isLiquidGlass ? 26 : borderRadius, padding: compactCardPadding, background: isLiquidGlass ? 'linear-gradient(145deg, rgba(255,255,255,0.58), rgba(255,255,255,0.22))' : '#fdfefe', boxShadow: isLiquidGlass ? '0 18px 44px rgba(8,82,112,0.1), inset 0 1px 0 rgba(255,255,255,0.58)' : '0 16px 34px rgba(15,23,42,0.05)', backdropFilter: isLiquidGlass ? glassBlur : undefined, WebkitBackdropFilter: isLiquidGlass ? glassBlur : undefined },
     featuredPlan: { background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: '#fff', borderColor: 'transparent' },
     planTitle: { margin: 0, fontSize: 21 },
     planCopy: { margin: '8px 0', lineHeight: 1.45 },

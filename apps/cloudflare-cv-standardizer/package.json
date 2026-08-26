@@ -1,0 +1,23 @@
+{
+  "name": "@cv-standardizer/cloudflare-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:worker && npm run build:frontend",
+    "build:frontend": "node scripts/build-frontend.mjs",
+    "build:worker": "tsc -p worker/tsconfig.json",
+    "dev:frontend": "WRANGLER_LOG_PATH=/tmp/wrangler-logs wrangler pages dev frontend/dist --compatibility-date=2026-08-24",
+    "dev:worker": "WRANGLER_LOG_PATH=/tmp/wrangler-logs wrangler dev worker/src/index.ts --config worker/wrangler.toml",
+    "deploy:frontend": "npm run build:frontend && WRANGLER_LOG_PATH=/tmp/wrangler-logs wrangler pages deploy frontend/dist --project-name cv-standardizer --commit-dirty=true",
+    "deploy:worker": "WRANGLER_LOG_PATH=/tmp/wrangler-logs wrangler deploy --config worker/wrangler.toml",
+    "wrangler": "WRANGLER_LOG_PATH=/tmp/wrangler-logs wrangler"
+  },
+  "devDependencies": {
+    "wrangler": "^4.30.0"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "pdf-lib": "^1.17.1"
+  }
+}

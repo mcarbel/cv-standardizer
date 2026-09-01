@@ -111,6 +111,7 @@ async function renderDocx(cv: CVData): Promise<Uint8Array> {
   zip.folder('word')?.file('document.xml', documentXml);
   zip.folder('word')?.file('styles.xml', stylesXml());
   zip.folder('word')?.file('settings.xml', settingsXml());
+  zip.folder('word')?.file('footer1.xml', footerXml());
   zip.folder('word/media')?.file('braineesys-logo.png', braineeSysLogoPngBytes());
   zip.folder('word/_rels')?.file('document.xml.rels', documentRelsXml());
 
@@ -233,7 +234,7 @@ function buildDocumentXml(cv: CVData): string {
     '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">',
     '<w:body>',
     ...blocks,
-    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>',
+    sectionProperties(1080, 1080, 1080, 1080),
     '</w:body>',
     '</w:document>'
   ]);
@@ -251,10 +252,10 @@ function buildConsultingDocumentXml(cv: CVData): string {
   ] as const;
   const sidebarBlocks = [
     consultingSmallHeading('Snapshot', theme.accent),
-    ...cv.summaryLines.slice(0, 3).map((line) => consultingBullet(line)),
+    ...cv.summaryLines.map((line) => consultingBullet(line)),
     consultingSpacer(80),
     consultingSmallHeading(labels.expertise, theme.accent),
-    ...cv.keyExpertise.slice(0, 8).map((skill) => consultingBullet(skill))
+    ...cv.keyExpertise.map((skill) => consultingBullet(skill))
   ];
   const bodyBlocks = [
     consultingHeading(labels.profile, theme.accent),
@@ -278,7 +279,7 @@ function buildConsultingDocumentXml(cv: CVData): string {
     consultingSmallHeading(labels.consultantProfile, theme.accent),
     divider(theme.accent),
     consultingTwoColumnTable(sidebarBlocks, bodyBlocks, theme),
-    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1000" w:right="1000" w:bottom="900" w:left="1000" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>',
+    sectionProperties(1000, 1000, 900, 1000),
     '</w:body>',
     '</w:document>'
   ]);
@@ -514,6 +515,7 @@ function contentTypesXml(): string {
     '<Default Extension="png" ContentType="image/png"/>',
     '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>',
     '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>',
+    '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>',
     '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>',
     '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>',
     '<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>',
@@ -537,8 +539,35 @@ function documentRelsXml(): string {
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
     '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">',
     '<Relationship Id="rIdBraineeSysLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/braineesys-logo.png"/>',
+    '<Relationship Id="rIdFooter1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>',
     '</Relationships>'
   ]);
+}
+
+function footerXml(): string {
+  return xml([
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+    '<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">',
+    '<w:p><w:pPr><w:jc w:val="center"/><w:pStyle w:val="Small"/></w:pPr>',
+    '<w:r><w:t xml:space="preserve">Page </w:t></w:r>',
+    '<w:r><w:fldChar w:fldCharType="begin"/></w:r>',
+    '<w:r><w:instrText xml:space="preserve">PAGE</w:instrText></w:r>',
+    '<w:r><w:fldChar w:fldCharType="separate"/></w:r>',
+    '<w:r><w:t>1</w:t></w:r>',
+    '<w:r><w:fldChar w:fldCharType="end"/></w:r>',
+    '</w:p>',
+    '</w:ftr>'
+  ]);
+}
+
+function sectionProperties(top: number, right: number, bottom: number, left: number): string {
+  return [
+    '<w:sectPr>',
+    '<w:footerReference w:type="default" r:id="rIdFooter1"/>',
+    '<w:pgSz w:w="11906" w:h="16838"/>',
+    `<w:pgMar w:top="${top}" w:right="${right}" w:bottom="${bottom}" w:left="${left}" w:header="720" w:footer="720" w:gutter="0"/>`,
+    '</w:sectPr>'
+  ].join('');
 }
 
 function corePropsXml(cv: CVData): string {
@@ -546,7 +575,7 @@ function corePropsXml(cv: CVData): string {
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
     '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">',
     `<dc:title>${escapeXml(cv.fullName)} - CV Standardized</dc:title>`,
-    '<dc:creator>CV Standardizer Cloudflare</dc:creator>',
+    '<dc:creator>CV Standardizer</dc:creator>',
     `<dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created>`,
     `<dcterms:modified xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:modified>`,
     '</cp:coreProperties>'
@@ -557,7 +586,7 @@ function appPropsXml(): string {
   return xml([
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
     '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">',
-    '<Application>CV Standardizer Cloudflare</Application>',
+    '<Application>CV Standardizer</Application>',
     '</Properties>'
   ]);
 }
@@ -602,12 +631,29 @@ async function renderConsultingPdf(cv: CVData): Promise<Uint8Array> {
   const sideX = margin;
   const sideWidth = 132;
   const bodyWidth = 327;
+  const sidebarLines = buildPdfSidebarLines(cv, labels, regular, sideWidth - 34);
+  let sidebarCursor = 0;
+
+  const drawSidebarFlow = (topY: number): void => {
+    sidebarCursor = drawSidebarPage(page, sidebarLines, sidebarCursor, {
+      x: sideX,
+      topY,
+      bottomY: contentBottom,
+      width: sideWidth,
+      regular,
+      bold,
+      accent,
+      ink,
+      panel
+    });
+  };
 
   const newPage = (): void => {
     drawFooter(page, pageNumber, regular, muted);
     page = pdf.addPage([595.2, 841.92]);
     pageNumber += 1;
     y = 790;
+    drawSidebarFlow(790);
   };
 
   const ensureSpace = (needed: number): void => {
@@ -655,16 +701,7 @@ async function renderConsultingPdf(cv: CVData): Promise<Uint8Array> {
   page.drawText('CONSULTANT PROFILE', { x: margin, y: 558, size: 10.5, font: bold, color: accent });
   page.drawLine({ start: { x: margin, y: 538 }, end: { x: 541, y: 538 }, thickness: 1.1, color: accent });
 
-  drawSidebar(page, cv, {
-    x: sideX,
-    y: 506,
-    width: sideWidth,
-    regular,
-    bold,
-    accent,
-    ink,
-    panel
-  });
+  drawSidebarFlow(506);
 
   sectionTitle('Profile');
   for (const line of cv.summaryLines.slice(0, 4)) {
@@ -724,6 +761,11 @@ async function renderConsultingPdf(cv: CVData): Promise<Uint8Array> {
   drawSimplePdfSection(sectionTitle, bodyParagraph, labels.education, cv.education);
   drawSimplePdfSection(sectionTitle, bodyParagraph, labels.languages, cv.languages);
   drawSimplePdfSection(sectionTitle, bodyParagraph, labels.certifications, cv.certifications);
+
+  while (sidebarCursor < sidebarLines.length) {
+    newPage();
+  }
+
   drawFooter(page, pageNumber, regular, muted);
 
   return pdf.save();
@@ -772,34 +814,71 @@ function drawContactLine(
   return lineY;
 }
 
-function drawSidebar(
-  page: PDFPage,
-  cv: CVData,
-  options: { x: number; y: number; width: number; regular: PDFFont; bold: PDFFont; accent: RGB; ink: RGB; panel: RGB }
-): void {
-  const { x, width, regular, bold, accent, ink, panel } = options;
-  let y = options.y;
-  page.drawRectangle({ x, y: 46, width, height: 460, color: panel });
+type PdfSidebarLine =
+  | { kind: 'heading'; text: string }
+  | { kind: 'bullet'; text: string; firstLine: boolean };
 
-  const title = (value: string): void => {
-    page.drawText(value.toUpperCase(), { x: x + 8, y, size: 10.3, font: bold, color: accent });
-    y -= 18;
-  };
-  const item = (value: string): void => {
-    const lines = wrapText(value, regular, 9.7, width - 34);
-    page.drawText('-', { x: x + 24, y, size: 12, font: bold, color: ink });
-    for (const line of lines.slice(0, 7)) {
-      page.drawText(line, { x: x + 42, y, size: 9.7, font: regular, color: ink });
-      y -= 13.4;
+function buildPdfSidebarLines(cv: CVData, labels: Labels, regular: PDFFont, textWidth: number): PdfSidebarLine[] {
+  const lines: PdfSidebarLine[] = [{ kind: 'heading', text: 'Snapshot' }];
+  const snapshot = cv.summaryLines.length ? cv.summaryLines : [labels.notDetected];
+  for (const item of snapshot) {
+    for (const [index, line] of wrapText(item, regular, 9.7, textWidth).entries()) {
+      lines.push({ kind: 'bullet', text: line, firstLine: index === 0 });
     }
-    y -= 4;
-  };
+  }
 
-  title('Snapshot');
-  cv.summaryLines.slice(0, 3).forEach(item);
-  y -= 4;
-  title('Expertise');
-  cv.keyExpertise.slice(0, 8).forEach(item);
+  lines.push({ kind: 'heading', text: labels.expertise });
+  const expertise = cv.keyExpertise.length ? cv.keyExpertise : [labels.notDetected];
+  for (const item of expertise) {
+    for (const [index, line] of wrapText(item, regular, 9.7, textWidth).entries()) {
+      lines.push({ kind: 'bullet', text: line, firstLine: index === 0 });
+    }
+  }
+
+  return lines;
+}
+
+function drawSidebarPage(
+  page: PDFPage,
+  lines: PdfSidebarLine[],
+  startIndex: number,
+  options: { x: number; topY: number; bottomY: number; width: number; regular: PDFFont; bold: PDFFont; accent: RGB; ink: RGB; panel: RGB }
+): number {
+  const { x, topY, bottomY, width, regular, bold, accent, ink, panel } = options;
+  let y = topY - 14;
+  let index = startIndex;
+  page.drawRectangle({ x, y: bottomY - 2, width, height: topY - bottomY + 12, color: panel });
+
+  while (index < lines.length) {
+    const line = lines[index];
+    const needed = line.kind === 'heading' ? 24 : line.firstLine ? 17 : 13.4;
+    if (y - needed < bottomY) {
+      break;
+    }
+
+    if (line.kind === 'heading') {
+      if (index > 0) {
+        y -= 6;
+      }
+      page.drawText(line.text.toUpperCase(), { x: x + 8, y, size: 10.3, font: bold, color: accent });
+      y -= 18;
+      index += 1;
+      continue;
+    }
+
+    if (line.firstLine) {
+      page.drawText('-', { x: x + 24, y, size: 12, font: bold, color: ink });
+    }
+    page.drawText(line.text, { x: x + 42, y, size: 9.7, font: regular, color: ink });
+    y -= 13.4;
+    const nextLine = lines[index + 1];
+    if (!nextLine || nextLine.kind !== 'bullet' || nextLine.firstLine) {
+      y -= 4;
+    }
+    index += 1;
+  }
+
+  return index;
 }
 
 function drawSimplePdfSection(
@@ -816,7 +895,9 @@ function drawSimplePdfSection(
 }
 
 function drawFooter(page: PDFPage, pageNumber: number, font: PDFFont, color: RGB): void {
-  page.drawText(`CV Standardizer Cloudflare · Page ${pageNumber}`, { x: 54, y: 28, size: 8, font, color });
+  const label = `Page ${pageNumber}`;
+  const size = 8;
+  page.drawText(label, { x: (page.getWidth() - font.widthOfTextAtSize(label, size)) / 2, y: 28, size, font, color });
 }
 
 function getLabels(language: OutputLanguage): Labels {

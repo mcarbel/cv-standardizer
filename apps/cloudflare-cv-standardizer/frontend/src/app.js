@@ -25,6 +25,8 @@ const finalDownloadButton = document.querySelector('#finalDownloadButton');
 const sendEmailButton = document.querySelector('#sendEmailButton');
 const advancedSettings = document.querySelector('#advancedSettings');
 const sectionNavLinks = document.querySelectorAll('.nav-orb');
+const DEFAULT_OLLAMA_MODEL = 'glm-5.2:cloud';
+const LEGACY_OLLAMA_DEFAULTS = new Set(['kimi-k3:cloud', 'gpt-4.1-mini']);
 
 let selectedFile;
 let originalPreviewUrl;
@@ -222,8 +224,8 @@ function applyProviderUi() {
     ? 'Loading available Ollama models from providerBaseUrl...'
     : 'Free text for OpenAI or heuristic mode. Select Ollama to load local models.';
 
-  if (isOllama && modelInput.value === 'gpt-4.1-mini') {
-    modelInput.value = 'glm-5.2:cloud';
+  if (isOllama && (!modelInput.value || LEGACY_OLLAMA_DEFAULTS.has(modelInput.value))) {
+    modelInput.value = DEFAULT_OLLAMA_MODEL;
     modelInput.placeholder = 'Select or type an Ollama model...';
   } else if (!isOllama && !modelInput.value) {
     modelInput.value = providerSelect.value === 'heuristic' ? 'heuristic' : 'gpt-4.1-mini';
@@ -269,12 +271,14 @@ async function refreshOllamaModels() {
       ollamaModelSelect.appendChild(option);
     }
 
-    const preferredModel = choosePreferredOllamaModel(availableModelNames);
-    if ((!modelInput.value || !availableModelNames.includes(modelInput.value)) && preferredModel) {
-      modelInput.value = preferredModel;
-      ollamaModelSelect.value = preferredModel;
-    } else if (modelInput.value && availableModelNames.includes(modelInput.value)) {
+    if (!modelInput.value) {
+      modelInput.value = DEFAULT_OLLAMA_MODEL;
+    }
+
+    if (modelInput.value && availableModelNames.includes(modelInput.value)) {
       ollamaModelSelect.value = modelInput.value;
+    } else {
+      ollamaModelSelect.value = '';
     }
 
     const retiredHint = payload.unavailableCount ? ` ${payload.unavailableCount} retired/unavailable hidden.` : '';
@@ -507,11 +511,6 @@ function cleanupExtractedText(value) {
     .replace(/\n{3,}/g, '\n\n')
     .trim()
     .slice(0, 50000);
-}
-
-function choosePreferredOllamaModel(modelNames) {
-  const preferred = ['glm-5.2:cloud', 'kimi-k3:cloud', 'kimi-k2.7-code:cloud', 'gpt-oss:20b'];
-  return preferred.find((modelName) => modelNames.includes(modelName)) || modelNames[0] || '';
 }
 
 async function fetchGeneratedCvFile() {

@@ -139,7 +139,7 @@ for (const navLink of sectionNavLinks) {
   });
 }
 
-sendEmailButton.addEventListener('click', () => {
+sendEmailButton.addEventListener('click', async () => {
   if (!latestResultUrl) {
     log('No generated CV is available to email yet.');
     return;
@@ -159,7 +159,10 @@ sendEmailButton.addEventListener('click', () => {
   const body = [
     'Hello,',
     '',
-    'The standardized CV is ready:',
+    'The standardized CV is attached when supported by your email client. If it is not attached automatically, please attach the downloaded file:',
+    latestResultFileName || 'standardized CV',
+    '',
+    'Secure download link:',
     latestResultUrl,
     '',
     'Best regards'
@@ -169,7 +172,31 @@ sendEmailButton.addEventListener('click', () => {
     recipient: recipient.trim(),
     resultUrl: latestResultUrl
   });
-  window.location.href = `mailto:${encodeURIComponent(recipient.trim())}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+  try {
+    const file = await fetchGeneratedCvFile();
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: subject,
+        text: body
+      });
+      log('Email handoff opened with native file sharing.', { fileName: file.name });
+      return;
+    }
+
+    downloadBlob(file, file.name);
+    log('Native file sharing is unavailable; downloaded CV before opening email composer.', { fileName: file.name });
+  } catch (error) {
+    log('Unable to prepare email attachment; opening composer with link only.', { message: error.message });
+  }
+
+  const client = window.prompt('Native attachment is not available in this browser. Type "outlook", "gmail", or "default" to open an email draft.', 'default');
+  if (!client) {
+    return;
+  }
+
+  openEmailComposer(client.trim().toLowerCase(), recipient.trim(), subject, body);
 });
 
 checkHealth();
@@ -196,7 +223,7 @@ function applyProviderUi() {
     : 'Free text for OpenAI or heuristic mode. Select Ollama to load local models.';
 
   if (isOllama && modelInput.value === 'gpt-4.1-mini') {
-    modelInput.value = 'kimi-k3:cloud';
+    modelInput.value = 'glm-5.2:cloud';
     modelInput.placeholder = 'Select or type an Ollama model...';
   } else if (!isOllama && !modelInput.value) {
     modelInput.value = providerSelect.value === 'heuristic' ? 'heuristic' : 'gpt-4.1-mini';
@@ -483,6 +510,47 @@ function cleanupExtractedText(value) {
 }
 
 function choosePreferredOllamaModel(modelNames) {
-  const preferred = ['kimi-k3:cloud', 'kimi-k2.7-code:cloud', 'gpt-oss:20b'];
+  const preferred = ['glm-5.2:cloud', 'kimi-k3:cloud', 'kimi-k2.7-code:cloud', 'gpt-oss:20b'];
   return preferred.find((modelName) => modelNames.includes(modelName)) || modelNames[0] || '';
+}
+
+async function fetchGeneratedCvFile() {
+  const response = await fetch(latestResultUrl);
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  return new File([blob], latestResultFileName || 'standardized-cv.pdf', {
+    type: blob.type || 'application/octet-stream'
+  });
+}
+
+function downloadBlob(file, fileName) {
+  const url = URL.createObjectURL(file);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function openEmailComposer(client, recipient, subject, body) {
+  const encodedRecipient = encodeURIComponent(recipient);
+  const encodedSubject = encodeURIComponent(subject);
+  const encodedBody = encodeURIComponent(body);
+
+  if (client === 'outlook') {
+    window.open(`https://outlook.office.com/mail/deeplink/compose?to=${encodedRecipient}&subject=${encodedSubject}&body=${encodedBody}`, '_blank', 'noopener');
+    return;
+  }
+
+  if (client === 'gmail') {
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodedRecipient}&su=${encodedSubject}&body=${encodedBody}`, '_blank', 'noopener');
+    return;
+  }
+
+  window.location.href = `mailto:${encodedRecipient}?subject=${encodedSubject}&body=${encodedBody}`;
 }

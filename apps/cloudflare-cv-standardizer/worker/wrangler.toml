@@ -4,7 +4,7 @@ compatibility_date = "2026-08-24"
 
 [vars]
 DEFAULT_PROVIDER = "ollama"
-DEFAULT_MODEL = "kimi-k3:cloud"
+DEFAULT_MODEL = "glm-5.2:cloud"
 OLLAMA_BASE_URL = "https://ollama.braineesys.lu"
 CORS_ORIGIN = "*"
 

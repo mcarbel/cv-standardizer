@@ -161,8 +161,6 @@ a:active,
 .top-nav,
 .brand-mark,
 .nav-actions,
-.actions,
-.button-stack,
 .result-heading,
 .preview-header,
 .preview-pane-header,
@@ -172,7 +170,6 @@ a:active,
 }
 
 .top-nav,
-.actions,
 .result-heading,
 .preview-header,
 .preview-pane-header {
@@ -538,11 +535,6 @@ select option {
   text-transform: none;
 }
 
-.actions {
-  gap: 18px;
-  justify-content: flex-end;
-}
-
 .checkbox {
   display: flex;
   grid-template-columns: none;
@@ -555,9 +547,13 @@ select option {
 }
 
 .preview-options {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
   justify-items: end;
+  max-width: 430px;
 }
 
 .preview-options .checkbox {
@@ -567,15 +563,24 @@ select option {
   color: hsl(var(--foreground));
 }
 
+.preview-options .primary-button {
+  min-height: 42px;
+  padding: 0 16px 0 10px;
+}
+
+.preview-options .button-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.preview-options small {
+  flex-basis: 100%;
+}
+
 .checkbox input {
   width: 18px;
   min-height: 18px;
   accent-color: hsl(var(--foreground));
-}
-
-.button-stack {
-  gap: 12px;
-  justify-content: flex-end;
 }
 
 button {
@@ -858,16 +863,10 @@ pre {
     padding: 10px 14px;
   }
 
-  .actions,
   .preview-header,
   .result-heading {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .button-stack,
-  .button-stack {
-    width: 100%;
   }
 
   .nav-actions {

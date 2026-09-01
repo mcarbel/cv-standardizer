@@ -1,0 +1,27 @@
+name = "cv-standardizer-api"
+main = "src/index.ts"
+compatibility_date = "2026-08-24"
+
+[vars]
+DEFAULT_PROVIDER = "ollama"
+DEFAULT_MODEL = "glm-5.2:cloud"
+OLLAMA_BASE_URL = "https://ollama.braineesys.lu"
+CORS_ORIGIN = "*"
+
+[[r2_buckets]]
+binding = "CV_FILES"
+bucket_name = "cv-standardizer-files"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cv-standardizer"
+database_id = "a50dc6a6-4768-422d-8eb6-2ebd352b0e91"
+
+[[queues.producers]]
+binding = "CV_JOBS_QUEUE"
+queue = "cv-standardizer-jobs"
+
+[[queues.consumers]]
+queue = "cv-standardizer-jobs"
+max_batch_size = 1
+max_batch_timeout = 5

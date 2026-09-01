@@ -4,6 +4,7 @@ lib/
 temp/
 *.log
 .DS_Store
+.wrangler/
 apps/backend-api/storage/
 apps/spfx-webpart/sharepoint/
 apps/spfx-webpart/release/

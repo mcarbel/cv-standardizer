@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CV Standardizer Cloudflare</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@1,8..60,400;1,8..60,500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <video class="video-background" autoplay muted loop playsinline aria-hidden="true">
+      <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4" type="video/mp4" />
+    </video>
+    <div class="background-vignette" aria-hidden="true"></div>
+
+    <main class="landing-shell">
+      <section class="left-panel liquid-glass-strong" id="standardize">
+        <nav class="top-nav" aria-label="Primary">
+          <a class="brand-mark" href="#standardize" aria-label="CV Standardizer home">
+            <span class="brand-logo">cv</span>
+            <span>standardizer</span>
+          </a>
+          <div class="nav-actions liquid-glass" aria-label="Section navigation">
+            <a class="nav-orb is-active" href="#standardize" aria-label="Upload CV">
+              <span>cv</span>
+            </a>
+            <a class="nav-orb" href="#compare" aria-label="Preview CV">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h4"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>
+            </a>
+            <a class="nav-orb" href="#debug" aria-label="Job telemetry">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h4v16H7z"/><path d="M13 4h4v16h-4z"/><path d="M9 8h.01"/><path d="M15 8h.01"/><path d="M9 16h.01"/><path d="M15 16h.01"/></svg>
+            </a>
+            <a class="nav-orb" href="#advancedSettings" aria-label="Advanced settings">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M8 12h8"/><path d="M11 17h2"/></svg>
+            </a>
+          </div>
+        </nav>
+
+        <div class="hero-center">
+          <div class="hero-orb" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h4"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>
+          </div>
+          <p class="eyebrow">AI standardization cockpit</p>
+          <h1>Transform CVs into <em>client-ready</em> profiles.</h1>
+          <p class="hero-copy">
+            Upload a PDF, DOCX, or TXT resume, normalize it with Ollama or OpenAI, then compare the original and final CV side by side.
+          </p>
+
+          <form id="jobForm" class="control-form">
+            <label class="drop-zone liquid-glass" id="dropZone">
+              <input id="fileInput" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" />
+              <span class="drop-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 17v2h14v-2"/></svg>
+              </span>
+              <span>
+                <strong>Drop a CV here</strong>
+                <small id="fileName">PDF, DOCX, or TXT · Max 10MB</small>
+              </span>
+            </label>
+
+            <details class="config-panel liquid-glass" id="advancedSettings">
+              <summary>
+                <span>
+                  <strong>Advanced settings</strong>
+                  <small>Provider, model, template and language</small>
+                </span>
+                <svg class="chevron-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+              </summary>
+              <div class="configuration">
+                <label>
+                  API base URL
+                  <input id="apiBaseUrl" name="apiBaseUrl" value="https://cv-standardizer-api.mario-carbel.workers.dev" />
+                </label>
+                <label>
+                  Provider
+                  <select id="provider" name="provider">
+                    <option value="openai">OpenAI</option>
+                    <option value="ollama" selected>Ollama</option>
+                    <option value="heuristic">Heuristic</option>
+                  </select>
+                </label>
+                <label>
+                  Model
+                  <input id="model" name="model" value="glm-5.2:cloud" />
+                  <select id="ollamaModelSelect" class="model-select" hidden>
+                    <option value="">Loading Ollama models...</option>
+                  </select>
+                  <small id="modelHint" class="field-hint">Select Ollama to load available models.</small>
+                </label>
+                <label>
+                  Provider base URL
+                  <input id="providerBaseUrl" name="providerBaseUrl" value="https://ollama.braineesys.lu" />
+                </label>
+                <label>
+                  Template
+                  <select id="templateStyle" name="templateStyle">
+                    <option value="consulting">Consulting</option>
+                    <option value="modern">Modern</option>
+                    <option value="standard">Standard</option>
+                  </select>
+                </label>
+                <label>
+                  Output format
+                  <select id="outputFormat" name="outputFormat">
+                    <option value="docx">DOCX</option>
+                    <option value="pdf" selected>PDF</option>
+                    <option value="markdown">Markdown</option>
+                  </select>
+                </label>
+                <label>
+                  Output language
+                  <select id="outputLanguage" name="outputLanguage">
+                    <option value="en">English</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="es">Spanish</option>
+                    <option value="it">Italian</option>
+                  </select>
+                </label>
+                <div class="settings-action">
+                  <button id="refreshModelsButton" type="button" class="secondary-button liquid-glass" hidden>Refresh models</button>
+                </div>
+              </div>
+            </details>
+          </form>
+        </div>
+
+        <footer class="quote-block">
+          <span>TRANSFORMATION ENGINE</span>
+          <p>From raw resume to <em>polished consultant profile</em>.</p>
+        </footer>
+      </section>
+
+      <section class="right-panel" aria-label="Preview and telemetry">
+        <section class="preview-card liquid-glass-strong" id="compare" aria-label="CV side by side preview">
+          <div class="preview-header">
+            <div>
+              <p class="eyebrow">Side-by-side review</p>
+              <h2>Original CV <em>vs</em> final CV</h2>
+            </div>
+            <div class="preview-options">
+              <label class="checkbox liquid-glass">
+                <input id="anonymizeCandidateName" type="checkbox" />
+                <span>Anonymize candidate</span>
+              </label>
+              <button type="submit" form="jobForm" class="primary-button liquid-glass-strong">
+                <span class="button-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+                </span>
+                Standardize now
+              </button>
+              <small>PDF renders inline. DOCX is converted to browser HTML for quick review.</small>
+            </div>
+          </div>
+          <div class="preview-grid">
+            <article class="preview-pane liquid-glass">
+              <div class="preview-pane-header">
+                <strong>Original CV</strong>
+                <span id="originalPreviewMeta">Waiting for upload</span>
+              </div>
+              <div id="originalPreview" class="preview-surface empty-preview">
+                Select or drop a PDF, DOCX, or TXT CV to preview it here.
+              </div>
+            </article>
+            <article class="preview-pane liquid-glass">
+              <div class="preview-pane-header">
+                <strong>Standardized CV</strong>
+                <span id="finalPreviewMeta">Waiting for processing</span>
+              </div>
+              <div id="finalPreview" class="preview-surface empty-preview">
+                The generated CV preview will appear here when processing finishes.
+              </div>
+              <div id="finalActions" class="final-actions" hidden>
+                <a id="finalDownloadButton" class="primary-button liquid-glass-strong" href="#" download hidden>
+                  <span class="button-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 19h14"/></svg>
+                  </span>
+                  Download
+                </a>
+                <button id="sendEmailButton" type="button" class="secondary-button liquid-glass" disabled>
+                  <span class="button-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.018 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+                  </span>
+                  Send to email
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <aside class="result-card liquid-glass" id="debug">
+          <div class="result-heading">
+            <div>
+              <p class="eyebrow">Live processing</p>
+              <h2>Job telemetry</h2>
+            </div>
+            <div class="download-row">
+              <a id="jsonLink" href="#" hidden>JSON</a>
+              <a id="resultLink" href="#" hidden>Output</a>
+            </div>
+          </div>
+          <div class="progress-shell">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+          <dl>
+            <div>
+              <dt>Job</dt>
+              <dd id="jobId">Not started</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd id="jobStatus">-</dd>
+            </div>
+            <div>
+              <dt>Progress</dt>
+              <dd id="jobProgress">0%</dd>
+            </div>
+          </dl>
+          <pre id="debugLog">Debug output will appear here.</pre>
+        </aside>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

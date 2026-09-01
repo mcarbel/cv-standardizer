@@ -23,6 +23,9 @@ interface Labels {
   consultantProfile: string;
   contact: string;
   candidate: string;
+  email: string;
+  phone: string;
+  address: string;
   title: string;
   expertise: string;
   contactValue: string;
@@ -248,7 +251,9 @@ function buildConsultingDocumentXml(cv: CVData): string {
     [`${labels.title}:`, cv.title || 'Consultant'],
     [`${labels.languages}:`, cv.languages.slice(0, 2).join(', ') || labels.notDetected],
     [`${labels.expertise}:`, cv.keyExpertise.slice(0, 3).join(', ') || labels.notDetected],
-    [`${labels.contact}:`, labels.contactValue]
+    [`${labels.email}:`, cv.contact?.email || labels.contactValue],
+    [`${labels.phone}:`, cv.contact?.phone || labels.contactValue],
+    [`${labels.address}:`, cv.contact?.address || labels.contactValue]
   ] as const;
   const sidebarBlocks = [
     consultingSmallHeading('Snapshot', theme.accent),
@@ -789,8 +794,9 @@ function drawConsultingHeader(
   contactY = drawContactLine(page, 'Candidate:', cv.fullName || 'Confidential Candidate', 360, contactY, 158, { regular, bold, ink });
   contactY = drawContactLine(page, 'Title:', cv.title || 'Consultant', 360, contactY - 5, 158, { regular, bold, ink });
   contactY = drawContactLine(page, 'Languages:', cv.languages.slice(0, 2).join(', ') || 'Shared on request', 360, contactY - 5, 158, { regular, bold, ink });
-  contactY = drawContactLine(page, 'Expertise:', cv.keyExpertise.slice(0, 3).join(', ') || 'Shared on request', 360, contactY - 5, 158, { regular, bold, ink });
-  drawContactLine(page, 'Contact:', 'Shared through BraineeSys on request', 360, contactY - 5, 158, { regular, bold, ink });
+  contactY = drawContactLine(page, 'Email:', cv.contact?.email || 'Shared on request', 360, contactY - 5, 158, { regular, bold, ink });
+  contactY = drawContactLine(page, 'Phone:', cv.contact?.phone || 'Shared on request', 360, contactY - 5, 158, { regular, bold, ink });
+  drawContactLine(page, 'Address:', cv.contact?.address || 'Shared on request', 360, contactY - 5, 158, { regular, bold, ink });
 }
 
 function drawContactLine(
@@ -916,6 +922,9 @@ function getLabels(language: OutputLanguage): Labels {
       consultantProfile: 'Profil Consultant',
       contact: 'Contact',
       candidate: 'Candidat',
+      email: 'Email',
+      phone: 'Téléphone',
+      address: 'Adresse',
       title: 'Titre',
       expertise: 'Expertise',
       contactValue: 'Partagé par BraineeSys sur demande',
@@ -938,6 +947,9 @@ function getLabels(language: OutputLanguage): Labels {
     consultantProfile: 'Consultant Profile',
     contact: 'Contact',
     candidate: 'Candidate',
+    email: 'Email',
+    phone: 'Phone',
+    address: 'Address',
     title: 'Title',
     expertise: 'Expertise',
     contactValue: 'Shared through BraineeSys on request',

@@ -73,6 +73,11 @@ export interface PublicJobRecord {
 export interface CVData {
   schemaVersion: string;
   fullName: string;
+  contact: {
+    email: string;
+    phone: string;
+    address: string;
+  };
   title: string;
   summaryLines: string[];
   keyExpertise: string[];

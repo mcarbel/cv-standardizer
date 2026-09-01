@@ -103,6 +103,7 @@ function normalizeProviderJson(job: JobRecord, content: string | undefined, fall
     return anonymizeIfNeeded({
       ...emptyCv(job),
       ...parsed,
+      contact: normalizeContact(parsed.contact, fallbackText),
       meta: {
         ...emptyCv(job).meta,
         ...parsed.meta,
@@ -135,7 +136,7 @@ function hasUsefulCvData(cv: Partial<CVData>): boolean {
 
 function heuristicTransform(job: JobRecord, text: string, warning?: string): CVData {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  const likelyName = job.anonymizeCandidateName ? anonymizedAlias(job) : inferName(lines, job.inputFileName);
+  const likelyName = inferName(lines, job.inputFileName);
   const skills = inferSkills(text);
   const summary = inferSummary(lines);
   const localizedWarning = warning ? localizeWarning(warning, job.outputLanguage) : undefined;
@@ -157,6 +158,7 @@ function heuristicTransform(job: JobRecord, text: string, warning?: string): CVD
   return anonymizeIfNeeded({
     ...emptyCv(job),
     ...localized,
+    contact: inferContact(text, lines),
     rawSections: {
       extractedText: text.slice(0, 12000)
     }
@@ -166,7 +168,12 @@ function heuristicTransform(job: JobRecord, text: string, warning?: string): CVD
 function emptyCv(job: JobRecord): CVData {
   return {
     schemaVersion: 'cloudflare-worker-0.2',
-    fullName: job.anonymizeCandidateName ? anonymizedAlias(job) : localizedDefault(job, 'Candidate', 'Candidat'),
+    fullName: localizedDefault(job, 'Candidate', 'Candidat'),
+    contact: {
+      email: '',
+      phone: '',
+      address: ''
+    },
     title: 'Consultant',
     summaryLines: [],
     keyExpertise: [],
@@ -193,7 +200,6 @@ function localizeHeuristicData(job: JobRecord, data: Pick<CVData, 'fullName' | '
   if (job.outputLanguage !== 'fr') {
     return {
       ...data,
-      fullName: job.anonymizeCandidateName ? anonymizedAlias(job) : data.fullName,
       technicalSkills: {
         core: data.technicalSkills.core || [],
         tools: data.technicalSkills.tools || []
@@ -203,7 +209,6 @@ function localizeHeuristicData(job: JobRecord, data: Pick<CVData, 'fullName' | '
 
   return {
     ...data,
-    fullName: job.anonymizeCandidateName ? anonymizedAlias(job) : data.fullName,
     technicalSkills: {
       principales: data.technicalSkills.core || [],
       outils: data.technicalSkills.tools || []
@@ -259,6 +264,29 @@ function inferName(lines: string[], fileName: string): string {
 
   const firstHumanLine = lines.find((line) => !ignored.test(line) && /^[A-ZÀ-ÿ][A-Za-zÀ-ÿ' .-]{3,80}$/.test(line));
   return firstHumanLine || fileName.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+}
+
+function inferContact(text: string, lines: string[]): CVData['contact'] {
+  const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || '';
+  const phone = lines
+    .map((line) => line.match(/(?:\+\d{1,3}[\s.-]?)?(?:\(?\d{2,4}\)?[\s.-]?){2,5}\d{2,4}/)?.[0]?.trim() || '')
+    .find(Boolean) || '';
+  const address = lines.find((line) => /\b(?:rue|avenue|boulevard|street|road|route|place|drive|lane|city|zip|postal|luxembourg|paris|france|belgium|belgique)\b/i.test(line) && line.length < 180) || '';
+  return { email, phone, address };
+}
+
+function normalizeContact(contact: Partial<CVData['contact']> | undefined, fallbackText: string): CVData['contact'] {
+  const fallbackLines = fallbackText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const inferred = inferContact(fallbackText, fallbackLines);
+  return {
+    email: stringOrEmpty(contact?.email) || inferred.email,
+    phone: stringOrEmpty(contact?.phone) || inferred.phone,
+    address: stringOrEmpty(contact?.address) || inferred.address
+  };
+}
+
+function stringOrEmpty(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
 }
 
 function inferTitle(lines: string[]): string {
@@ -368,8 +396,9 @@ function buildSystemPrompt(language: string): string {
     `You standardize CVs into structured JSON in ${outputLanguage}.`,
     'Return only valid JSON. Do not include markdown, comments, explanations, or text outside the JSON object.',
     'If information is missing, use an empty string or an empty array, but preserve every detected experience and skill.',
+    'When available, extract candidate contact details into contact.email, contact.phone, and contact.address.',
     'Match this shape:',
-    '{"schemaVersion":"string","fullName":"string","title":"string","summaryLines":["string"],"keyExpertise":["string"],"technicalSkills":{"category":["skill"]},"experiences":[{"title":"string","sector":"string","role":"string","context":"string","achievements":["string"],"results":["string"],"dates":"string"}],"education":["string"],"languages":["string"],"certifications":["string"],"rawSections":{},"meta":{}}'
+    '{"schemaVersion":"string","fullName":"string","contact":{"email":"string","phone":"string","address":"string"},"title":"string","summaryLines":["string"],"keyExpertise":["string"],"technicalSkills":{"category":["skill"]},"experiences":[{"title":"string","sector":"string","role":"string","context":"string","achievements":["string"],"results":["string"],"dates":"string"}],"education":["string"],"languages":["string"],"certifications":["string"],"rawSections":{},"meta":{}}'
   ].join('\n');
 }
 
@@ -392,41 +421,79 @@ function anonymizeIfNeeded(cv: CVData, job: JobRecord): CVData {
     String(cv.rawSections.extractedText || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean),
     job.inputFileName
   );
-  const alias = anonymizedAlias(job);
-  const redactors = [
-    detectedName,
-    cv.fullName,
-    ...detectedName.split(/\s+/).filter((part) => part.length > 2)
-  ].filter((value, index, values) => value && values.indexOf(value) === index);
+  const originalName = cv.fullName || detectedName;
+  const alias = anonymizedAlias(job, originalName);
+  const contact = anonymizedContact(job);
+  const redactions = uniqueRedactions([
+    { value: detectedName, replacement: alias },
+    { value: originalName, replacement: alias },
+    { value: cv.contact.email, replacement: contact.email },
+    { value: cv.contact.phone, replacement: contact.phone },
+    { value: cv.contact.address, replacement: contact.address }
+  ]);
 
   return {
     ...cv,
     fullName: alias,
-    summaryLines: cv.summaryLines.map((line) => redactText(line, redactors, alias)),
-    experiences: cv.experiences.map((experience) => ({
-      ...experience,
-      title: redactText(experience.title, redactors, alias),
-      role: redactText(experience.role, redactors, alias),
-      context: redactText(experience.context, redactors, alias),
-      achievements: experience.achievements.map((line) => redactText(line, redactors, alias)),
-      results: experience.results.map((line) => redactText(line, redactors, alias))
-    })),
+    contact,
     rawSections: Object.fromEntries(
-      Object.entries(cv.rawSections).map(([key, value]) => [key, redactText(value, redactors, alias)])
+      Object.entries(cv.rawSections).map(([key, value]) => [key, redactSensitiveText(value, redactions)])
     )
   };
 }
 
-function anonymizedAlias(job: JobRecord): string {
-  return job.outputLanguage === 'fr' ? 'Candidat Confidentiel' : 'Confidential Candidate';
+function anonymizedAlias(job: JobRecord, sourceName?: string): string {
+  const initials = candidateInitials(sourceName || job.inputFileName);
+  const sequence = job.jobId.replace(/^job_/, '').replace(/[^a-z0-9]/gi, '').slice(0, 4).toUpperCase() || '0001';
+  return `${initials}-${sequence}`;
 }
 
-function redactText(value: string, redactors: string[], alias: string): string {
-  return redactors.reduce((current, redactor) => {
-    if (!redactor.trim()) {
+function candidateInitials(value: string): string {
+  const ignored = /^(?:cv|resume|mr|mrs|ms|mme|mlle|monsieur|madame|m|dr|prof|consulting|standardise|standardized)$/i;
+  const words = value
+    .replace(/\.[^.]+$/, '')
+    .replace(/[_-]+/g, ' ')
+    .split(/\s+/)
+    .map((part) => part.replace(/[^A-Za-zÀ-ÿ]/g, ''))
+    .filter((part) => part.length > 1 && !ignored.test(part));
+  const initials = words.slice(0, 4).map((part) => part[0]?.toUpperCase()).join('');
+  return initials || 'CV';
+}
+
+function anonymizedContact(job: JobRecord): CVData['contact'] {
+  if (job.outputLanguage === 'fr') {
+    return {
+      email: 'Email masqué',
+      phone: 'Téléphone masqué',
+      address: 'Adresse masquée'
+    };
+  }
+
+  return {
+    email: 'Email withheld',
+    phone: 'Phone withheld',
+    address: 'Address withheld'
+  };
+}
+
+function uniqueRedactions(redactions: Array<{ value: string; replacement: string }>): Array<{ value: string; replacement: string }> {
+  const seen = new Set<string>();
+  return redactions.filter((redaction) => {
+    const key = redaction.value.trim().toLowerCase();
+    if (!key || seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function redactSensitiveText(value: string, redactions: Array<{ value: string; replacement: string }>): string {
+  return redactions.reduce((current, redaction) => {
+    if (!redaction.value.trim()) {
       return current;
     }
 
-    return current.replace(new RegExp(`\\b${escapeRegExp(redactor)}\\b`, 'gi'), alias);
+    return current.replace(new RegExp(escapeRegExp(redaction.value), 'gi'), redaction.replacement);
   }, value);
 }

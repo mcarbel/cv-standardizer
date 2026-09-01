@@ -39,7 +39,10 @@ export default {
           ],
           languages: [
             { key: 'en', label: 'English' },
-            { key: 'fr', label: 'French' }
+            { key: 'fr', label: 'French' },
+            { key: 'de', label: 'German' },
+            { key: 'es', label: 'Spanish' },
+            { key: 'it', label: 'Italian' }
           ]
         }, env);
       }
@@ -271,7 +274,7 @@ function parseCreateJobOptions(form: FormData, env: Env): CreateJobOptions {
     provider: normalizeChoice(form.get('provider'), ['heuristic', 'openai', 'ollama'], env.DEFAULT_PROVIDER || 'heuristic'),
     model: stringValue(form.get('model'), env.DEFAULT_MODEL || 'heuristic'),
     outputFormat: normalizeChoice(form.get('outputFormat'), ['docx', 'pdf', 'markdown'], 'pdf'),
-    outputLanguage: normalizeChoice(form.get('outputLanguage'), ['en', 'fr'], 'en'),
+    outputLanguage: normalizeChoice(form.get('outputLanguage'), ['en', 'fr', 'de', 'es', 'it'], 'en'),
     templateStyle: normalizeChoice(form.get('templateStyle'), ['standard', 'modern', 'consulting'], 'consulting'),
     anonymizeCandidateName: stringValue(form.get('anonymizeCandidateName'), 'false') === 'true',
     providerBaseUrl: optionalString(form.get('providerBaseUrl')),

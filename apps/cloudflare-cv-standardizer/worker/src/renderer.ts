@@ -782,21 +782,25 @@ function drawConsultingHeader(
   fonts: { regular: PDFFont; bold: PDFFont; italic: PDFFont; accent: RGB; ink: RGB; muted: RGB; panel: RGB; logoImage: PDFImage }
 ): void {
   const { regular, bold, italic, accent, ink, muted, panel, logoImage } = fonts;
+  const labels = getLabels(cv.meta.outputLanguage);
   page.drawText(cv.fullName || 'CV Standardized', { x: 54, y: 744, size: 22, font: bold, color: ink });
   page.drawText(cv.title || 'Consultant', { x: 54, y: 714, size: 13.5, font: regular, color: muted });
-  page.drawText('Client-ready profile prepared for presentation and interview', { x: 54, y: 688, size: 10.6, font: regular, color: ink });
-  page.drawText('shortlisting.', { x: 54, y: 674, size: 10.6, font: regular, color: ink });
+  const clientReadyLines = wrapText(labels.clientReady, regular, 10.6, 260);
+  page.drawText(clientReadyLines[0] || labels.clientReady, { x: 54, y: 688, size: 10.6, font: regular, color: ink });
+  if (clientReadyLines[1]) {
+    page.drawText(clientReadyLines[1], { x: 54, y: 674, size: 10.6, font: regular, color: ink });
+  }
 
   page.drawRectangle({ x: 350, y: 566, width: 180, height: 226, color: panel });
   page.drawImage(logoImage, { x: 393, y: 739, width: 92, height: 44 });
-  page.drawText('CONTACT', { x: 360, y: 720, size: 10.5, font: bold, color: accent });
+  page.drawText(labels.contact.toUpperCase(), { x: 360, y: 720, size: 10.5, font: bold, color: accent });
   let contactY = 699;
-  contactY = drawContactLine(page, 'Candidate:', cv.fullName || 'Confidential Candidate', 360, contactY, 158, { regular, bold, ink });
-  contactY = drawContactLine(page, 'Title:', cv.title || 'Consultant', 360, contactY - 5, 158, { regular, bold, ink });
-  contactY = drawContactLine(page, 'Languages:', cv.languages.slice(0, 2).join(', ') || 'Shared on request', 360, contactY - 5, 158, { regular, bold, ink });
-  contactY = drawContactLine(page, 'Email:', cv.contact?.email || 'Shared on request', 360, contactY - 5, 158, { regular, bold, ink });
-  contactY = drawContactLine(page, 'Phone:', cv.contact?.phone || 'Shared on request', 360, contactY - 5, 158, { regular, bold, ink });
-  drawContactLine(page, 'Address:', cv.contact?.address || 'Shared on request', 360, contactY - 5, 158, { regular, bold, ink });
+  contactY = drawContactLine(page, `${labels.candidate}:`, cv.fullName || 'Confidential Candidate', 360, contactY, 158, { regular, bold, ink });
+  contactY = drawContactLine(page, `${labels.title}:`, cv.title || 'Consultant', 360, contactY - 5, 158, { regular, bold, ink });
+  contactY = drawContactLine(page, `${labels.languages}:`, cv.languages.slice(0, 2).join(', ') || labels.contactValue, 360, contactY - 5, 158, { regular, bold, ink });
+  contactY = drawContactLine(page, `${labels.email}:`, cv.contact?.email || labels.contactValue, 360, contactY - 5, 158, { regular, bold, ink });
+  contactY = drawContactLine(page, `${labels.phone}:`, cv.contact?.phone || labels.contactValue, 360, contactY - 5, 158, { regular, bold, ink });
+  drawContactLine(page, `${labels.address}:`, cv.contact?.address || labels.contactValue, 360, contactY - 5, 158, { regular, bold, ink });
 }
 
 function drawContactLine(
@@ -930,6 +934,84 @@ function getLabels(language: OutputLanguage): Labels {
       contactValue: 'Partagé par BraineeSys sur demande',
       clientReady: 'Profil prêt pour présentation client et présélection entretien.',
       notDetected: 'Non détecté'
+    };
+  }
+
+  if (language === 'de') {
+    return {
+      summary: 'Zusammenfassung',
+      keyExpertise: 'Kernkompetenzen',
+      technicalSkills: 'Technische Kompetenzen',
+      experience: 'Berufserfahrung',
+      education: 'Ausbildung',
+      languages: 'Sprachen',
+      certifications: 'Zertifizierungen',
+      metadata: 'Metadaten',
+      profile: 'Profil',
+      capabilities: 'Kompetenzen',
+      consultantProfile: 'Beraterprofil',
+      contact: 'Kontakt',
+      candidate: 'Kandidat',
+      email: 'E-Mail',
+      phone: 'Telefon',
+      address: 'Adresse',
+      title: 'Titel',
+      expertise: 'Expertise',
+      contactValue: 'Auf Anfrage über BraineeSys geteilt',
+      clientReady: 'Kundenfertiges Profil für Präsentation und Interviewauswahl.',
+      notDetected: 'Nicht erkannt'
+    };
+  }
+
+  if (language === 'es') {
+    return {
+      summary: 'Resumen ejecutivo',
+      keyExpertise: 'Experiencia clave',
+      technicalSkills: 'Competencias técnicas',
+      experience: 'Experiencia profesional',
+      education: 'Formación',
+      languages: 'Idiomas',
+      certifications: 'Certificaciones',
+      metadata: 'Metadatos',
+      profile: 'Perfil',
+      capabilities: 'Capacidades',
+      consultantProfile: 'Perfil consultor',
+      contact: 'Contacto',
+      candidate: 'Candidato',
+      email: 'Email',
+      phone: 'Teléfono',
+      address: 'Dirección',
+      title: 'Título',
+      expertise: 'Experiencia',
+      contactValue: 'Compartido por BraineeSys bajo solicitud',
+      clientReady: 'Perfil listo para presentación al cliente y preselección de entrevistas.',
+      notDetected: 'No detectado'
+    };
+  }
+
+  if (language === 'it') {
+    return {
+      summary: 'Sintesi executive',
+      keyExpertise: 'Competenze chiave',
+      technicalSkills: 'Competenze tecniche',
+      experience: 'Esperienza professionale',
+      education: 'Formazione',
+      languages: 'Lingue',
+      certifications: 'Certificazioni',
+      metadata: 'Metadati',
+      profile: 'Profilo',
+      capabilities: 'Competenze',
+      consultantProfile: 'Profilo consulente',
+      contact: 'Contatto',
+      candidate: 'Candidato',
+      email: 'Email',
+      phone: 'Telefono',
+      address: 'Indirizzo',
+      title: 'Titolo',
+      expertise: 'Expertise',
+      contactValue: 'Condiviso da BraineeSys su richiesta',
+      clientReady: 'Profilo pronto per presentazione al cliente e selezione colloqui.',
+      notDetected: 'Non rilevato'
     };
   }
 

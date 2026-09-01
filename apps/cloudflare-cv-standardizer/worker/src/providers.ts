@@ -252,7 +252,11 @@ function translateGenericValue(value: string, language: JobRecord['outputLanguag
 }
 
 function localizedDefault(job: JobRecord, english: string, french: string): string {
-  return job.outputLanguage === 'fr' ? french : english;
+  if (job.outputLanguage === 'fr') return french;
+  if (job.outputLanguage === 'de') return 'Kandidat';
+  if (job.outputLanguage === 'es') return 'Candidato';
+  if (job.outputLanguage === 'it') return 'Candidato';
+  return english;
 }
 
 function inferName(lines: string[], fileName: string): string {
@@ -390,16 +394,27 @@ function mergeWrappedLines(lines: string[]): string[] {
   return merged;
 }
 
-function buildSystemPrompt(language: string): string {
-  const outputLanguage = language === 'fr' ? 'French' : 'English';
+function buildSystemPrompt(language: JobRecord['outputLanguage']): string {
+  const outputLanguage = outputLanguageName(language);
   return [
     `You standardize CVs into structured JSON in ${outputLanguage}.`,
+    `Translate and write all narrative CV fields in ${outputLanguage}: title, summaryLines, keyExpertise labels when relevant, experience context, achievements, results, education, languages, certifications, and technical skill category names.`,
+    `Do not mix output languages. If the source CV is in another language, rewrite the standardized CV content in ${outputLanguage}.`,
+    'Preserve proper nouns, company names, product names, acronyms, technologies, certifications, dates, and measurable results exactly unless translation is clearly required.',
     'Return only valid JSON. Do not include markdown, comments, explanations, or text outside the JSON object.',
     'If information is missing, use an empty string or an empty array, but preserve every detected experience and skill.',
     'When available, extract candidate contact details into contact.email, contact.phone, and contact.address.',
     'Match this shape:',
     '{"schemaVersion":"string","fullName":"string","contact":{"email":"string","phone":"string","address":"string"},"title":"string","summaryLines":["string"],"keyExpertise":["string"],"technicalSkills":{"category":["skill"]},"experiences":[{"title":"string","sector":"string","role":"string","context":"string","achievements":["string"],"results":["string"],"dates":"string"}],"education":["string"],"languages":["string"],"certifications":["string"],"rawSections":{},"meta":{}}'
   ].join('\n');
+}
+
+function outputLanguageName(language: JobRecord['outputLanguage']): string {
+  if (language === 'fr') return 'French';
+  if (language === 'de') return 'German';
+  if (language === 'es') return 'Spanish';
+  if (language === 'it') return 'Italian';
+  return 'English';
 }
 
 function extractJsonObject(content: string): string {
@@ -466,6 +481,30 @@ function anonymizedContact(job: JobRecord): CVData['contact'] {
       email: 'Email masqué',
       phone: 'Téléphone masqué',
       address: 'Adresse masquée'
+    };
+  }
+
+  if (job.outputLanguage === 'de') {
+    return {
+      email: 'E-Mail verborgen',
+      phone: 'Telefon verborgen',
+      address: 'Adresse verborgen'
+    };
+  }
+
+  if (job.outputLanguage === 'es') {
+    return {
+      email: 'Email oculto',
+      phone: 'Teléfono oculto',
+      address: 'Dirección oculta'
+    };
+  }
+
+  if (job.outputLanguage === 'it') {
+    return {
+      email: 'Email nascosta',
+      phone: 'Telefono nascosto',
+      address: 'Indirizzo nascosto'
     };
   }
 

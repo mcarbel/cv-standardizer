@@ -1,6 +1,6 @@
 export type Provider = 'heuristic' | 'openai' | 'ollama';
 export type OutputFormat = 'docx' | 'pdf' | 'markdown';
-export type OutputLanguage = 'en' | 'fr';
+export type OutputLanguage = 'en' | 'fr' | 'de' | 'es' | 'it';
 export type TemplateStyle = 'standard' | 'modern' | 'consulting';
 export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
 
